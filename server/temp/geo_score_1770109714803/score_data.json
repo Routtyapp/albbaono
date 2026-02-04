@@ -1,0 +1,478 @@
+{
+  "url": "https://www.echoit.co.kr/",
+  "analyzedAt": "2026-02-03T02:04:12.020Z",
+  "totalScore": 50,
+  "grade": "D",
+  "categories": {
+    "structure": {
+      "score": 18,
+      "maxScore": 25,
+      "percentage": 72,
+      "items": [
+        {
+          "name": "목록형 콘텐츠",
+          "passed": false,
+          "score": 0,
+          "maxScore": 7,
+          "detail": "목록형 콘텐츠 부족 - AI 인용률 향상을 위해 목록 추가 권장"
+        },
+        {
+          "name": "표 형식 사용",
+          "passed": false,
+          "score": 0,
+          "maxScore": 6,
+          "detail": "표 형식 미사용 - 데이터 정리에 표 활용 권장"
+        },
+        {
+          "name": "두괄식 작성",
+          "passed": false,
+          "score": 1,
+          "maxScore": 7,
+          "detail": "섹션 시작에 핵심 답변 배치 권장"
+        },
+        {
+          "name": "콘텐츠 최신성",
+          "passed": false,
+          "score": 0,
+          "maxScore": 5,
+          "detail": "발행일/수정일 표기 없음 - datePublished 스키마 추가 권장"
+        }
+      ]
+    },
+    "schema": {
+      "score": 0,
+      "maxScore": 25,
+      "percentage": 0,
+      "items": [
+        {
+          "name": "Product 스키마",
+          "passed": false,
+          "score": 0,
+          "maxScore": 10,
+          "detail": "Product 스키마 없음 - 제품 페이지인 경우 추가 필수"
+        },
+        {
+          "name": "FAQ 스키마",
+          "passed": false,
+          "score": 0,
+          "maxScore": 5,
+          "detail": "FAQ 스키마 없음 - 자주 묻는 질문 섹션 추가 권장"
+        },
+        {
+          "name": "HowTo 스키마",
+          "passed": false,
+          "score": 0,
+          "maxScore": 5,
+          "detail": "HowTo 스키마 없음 - 가이드/튜토리얼 콘텐츠인 경우 추가 권장"
+        },
+        {
+          "name": "Review 스키마",
+          "passed": false,
+          "score": 0,
+          "maxScore": 5,
+          "detail": "Review/Rating 스키마 없음 - 리뷰 데이터가 있다면 스키마 추가 권장"
+        }
+      ]
+    },
+    "url": {
+      "score": 14,
+      "maxScore": 15,
+      "percentage": 93,
+      "items": [
+        {
+          "name": "하이픈 사용",
+          "passed": false,
+          "score": 0,
+          "maxScore": 5,
+          "detail": "URL에 언더스코어(_) 발견: \"/brity/brity_automation.html\" - 하이픈(-) 사용 권장"
+        },
+        {
+          "name": "소문자 사용",
+          "passed": true,
+          "score": 5,
+          "maxScore": 5,
+          "detail": "소문자 규칙 준수"
+        },
+        {
+          "name": "영문 URL",
+          "passed": true,
+          "score": 5,
+          "maxScore": 5,
+          "detail": "영문 URL 규칙 준수"
+        }
+      ]
+    },
+    "meta": {
+      "score": 6,
+      "maxScore": 20,
+      "percentage": 30,
+      "items": [
+        {
+          "name": "Title 최적화",
+          "passed": false,
+          "score": 1,
+          "maxScore": 7,
+          "detail": "Title 길이 부족 (11자)"
+        },
+        {
+          "name": "Description 최적화",
+          "passed": false,
+          "score": 0,
+          "maxScore": 7,
+          "detail": "Meta Description 없음 - 필수 요소"
+        },
+        {
+          "name": "Open Graph",
+          "passed": false,
+          "score": 0,
+          "maxScore": 3,
+          "detail": "Open Graph 태그 없음 - og:title, og:description, og:image 추가 권장"
+        },
+        {
+          "name": "Canonical URL",
+          "passed": false,
+          "score": 0,
+          "maxScore": 3,
+          "detail": "Canonical URL 없음 - 중복 콘텐츠 이슈 방지를 위해 추가 권장"
+        }
+      ]
+    },
+    "content": {
+      "score": 12,
+      "maxScore": 15,
+      "percentage": 80,
+      "items": [
+        {
+          "name": "데이터/통계",
+          "passed": false,
+          "score": 0,
+          "maxScore": 5,
+          "detail": "구체적인 데이터/통계 부족 - AI 신뢰도 향상을 위해 수치 데이터 추가 권장"
+        },
+        {
+          "name": "출처 표기",
+          "passed": false,
+          "score": 0,
+          "maxScore": 5,
+          "detail": "출처/인용 표기 없음 - 외부 참조 링크 추가 권장"
+        },
+        {
+          "name": "HTML vs 이미지",
+          "passed": false,
+          "score": 2,
+          "maxScore": 5,
+          "detail": "텍스트 콘텐츠 부족 - AI가 읽을 수 있는 HTML 텍스트 추가 권장"
+        }
+      ]
+    }
+  },
+  "pages": [
+    {
+      "url": "https://www.echoit.co.kr/",
+      "title": ":: 에코아이티 ::",
+      "scores": {
+        "structure": 20,
+        "schema": 0,
+        "url": 15,
+        "meta": 7,
+        "content": 14,
+        "total": 56
+      }
+    },
+    {
+      "url": "https://www.echoit.co.kr/index.html",
+      "title": ":: 에코아이티 ::",
+      "scores": {
+        "structure": 20,
+        "schema": 0,
+        "url": 15,
+        "meta": 7,
+        "content": 14,
+        "total": 56
+      }
+    },
+    {
+      "url": "https://www.echoit.co.kr/sap/sap.html",
+      "title": ":: 에코아이티 ::",
+      "scores": {
+        "structure": 20,
+        "schema": 0,
+        "url": 15,
+        "meta": 7,
+        "content": 13,
+        "total": 55
+      }
+    },
+    {
+      "url": "https://www.echoit.co.kr/brity/brity_automation.html",
+      "title": ":: 에코아이티 ::",
+      "scores": {
+        "structure": 20,
+        "schema": 0,
+        "url": 10,
+        "meta": 7,
+        "content": 11,
+        "total": 48
+      }
+    },
+    {
+      "url": "https://www.echoit.co.kr/mendix/mendix.html",
+      "title": ":: 에코아이티 ::",
+      "scores": {
+        "structure": 20,
+        "schema": 0,
+        "url": 15,
+        "meta": 7,
+        "content": 13,
+        "total": 55
+      }
+    },
+    {
+      "url": "https://www.echoit.co.kr/hancom/hancom.html",
+      "title": ":: 에코아이티 ::",
+      "scores": {
+        "structure": 20,
+        "schema": 0,
+        "url": 15,
+        "meta": 7,
+        "content": 14,
+        "total": 56
+      }
+    },
+    {
+      "url": "https://www.echoit.co.kr/salesforce/salesforce.html",
+      "title": ":: 에코아이티 ::",
+      "scores": {
+        "structure": 20,
+        "schema": 0,
+        "url": 15,
+        "meta": 7,
+        "content": 14,
+        "total": 56
+      }
+    },
+    {
+      "url": "https://www.echoit.co.kr/ito/ito.html",
+      "title": ":: 에코아이티 ::",
+      "scores": {
+        "structure": 20,
+        "schema": 0,
+        "url": 15,
+        "meta": 7,
+        "content": 13,
+        "total": 55
+      }
+    },
+    {
+      "url": "https://www.echoit.co.kr/esg/esg.html",
+      "title": ":: 에코아이티 ::",
+      "scores": {
+        "structure": 20,
+        "schema": 0,
+        "url": 15,
+        "meta": 7,
+        "content": 11,
+        "total": 53
+      }
+    },
+    {
+      "url": "https://www.echoit.co.kr/work/notice.html",
+      "title": ":: 에코아이티 ::",
+      "scores": {
+        "structure": 20,
+        "schema": 0,
+        "url": 15,
+        "meta": 7,
+        "content": 14,
+        "total": 56
+      }
+    },
+    {
+      "url": "https://www.echoit.co.kr/work/work.html",
+      "title": ":: 에코아이티 ::",
+      "scores": {
+        "structure": 20,
+        "schema": 0,
+        "url": 15,
+        "meta": 7,
+        "content": 13,
+        "total": 55
+      }
+    },
+    {
+      "url": "https://www.echoit.co.kr/recruit/talent.html",
+      "title": ":: 에코아이티 ::",
+      "scores": {
+        "structure": 20,
+        "schema": 0,
+        "url": 15,
+        "meta": 7,
+        "content": 13,
+        "total": 55
+      }
+    },
+    {
+      "url": "https://www.echoit.co.kr/company/company.html",
+      "title": ":: 에코아이티 ::",
+      "scores": {
+        "structure": 20,
+        "schema": 0,
+        "url": 15,
+        "meta": 7,
+        "content": 14,
+        "total": 56
+      }
+    },
+    {
+      "url": "https://www.echoit.co.kr/company/location.html",
+      "title": ":: 에코아이티 ::",
+      "scores": {
+        "structure": 20,
+        "schema": 0,
+        "url": 15,
+        "meta": 7,
+        "content": 11,
+        "total": 53
+      }
+    },
+    {
+      "url": "https://www.echoit.co.kr/rest/index.html",
+      "title": "힐링하우스",
+      "scores": {
+        "structure": 10,
+        "schema": 0,
+        "url": 15,
+        "meta": 1,
+        "content": 2,
+        "total": 28
+      }
+    },
+    {
+      "url": "https://www.echoit.co.kr/common/company-personal_info.html",
+      "title": ":: 에코아이티 ::",
+      "scores": {
+        "structure": 1,
+        "schema": 0,
+        "url": 10,
+        "meta": 1,
+        "content": 7,
+        "total": 19
+      }
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "high",
+      "category": "structure",
+      "issue": "목록형 콘텐츠: 목록형 콘텐츠 부족 - AI 인용률 향상을 위해 목록 추가 권장",
+      "suggestion": "핵심 정보를 <ul> 또는 <ol> 목록으로 정리하세요. AI는 목록 형태의 정보를 50% 더 자주 인용합니다.",
+      "impact": "최대 +7점"
+    },
+    {
+      "priority": "high",
+      "category": "structure",
+      "issue": "두괄식 작성: 섹션 시작에 핵심 답변 배치 권장",
+      "suggestion": "각 섹션의 첫 40-60단어 안에 핵심 답변을 배치하세요.",
+      "impact": "최대 +7점"
+    },
+    {
+      "priority": "high",
+      "category": "schema",
+      "issue": "Product 스키마: Product 스키마 없음 - 제품 페이지인 경우 추가 필수",
+      "suggestion": "Product 스키마에 name, description, price, availability, brand, sku를 포함하세요.",
+      "impact": "최대 +10점"
+    },
+    {
+      "priority": "high",
+      "category": "meta",
+      "issue": "Title 최적화: Title 길이 부족 (11자)",
+      "suggestion": "Title을 50-60자로 조정하고 쇼핑 의도 키워드(추천, 비교, 가이드 등)를 포함하세요.",
+      "impact": "최대 +7점"
+    },
+    {
+      "priority": "high",
+      "category": "meta",
+      "issue": "Description 최적화: Meta Description 없음 - 필수 요소",
+      "suggestion": "Description을 120-160자로 작성하고 \"~를 찾는\", \"~를 위한\" 같은 의도 문구를 포함하세요.",
+      "impact": "최대 +7점"
+    },
+    {
+      "priority": "medium",
+      "category": "structure",
+      "issue": "표 형식 사용: 표 형식 미사용 - 데이터 정리에 표 활용 권장",
+      "suggestion": "비교 데이터나 스펙을 <table>로 정리하고 <thead>와 <th>를 포함하세요.",
+      "impact": "최대 +6점, 인용률 2.5배 증가"
+    },
+    {
+      "priority": "medium",
+      "category": "structure",
+      "issue": "콘텐츠 최신성: 발행일/수정일 표기 없음 - datePublished 스키마 추가 권장",
+      "suggestion": "datePublished, dateModified 스키마를 추가하고 콘텐츠를 정기적으로 업데이트하세요.",
+      "impact": "최대 +5점"
+    },
+    {
+      "priority": "medium",
+      "category": "schema",
+      "issue": "FAQ 스키마: FAQ 스키마 없음 - 자주 묻는 질문 섹션 추가 권장",
+      "suggestion": "FAQPage 스키마를 추가하고 최소 5개 이상의 Q&A를 포함하세요.",
+      "impact": "최대 +5점"
+    },
+    {
+      "priority": "medium",
+      "category": "schema",
+      "issue": "HowTo 스키마: HowTo 스키마 없음 - 가이드/튜토리얼 콘텐츠인 경우 추가 권장",
+      "suggestion": "가이드 콘텐츠에 HowTo 스키마를 추가하세요.",
+      "impact": "최대 +5점"
+    },
+    {
+      "priority": "medium",
+      "category": "schema",
+      "issue": "Review 스키마: Review/Rating 스키마 없음 - 리뷰 데이터가 있다면 스키마 추가 권장",
+      "suggestion": "AggregateRating 스키마에 ratingValue와 reviewCount를 포함하세요.",
+      "impact": "최대 +5점"
+    },
+    {
+      "priority": "medium",
+      "category": "url",
+      "issue": "하이픈 사용: URL에 언더스코어(_) 발견: \"/brity/brity_automation.html\" - 하이픈(-) 사용 권장",
+      "suggestion": "URL에서 언더스코어(_)를 하이픈(-)으로 변경하세요.",
+      "impact": "+5점"
+    },
+    {
+      "priority": "medium",
+      "category": "content",
+      "issue": "데이터/통계: 구체적인 데이터/통계 부족 - AI 신뢰도 향상을 위해 수치 데이터 추가 권장",
+      "suggestion": "구체적인 수치, 통계, 퍼센트 데이터를 추가하세요. AI는 정량적 데이터를 신뢰합니다.",
+      "impact": "최대 +5점"
+    },
+    {
+      "priority": "medium",
+      "category": "content",
+      "issue": "출처 표기: 출처/인용 표기 없음 - 외부 참조 링크 추가 권장",
+      "suggestion": "신뢰할 수 있는 외부 소스 링크와 인용을 추가하세요.",
+      "impact": "최대 +5점"
+    },
+    {
+      "priority": "medium",
+      "category": "content",
+      "issue": "HTML vs 이미지: 텍스트 콘텐츠 부족 - AI가 읽을 수 있는 HTML 텍스트 추가 권장",
+      "suggestion": "텍스트 이미지를 HTML 텍스트로 변환하고 표/목록을 HTML로 작성하세요.",
+      "impact": "최대 +5점"
+    },
+    {
+      "priority": "low",
+      "category": "meta",
+      "issue": "Open Graph: Open Graph 태그 없음 - og:title, og:description, og:image 추가 권장",
+      "suggestion": "og:title, og:description, og:image 태그를 추가하세요.",
+      "impact": "최대 +3점"
+    },
+    {
+      "priority": "low",
+      "category": "meta",
+      "issue": "Canonical URL: Canonical URL 없음 - 중복 콘텐츠 이슈 방지를 위해 추가 권장",
+      "suggestion": "<link rel=\"canonical\" href=\"...\"> 태그를 추가하세요.",
+      "impact": "최대 +3점"
+    }
+  ],
+  "savedAt": "2026-02-03T02:04:12.025Z"
+}

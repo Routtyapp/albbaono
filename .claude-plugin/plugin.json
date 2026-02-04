@@ -1,0 +1,6 @@
+{
+  "name": "god-damn-visualization",
+  "description": "Matplotlib 기반 데이터 시각화 플러그인 - 라인차트, 바차트, 파이차트, 산점도, 히트맵, 히스토그램, 다이어그램 생성 가이드 제공",
+  "version": "1.0.0",
+  "keywords": ["matplotlib", "visualization", "chart", "graph", "data", "python", "plot"]
+}

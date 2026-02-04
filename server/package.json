@@ -1,0 +1,30 @@
+{
+  "name": "geo-tracker-server",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc && npm run copy-scripts",
+    "copy-scripts": "xcopy /E /I /Y src\\scripts dist\\scripts",
+    "start": "node dist/index.js",
+    "setup-python": "pip install -r src/scripts/requirements.txt"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "cors": "^2.8.5",
+    "puppeteer-core": "^23.0.0",
+    "cheerio": "^1.0.0",
+    "node-cron": "^3.0.3",
+    "dotenv": "^16.3.1",
+    "openai": "^4.20.0",
+    "@google/generative-ai": "^0.21.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/cors": "^2.8.17",
+    "@types/node": "^22.0.0",
+    "@types/node-cron": "^3.0.11",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
