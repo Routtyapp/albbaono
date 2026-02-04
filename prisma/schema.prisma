@@ -1,0 +1,161 @@
+// Prisma schema for GEO Tracker
+// Supports both SQLite (development) and MySQL (production)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// 브랜드 테이블
+model Brand {
+  id          String   @id @default(cuid())
+  name        String
+  competitors String   @default("[]") // JSON stored as string in SQLite
+  createdAt   DateTime @default(now()) @map("created_at")
+  isActive    Boolean  @default(true) @map("is_active")
+
+  // Relations
+  queryBrands  QueryBrand[]
+  brandResults BrandResult[]
+  insights     Insight[]
+
+  @@map("brands")
+}
+
+// 쿼리 테이블
+model Query {
+  id         String    @id @default(cuid())
+  query      String
+  category   String
+  frequency  String    @default("daily") // 'daily' | 'weekly' | 'monthly'
+  isActive   Boolean   @default(true) @map("is_active")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  lastTested DateTime? @map("last_tested")
+
+  // Relations
+  queryBrands QueryBrand[]
+  results     Result[]
+
+  @@map("queries")
+}
+
+// 쿼리-브랜드 다대다 관계 테이블
+model QueryBrand {
+  queryId String @map("query_id")
+  brandId String @map("brand_id")
+
+  query Query @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@id([queryId, brandId])
+  @@map("query_brands")
+}
+
+// 결과 테이블
+model Result {
+  id           String   @id @default(cuid())
+  queryId      String?  @map("query_id")
+  query        String
+  category     String
+  engine       String   // 'gpt' | 'gemini'
+  cited        Boolean
+  response     String?
+  fullResponse String?  @map("full_response")
+  testedAt     DateTime @default(now()) @map("tested_at")
+
+  // Relations
+  queryRef     Query?        @relation(fields: [queryId], references: [id], onDelete: SetNull)
+  brandResults BrandResult[]
+
+  @@index([queryId])
+  @@index([testedAt])
+  @@map("results")
+}
+
+// 결과당 브랜드별 인용 정보 테이블
+model BrandResult {
+  id                  Int     @id @default(autoincrement())
+  resultId            String  @map("result_id")
+  brandId             String  @map("brand_id")
+  brandName           String  @map("brand_name")
+  cited               Boolean
+  rank                Int?
+  competitorMentions  String  @default("[]") @map("competitor_mentions") // JSON stored as string
+
+  // Relations
+  result Result @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  brand  Brand  @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@index([resultId])
+  @@index([brandId])
+  @@map("brand_results")
+}
+
+// 리포트 테이블
+model Report {
+  id           String   @id @default(cuid())
+  title        String
+  type         String   // 'weekly' | 'monthly'
+  period       String
+  startDate    DateTime @map("start_date")
+  endDate      DateTime @map("end_date")
+  generatedAt  DateTime @default(now()) @map("generated_at")
+  metrics      String   // JSON stored as string
+  highlights   String   @default("[]") // JSON stored as string
+  topQueries   String   @default("[]") @map("top_queries") // JSON stored as string
+  worstQueries String   @default("[]") @map("worst_queries") // JSON stored as string
+
+  @@map("reports")
+}
+
+// 인사이트 테이블
+model Insight {
+  id                 String   @id @default(cuid())
+  brandId            String   @map("brand_id")
+  brandName          String   @map("brand_name")
+  commonKeywords     String   @default("[]") @map("common_keywords") // JSON stored as string
+  categoryInsights   String   @default("[]") @map("category_insights") // JSON stored as string
+  citationPatterns   String   @default("{}") @map("citation_patterns") // JSON stored as string
+  actionableInsights String   @default("[]") @map("actionable_insights") // JSON stored as string
+  contentGaps        String   @default("[]") @map("content_gaps") // JSON stored as string
+  metadata           String   @default("{}") // JSON stored as string
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  // Relations
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@index([brandId])
+  @@map("insights")
+}
+
+// 스케줄러 설정 테이블 (단일 레코드)
+model SchedulerConfig {
+  id                Int     @id @default(1)
+  enabled           Boolean @default(false)
+  dailyRunTime      String  @default("09:00") @map("daily_run_time")
+  weeklyRunDay      Int     @default(1) @map("weekly_run_day")
+  weeklyRunTime     String  @default("09:00") @map("weekly_run_time")
+  monthlyRunDay     Int     @default(1) @map("monthly_run_day")
+  monthlyRunTime    String  @default("09:00") @map("monthly_run_time")
+  defaultEngine     String  @default("gpt") @map("default_engine")
+  concurrentQueries Int     @default(1) @map("concurrent_queries")
+
+  @@map("scheduler_config")
+}
+
+// 스케줄러 히스토리 테이블
+model SchedulerHistory {
+  id               String   @id @default(cuid())
+  type             String   // 'daily' | 'weekly' | 'monthly'
+  startedAt        DateTime @map("started_at")
+  completedAt      DateTime @map("completed_at")
+  queriesProcessed Int      @map("queries_processed")
+  success          Int
+  failed           Int
+
+  @@index([type])
+  @@map("scheduler_history")
+}

@@ -25,9 +25,7 @@
     "@mantine/nprogress": "^8.3.14",
     "@mantine/spotlight": "^8.3.14",
     "@mantine/tiptap": "^8.3.14",
-    "@remotion/cli": "4.0.417",
-    "@remotion/player": "4.0.417",
-    "@remotion/renderer": "4.0.417",
+    "@prisma/client": "^7.3.0",
     "@tabler/icons-react": "^3.36.1",
     "@tiptap/extension-link": "^3.18.0",
     "@tiptap/pm": "^3.18.0",
@@ -39,15 +37,14 @@
     "embla-carousel": "^8.5.2",
     "embla-carousel-react": "^8.5.2",
     "openai": "^6.17.0",
+    "prisma": "^7.3.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.13.0",
-    "recharts": "^3.7.0",
-    "remotion": "4.0.417"
+    "recharts": "^3.7.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
-    "@remotion/eslint-plugin": "^4.0.417",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
