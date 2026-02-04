@@ -120,7 +120,7 @@ export function Overview() {
     <Stack gap="lg">
       <Group justify="space-between">
         <div>
-          <Title order={2}>알빠노</Title>
+          <Title order={2}>Overview</Title>
           <Group gap="xs">
             <Text c="dimmed" size="sm">
               AI 가시성 현황을 한눈에 확인하세요
