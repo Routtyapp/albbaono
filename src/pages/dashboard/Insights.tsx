@@ -48,7 +48,7 @@ import {
   type KeywordInsight,
   type ActionableInsight,
 } from '../../services/api';
-import type { Brand } from '../../data/mockData';
+import type { Brand } from '../../types';
 import { IconTrash, IconHistory, IconFileTypePdf, IconDownload } from '@tabler/icons-react';
 
 const PRIORITY_COLORS = {

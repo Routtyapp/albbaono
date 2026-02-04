@@ -18,7 +18,7 @@ import {
   IconAlertTriangle,
   IconTrash,
 } from '@tabler/icons-react';
-import type { Report } from '../../data/mockData';
+import type { Report } from '../../types';
 
 interface ReportDetailPanelProps {
   report: Report;

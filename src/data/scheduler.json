@@ -1,0 +1,23 @@
+{
+  "config": {
+    "enabled": true,
+    "dailyRunTime": "09:00",
+    "weeklyRunDay": 1,
+    "weeklyRunTime": "09:00",
+    "monthlyRunDay": 1,
+    "monthlyRunTime": "09:00",
+    "defaultEngine": "gpt",
+    "concurrentQueries": 3
+  },
+  "status": {
+    "isRunning": false,
+    "currentTask": null,
+    "lastCompletedAt": null
+  },
+  "history": [],
+  "nextScheduled": {
+    "daily": "2026-02-05T00:00:00.000Z",
+    "weekly": "2026-02-09T00:00:00.000Z",
+    "monthly": "2026-03-01T00:00:00.000Z"
+  }
+}

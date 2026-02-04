@@ -23,7 +23,7 @@ import {
   IconSelect,
 } from '@tabler/icons-react';
 import { getReports, getStats, generateReport, downloadReportPdf, deleteReport } from '../../services/api';
-import type { Report, Stats } from '../../data/mockData';
+import type { Report, Stats } from '../../types';
 import { ReportsSkeleton, ReportListItem, ReportDetailPanel } from '../../components/ui';
 
 export function Reports() {

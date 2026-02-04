@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getBrands, getQueries, getStats, getReports, getSavedInsights, getResultsPaginated } from '../services/api';
-import type { Brand, MonitoredQuery, Stats, Report, TestResult } from '../data/mockData';
+import type { Brand, MonitoredQuery, Stats, Report, TestResult } from '../types';
 import type { SavedInsight } from '../services/api';
 
 export interface SidebarData {

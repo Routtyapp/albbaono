@@ -36,11 +36,10 @@ import {
   IconLink,
   IconClock,
   IconPlayerPlay,
-  IconPlayerStop,
   IconCalendarEvent,
   IconSettings,
 } from '@tabler/icons-react';
-import { QUERY_CATEGORIES, AI_ENGINES, type MonitoredQuery, type TestResult, type Brand } from '../../data/mockData';
+import { QUERY_CATEGORIES, AI_ENGINES, type MonitoredQuery, type TestResult, type Brand } from '../../types';
 import {
   getQueries,
   addQuery,
@@ -690,7 +689,7 @@ export function Queries() {
                       variant="light"
                       size="sm"
                     >
-                      {AI_ENGINES[result.engine]?.name || result.engine}
+                      {AI_ENGINES.find(e => e.value === result.engine)?.label || result.engine}
                     </Badge>
                   </Table.Td>
                   <Table.Td>
@@ -783,7 +782,7 @@ export function Queries() {
                 variant="filled"
                 size="lg"
               >
-                {AI_ENGINES[latestResult.engine]?.name || latestResult.engine}
+                {AI_ENGINES.find(e => e.value === latestResult.engine)?.label || latestResult.engine}
               </Badge>
             </Group>
 
@@ -825,7 +824,7 @@ export function Queries() {
 
             <div>
               <Text size="sm" c="dimmed" mb="xs">
-                {AI_ENGINES[latestResult.engine]?.name || latestResult.engine} 응답
+                {AI_ENGINES.find(e => e.value === latestResult.engine)?.label || latestResult.engine} 응답
               </Text>
               <ScrollArea h={250}>
                 <Code block style={{ whiteSpace: 'pre-wrap' }}>

@@ -20,7 +20,7 @@ import {
 } from '@tabler/icons-react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSidebarData, type SidebarData } from '../../hooks/useSidebarData';
-import type { Brand, MonitoredQuery, Stats, Report, TestResult } from '../../data/mockData';
+import type { Brand, MonitoredQuery, Stats, Report, TestResult } from '../../types';
 import type { SavedInsight } from '../../services/api';
 
 const trackerMenuItems = [

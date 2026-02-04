@@ -104,12 +104,6 @@ export function ScoreOverview() {
     navigate(`/dashboard/score/analysis?url=${encodeURIComponent(item.url)}`);
   };
 
-  const handleDeleteHistory = (urlToDelete: string) => {
-    const updated = history.filter((h) => h.url !== urlToDelete);
-    setHistory(updated);
-    localStorage.setItem('geoScoreHistory', JSON.stringify(updated));
-  };
-
   const handleClearHistory = () => {
     setHistory([]);
     localStorage.removeItem('geoScoreHistory');

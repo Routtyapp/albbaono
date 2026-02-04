@@ -13,7 +13,6 @@ import * as queryRepository from './src/db/repositories/queryRepository';
 import * as resultRepository from './src/db/repositories/resultRepository';
 import * as reportRepository from './src/db/repositories/reportRepository';
 import * as insightRepository from './src/db/repositories/insightRepository';
-import * as schedulerRepository from './src/db/repositories/schedulerRepository';
 
 // https://vite.dev/config/
 export default defineConfig({

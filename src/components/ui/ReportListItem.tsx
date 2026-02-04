@@ -1,6 +1,6 @@
 import { Paper, Group, Text, Badge, Stack, Box } from '@mantine/core';
 import { IconCalendarWeek, IconCalendarMonth } from '@tabler/icons-react';
-import type { Report } from '../../data/mockData';
+import type { Report } from '../../types';
 
 interface ReportListItemProps {
   report: Report;

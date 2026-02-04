@@ -1,6 +1,6 @@
 import { Paper, Group, Text, Badge, Stack, Box } from '@mantine/core';
 import { IconBuilding } from '@tabler/icons-react';
-import type { Brand } from '../../data/mockData';
+import type { Brand } from '../../types';
 
 interface BrandListItemProps {
   brand: Brand;

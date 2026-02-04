@@ -32,7 +32,7 @@ import {
 } from '@tabler/icons-react';
 import { useSearchParams } from 'react-router-dom';
 import { getResultById } from '../../services/api';
-import type { TestResult } from '../../data/mockData';
+import type { TestResult } from '../../types';
 import { VisibilitySkeleton } from '../../components/ui';
 
 // 응답에서 키워드 추출하는 함수

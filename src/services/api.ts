@@ -1,4 +1,4 @@
-import type { MonitoredQuery, TestResult, Stats, Report, Brand } from '../data/mockData';
+import type { MonitoredQuery, TestResult, Stats, Report, Brand } from '../types';
 
 // === 브랜드 API ===
 
@@ -262,7 +262,7 @@ export interface PdfReportData {
     citationRateChange: number;
     shareOfVoice: number;
     shareOfVoiceChange: number;
-    avgRank: number;
+    avgRank: number | null;
     avgRankChange: number;
     totalTests: number;
     totalTestsChange: number;

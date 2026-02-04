@@ -12,8 +12,8 @@ import {
 } from '@tabler/icons-react';
 import { MetricCard, ChartCard, OverviewSkeleton } from '../../components/ui';
 import { getStats, getQueries, getBrands } from '../../services/api';
-import type { Stats, MonitoredQuery, TestResult, Brand } from '../../data/mockData';
-import { AI_ENGINES as ENGINES } from '../../data/mockData';
+import type { Stats, MonitoredQuery, TestResult, Brand } from '../../types';
+import { AI_ENGINES as ENGINES } from '../../types';
 
 export function Overview() {
   const [stats, setStats] = useState<Stats | null>(null);
@@ -251,7 +251,7 @@ export function Overview() {
                           color={es.engine === 'gemini' ? 'blue' : 'teal'}
                           variant="light"
                         >
-                          {ENGINES[es.engine as keyof typeof ENGINES]?.name || es.engine}
+                          {ENGINES.find(e => e.value === es.engine)?.label || es.engine}
                         </Badge>
                         <Text size="sm">
                           {es.citedCount}/{es.totalTests} ({es.citationRate}%)
@@ -304,9 +304,9 @@ export function Overview() {
                         {brandResult?.cited ? '인용됨' : '미인용'}
                         {brandResult?.rank ? ` #${brandResult.rank}` : ''}
                       </Badge>
-                    ) : result.brandResults?.length > 0 ? (
+                    ) : (result.brandResults?.length ?? 0) > 0 ? (
                       // 전체 브랜드 결과 표시
-                      result.brandResults.map((br) => (
+                      result.brandResults!.map((br) => (
                         <Badge
                           key={br.brandId}
                           color={br.cited ? 'teal' : 'gray'}

@@ -23,7 +23,7 @@ import {
   IconSelect,
 } from '@tabler/icons-react';
 import { getBrands, addBrand, updateBrand, deleteBrand, getStats, getResults, getQueries, getSavedInsights } from '../../services/api';
-import type { Brand, BrandDetail, TestResult, MonitoredQuery, BrandStats } from '../../data/mockData';
+import type { Brand, BrandDetail, TestResult, MonitoredQuery, BrandStats } from '../../types';
 import type { SavedInsight } from '../../services/api';
 import { BrandsSkeleton, BrandListItem, BrandDetailPanel } from '../../components/ui';
 

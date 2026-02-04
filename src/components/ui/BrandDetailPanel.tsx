@@ -21,7 +21,7 @@ import {
   IconFileDescription,
 } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
-import type { BrandDetail } from '../../data/mockData';
+import type { BrandDetail } from '../../types';
 
 interface BrandDetailPanelProps {
   brand: BrandDetail;
@@ -52,7 +52,7 @@ function StatBox({
   );
 }
 
-function getActivityIcon(type: 'test' | 'insight' | 'report') {
+function getActivityIcon(type: string) {
   switch (type) {
     case 'test':
       return <IconFlask size={12} />;
@@ -60,10 +60,12 @@ function getActivityIcon(type: 'test' | 'insight' | 'report') {
       return <IconBulb size={12} />;
     case 'report':
       return <IconFileReport size={12} />;
+    default:
+      return <IconSearch size={12} />;
   }
 }
 
-function getActivityColor(type: 'test' | 'insight' | 'report') {
+function getActivityColor(type: string) {
   switch (type) {
     case 'test':
       return 'blue';
@@ -71,6 +73,8 @@ function getActivityColor(type: 'test' | 'insight' | 'report') {
       return 'violet';
     case 'report':
       return 'green';
+    default:
+      return 'gray';
   }
 }
 
@@ -123,7 +127,7 @@ export function BrandDetailPanel({ brand, onEdit, onDelete }: BrandDetailPanelPr
               </Badge>
             </Group>
             <Text size="sm" c="dimmed">
-              등록일: {new Date(brand.createdAt).toLocaleDateString('ko-KR')}
+              등록일: {brand.createdAt ? new Date(brand.createdAt).toLocaleDateString('ko-KR') : '-'}
             </Text>
           </Stack>
           <Group gap="xs">
