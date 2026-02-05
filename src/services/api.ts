@@ -1,7 +1,7 @@
 import type { MonitoredQuery, TestResult, Stats, Report, Brand } from '../types';
 
-// API Base URL
-const API_BASE = 'http://localhost:3001';
+// API Base URL - 환경변수 사용, 없으면 상대경로 (같은 도메인)
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 // 공통 fetch 옵션 (credentials 포함)
 const fetchOptions: RequestInit = {

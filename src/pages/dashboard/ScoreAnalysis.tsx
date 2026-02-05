@@ -39,7 +39,6 @@ import {
   downloadGeoScorePdf,
   getGeoScoreHistory,
   clearGeoScoreHistory,
-  type GeoScoreResult,
   type GeoScoreHistoryItem,
 } from '../../services/api';
 

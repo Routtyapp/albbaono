@@ -26,7 +26,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const API_BASE = 'http://localhost:3001';
+// API Base URL - 환경변수 사용, 없으면 상대경로 (같은 도메인)
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
