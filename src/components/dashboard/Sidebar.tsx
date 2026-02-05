@@ -658,7 +658,9 @@ function IconMenu({
       <Divider w="80%" my="xs" />
 
       {scoreMenuItems.map((item) => {
-        const isActive = location.pathname.startsWith(item.path);
+        const isActive = item.path === '/dashboard/score'
+          ? location.pathname === '/dashboard/score'
+          : location.pathname.startsWith(item.path);
         return (
           <UnstyledButton
             key={item.path}
