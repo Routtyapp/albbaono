@@ -12,6 +12,7 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
 const navLinks = [
   { label: '문제점', href: '#problem' },
@@ -22,6 +23,7 @@ const navLinks = [
 export function Header() {
   const [opened, { toggle, close }] = useDisclosure(false);
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   return (
     <Box
@@ -68,20 +70,31 @@ export function Header() {
           </Group>
 
           <Group gap="sm">
-            <Button
-              variant="subtle"
-              color="gray"
-              visibleFrom="sm"
-              onClick={() => navigate('/dashboard')}
-            >
-              로그인
-            </Button>
-            <Button
-              color="dark"
-              onClick={() => navigate('/dashboard')}
-            >
-              시작하기
-            </Button>
+            {isAuthenticated ? (
+              <Button
+                color="dark"
+                onClick={() => navigate('/dashboard')}
+              >
+                대시보드
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="subtle"
+                  color="gray"
+                  visibleFrom="sm"
+                  onClick={() => navigate('/login')}
+                >
+                  로그인
+                </Button>
+                <Button
+                  color="dark"
+                  onClick={() => navigate('/register')}
+                >
+                  시작하기
+                </Button>
+              </>
+            )}
             <Burger
               opened={opened}
               onClick={toggle}
@@ -126,28 +139,44 @@ export function Header() {
               {link.label}
             </Anchor>
           ))}
-          <Button
-            variant="subtle"
-            color="gray"
-            fullWidth
-            mt="md"
-            onClick={() => {
-              close();
-              navigate('/dashboard');
-            }}
-          >
-            로그인
-          </Button>
-          <Button
-            color="dark"
-            fullWidth
-            onClick={() => {
-              close();
-              navigate('/dashboard');
-            }}
-          >
-            시작하기
-          </Button>
+          {isAuthenticated ? (
+            <Button
+              color="dark"
+              fullWidth
+              mt="md"
+              onClick={() => {
+                close();
+                navigate('/dashboard');
+              }}
+            >
+              대시보드
+            </Button>
+          ) : (
+            <>
+              <Button
+                variant="subtle"
+                color="gray"
+                fullWidth
+                mt="md"
+                onClick={() => {
+                  close();
+                  navigate('/login');
+                }}
+              >
+                로그인
+              </Button>
+              <Button
+                color="dark"
+                fullWidth
+                onClick={() => {
+                  close();
+                  navigate('/register');
+                }}
+              >
+                시작하기
+              </Button>
+            </>
+          )}
         </Stack>
       </Drawer>
     </Box>

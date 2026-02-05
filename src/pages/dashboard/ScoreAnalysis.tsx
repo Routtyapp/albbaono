@@ -37,7 +37,10 @@ import {
 } from '@tabler/icons-react';
 import {
   downloadGeoScorePdf,
+  getGeoScoreHistory,
+  clearGeoScoreHistory,
   type GeoScoreResult,
+  type GeoScoreHistoryItem,
 } from '../../services/api';
 
 const GRADE_COLORS: Record<string, string> = {
@@ -59,13 +62,9 @@ const CATEGORY_LABELS: Record<string, string> = {
   content: '콘텐츠',
 };
 
-interface HistoryEntry extends GeoScoreResult {
-  savedAt: string;
-}
-
 export function ScoreAnalysis() {
   const [searchParams] = useSearchParams();
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [history, setHistory] = useState<GeoScoreHistoryItem[]>([]);
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,17 +84,18 @@ export function ScoreAnalysis() {
     }
   }, [searchParams, history]);
 
-  const loadHistory = () => {
-    const savedHistory = localStorage.getItem('geoScoreHistory');
-    if (savedHistory) {
-      const parsed = JSON.parse(savedHistory);
-      setHistory(parsed);
+  const loadHistory = async () => {
+    try {
+      const { scores } = await getGeoScoreHistory();
+      setHistory(scores);
 
       // URL 파라미터가 없을 때만 첫 번째 항목 선택
       const urlParam = searchParams.get('url');
-      if (parsed.length > 0 && !urlParam) {
-        setSelectedUrl(parsed[0].url);
+      if (scores.length > 0 && !urlParam) {
+        setSelectedUrl(scores[0].url);
       }
+    } catch (err) {
+      console.error('Failed to load history:', err);
     }
   };
 
@@ -147,11 +147,14 @@ export function ScoreAnalysis() {
     }
   };
 
-  const handleClearHistory = () => {
-    localStorage.removeItem('geoScoreHistory');
-    localStorage.removeItem('lastGeoScoreResult');
-    setHistory([]);
-    setSelectedUrl(null);
+  const handleClearHistory = async () => {
+    try {
+      await clearGeoScoreHistory();
+      setHistory([]);
+      setSelectedUrl(null);
+    } catch (err) {
+      console.error('Failed to clear history:', err);
+    }
   };
 
   // 카테고리별 통계

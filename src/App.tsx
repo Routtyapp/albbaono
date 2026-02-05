@@ -10,38 +10,55 @@ import { Layout } from './components/common';
 import { DashboardLayout } from './components/dashboard';
 import { Landing } from './pages';
 import { Overview, Brands, Visibility, Queries, Reports, ScoreOverview, ScoreAnalysis, ScoreCompetitors, Insights } from './pages/dashboard';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import ProtectedRoute from './components/ProtectedRoute';
+import { AuthProvider } from './contexts/AuthContext';
 
 export default function App() {
   return (
     <MantineProvider theme={theme} defaultColorScheme="light">
-      <BrowserRouter>
-        <Routes>
-          {/* Landing page with original layout */}
-          <Route
-            path="/"
-            element={
-              <Layout>
-                <Landing />
-              </Layout>
-            }
-          />
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Landing page with original layout */}
+            <Route
+              path="/"
+              element={
+                <Layout>
+                  <Landing />
+                </Layout>
+              }
+            />
 
-          {/* Dashboard routes with dashboard layout */}
-          <Route path="/dashboard" element={<DashboardLayout />}>
-            {/* GEO Tracker */}
-            <Route index element={<Overview />} />
-            <Route path="brands" element={<Brands />} />
-            <Route path="visibility" element={<Visibility />} />
-            <Route path="queries" element={<Queries />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="insights" element={<Insights />} />
-            {/* GEO Score */}
-            <Route path="score" element={<ScoreOverview />} />
-            <Route path="score/analysis" element={<ScoreAnalysis />} />
-            <Route path="score/competitors" element={<ScoreCompetitors />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+            {/* Auth routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+
+            {/* Dashboard routes with dashboard layout (protected) */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout />
+                </ProtectedRoute>
+              }
+            >
+              {/* GEO Tracker */}
+              <Route index element={<Overview />} />
+              <Route path="brands" element={<Brands />} />
+              <Route path="visibility" element={<Visibility />} />
+              <Route path="queries" element={<Queries />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="insights" element={<Insights />} />
+              {/* GEO Score */}
+              <Route path="score" element={<ScoreOverview />} />
+              <Route path="score/analysis" element={<ScoreAnalysis />} />
+              <Route path="score/competitors" element={<ScoreCompetitors />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </MantineProvider>
   );
 }

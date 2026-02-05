@@ -30,11 +30,10 @@ import {
   IconTrophy,
   IconScale,
 } from '@tabler/icons-react';
-import type { GeoScoreResult } from '../../services/api';
-
-interface HistoryEntry extends GeoScoreResult {
-  savedAt: string;
-}
+import {
+  getGeoScoreHistory,
+  type GeoScoreHistoryItem,
+} from '../../services/api';
 
 const GRADE_COLORS: Record<string, string> = {
   'A+': 'teal',
@@ -140,27 +139,26 @@ function ComparisonBar({ label, icon: Icon, myScore, myMax, competitorScore, com
 }
 
 export function ScoreCompetitors() {
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [history, setHistory] = useState<GeoScoreHistoryItem[]>([]);
   const [mySelection, setMySelection] = useState<string | null>(null);
   const [competitorSelection, setCompetitorSelection] = useState<string | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('geoScoreHistory');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setHistory(parsed);
+    getGeoScoreHistory()
+      .then(({ scores }) => {
+        setHistory(scores);
         // 첫 번째와 두 번째를 기본 선택
-        if (parsed.length >= 2) {
-          setMySelection(parsed[0].url);
-          setCompetitorSelection(parsed[1].url);
-        } else if (parsed.length === 1) {
-          setMySelection(parsed[0].url);
+        if (scores.length >= 2) {
+          setMySelection(scores[0].url);
+          setCompetitorSelection(scores[1].url);
+        } else if (scores.length === 1) {
+          setMySelection(scores[0].url);
         }
-      } catch {
+      })
+      .catch((err) => {
+        console.error('Failed to load history:', err);
         setHistory([]);
-      }
-    }
+      });
   }, []);
 
   const selectOptions = useMemo(() => {

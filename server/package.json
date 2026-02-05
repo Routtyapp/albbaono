@@ -10,20 +10,31 @@
     "setup-python": "pip install -r src/scripts/requirements.txt"
   },
   "dependencies": {
-    "express": "^4.21.0",
-    "cors": "^2.8.5",
-    "puppeteer-core": "^23.0.0",
+    "@google/generative-ai": "^0.21.0",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.6.2",
+    "better-sqlite3-session-store": "^0.1.0",
     "cheerio": "^1.0.0",
-    "node-cron": "^3.0.3",
+    "cors": "^2.8.5",
     "dotenv": "^16.3.1",
+    "express": "^4.21.0",
+    "express-session": "^1.19.0",
+    "node-cron": "^3.0.3",
     "openai": "^4.20.0",
-    "@google/generative-ai": "^0.21.0"
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0",
+    "puppeteer-core": "^23.0.0"
   },
   "devDependencies": {
-    "@types/express": "^4.17.21",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/express-session": "^1.18.2",
     "@types/node": "^22.0.0",
     "@types/node-cron": "^3.0.11",
+    "@types/passport": "^1.0.17",
+    "@types/passport-local": "^1.0.38",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0"
   }

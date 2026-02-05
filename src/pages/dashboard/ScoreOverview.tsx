@@ -45,7 +45,11 @@ import {
   analyzeGeoScore,
   checkGeoScoreHealth,
   downloadGeoScorePdf,
+  getGeoScoreHistory,
+  saveGeoScoreHistory,
+  clearGeoScoreHistory,
   type GeoScoreResult,
+  type GeoScoreHistoryItem,
   type CategoryScore,
   type Recommendation,
 } from '../../services/api';
@@ -87,16 +91,17 @@ export function ScoreOverview() {
   const [result, setResult] = useState<GeoScoreResult | null>(null);
   const [serviceAvailable, setServiceAvailable] = useState<boolean | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [history, setHistory] = useState<GeoScoreResult[]>([]);
+  const [history, setHistory] = useState<GeoScoreHistoryItem[]>([]);
 
   useEffect(() => {
     checkGeoScoreHealth()
       .then(() => setServiceAvailable(true))
       .catch(() => setServiceAvailable(false));
 
-    // 히스토리 로드
-    const savedHistory = JSON.parse(localStorage.getItem('geoScoreHistory') || '[]');
-    setHistory(savedHistory);
+    // 히스토리 로드 (API에서)
+    getGeoScoreHistory()
+      .then(({ scores }) => setHistory(scores))
+      .catch((err) => console.error('Failed to load history:', err));
   }, []);
 
   const handleLoadFromHistory = (item: GeoScoreResult) => {
@@ -104,9 +109,13 @@ export function ScoreOverview() {
     navigate(`/dashboard/score/analysis?url=${encodeURIComponent(item.url)}`);
   };
 
-  const handleClearHistory = () => {
-    setHistory([]);
-    localStorage.removeItem('geoScoreHistory');
+  const handleClearHistory = async () => {
+    try {
+      await clearGeoScoreHistory();
+      setHistory([]);
+    } catch (err) {
+      console.error('Failed to clear history:', err);
+    }
   };
 
   const handleDownloadPdf = async () => {
@@ -159,17 +168,10 @@ export function ScoreOverview() {
       });
       setResult(data);
 
-      // 분석 결과를 로컬 스토리지에 저장 (히스토리)
-      const savedHistory = JSON.parse(localStorage.getItem('geoScoreHistory') || '[]');
-      const newEntry = {
-        ...data,
-        savedAt: new Date().toISOString(),
-      };
-      // 최대 10개까지 저장
-      const updatedHistory = [newEntry, ...savedHistory.filter((h: any) => h.url !== data.url)].slice(0, 10);
-      localStorage.setItem('geoScoreHistory', JSON.stringify(updatedHistory));
-      localStorage.setItem('lastGeoScoreResult', JSON.stringify(data));
-      setHistory(updatedHistory);
+      // 분석 결과를 서버에 저장 (히스토리)
+      const savedItem = await saveGeoScoreHistory(data);
+      // 히스토리 목록 갱신
+      setHistory((prev) => [savedItem, ...prev.filter((h) => h.url !== data.url)].slice(0, 10));
     } catch (err) {
       setError(err instanceof Error ? err.message : '분석 중 오류가 발생했습니다.');
     } finally {

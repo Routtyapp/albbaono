@@ -1,51 +1,96 @@
 import type { MonitoredQuery, TestResult, Stats, Report, Brand } from '../types';
 
+// API Base URL
+const API_BASE = 'http://localhost:3001';
+
+// 공통 fetch 옵션 (credentials 포함)
+const fetchOptions: RequestInit = {
+  credentials: 'include',
+};
+
+// GET 요청 헬퍼
+async function apiGet<T>(path: string): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, fetchOptions);
+  if (!response.ok) {
+    if (response.status === 401) {
+      window.location.href = '/login';
+      throw new Error('Unauthorized');
+    }
+    throw new Error(`Failed to fetch ${path}`);
+  }
+  return response.json();
+}
+
+// POST/PUT/DELETE 요청 헬퍼
+async function apiMutate<T>(
+  path: string,
+  method: 'POST' | 'PUT' | 'DELETE',
+  body?: unknown
+): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...fetchOptions,
+    method,
+    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!response.ok) {
+    if (response.status === 401) {
+      window.location.href = '/login';
+      throw new Error('Unauthorized');
+    }
+    const error = await response.json().catch(() => ({ error: `Failed to ${method} ${path}` }));
+    throw new Error(error.error || `Failed to ${method} ${path}`);
+  }
+  return response.json();
+}
+
+// Blob 응답 헬퍼 (PDF 다운로드용)
+async function apiBlob(path: string, body: unknown): Promise<Blob> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...fetchOptions,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    if (response.status === 401) {
+      window.location.href = '/login';
+      throw new Error('Unauthorized');
+    }
+    const error = await response.json().catch(() => ({ error: 'Failed to generate PDF' }));
+    throw new Error(error.error || 'Failed to generate PDF');
+  }
+  return response.blob();
+}
+
 // === 브랜드 API ===
 
 export async function getBrands(): Promise<{ brands: Brand[] }> {
-  const response = await fetch('/api/brands');
-  if (!response.ok) throw new Error('Failed to fetch brands');
-  return response.json();
+  return apiGet('/api/brands');
 }
 
 export async function addBrand(data: {
   name: string;
   competitors: string[];
 }): Promise<Brand> {
-  const response = await fetch('/api/brands', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) throw new Error('Failed to add brand');
-  return response.json();
+  return apiMutate('/api/brands', 'POST', data);
 }
 
 export async function updateBrand(id: string, data: {
   name: string;
   competitors: string[];
 }): Promise<void> {
-  const response = await fetch(`/api/brands/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) throw new Error('Failed to update brand');
+  return apiMutate(`/api/brands/${id}`, 'PUT', data);
 }
 
 export async function deleteBrand(id: string): Promise<void> {
-  const response = await fetch(`/api/brands/${id}`, {
-    method: 'DELETE',
-  });
-  if (!response.ok) throw new Error('Failed to delete brand');
+  return apiMutate(`/api/brands/${id}`, 'DELETE');
 }
 
 // === 쿼리 API ===
 
 export async function getQueries(): Promise<{ queries: MonitoredQuery[] }> {
-  const response = await fetch('/api/queries');
-  if (!response.ok) throw new Error('Failed to fetch queries');
-  return response.json();
+  return apiGet('/api/queries');
 }
 
 export async function addQuery(data: {
@@ -53,29 +98,15 @@ export async function addQuery(data: {
   category: string;
   frequency: string;
 }): Promise<MonitoredQuery> {
-  const response = await fetch('/api/queries', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) throw new Error('Failed to add query');
-  return response.json();
+  return apiMutate('/api/queries', 'POST', data);
 }
 
 export async function deleteQuery(id: string): Promise<void> {
-  const response = await fetch(`/api/queries/${id}`, {
-    method: 'DELETE',
-  });
-  if (!response.ok) throw new Error('Failed to delete query');
+  return apiMutate(`/api/queries/${id}`, 'DELETE');
 }
 
 export async function updateQueryBrands(id: string, brandIds: string[]): Promise<void> {
-  const response = await fetch(`/api/queries/${id}/brands`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ brandIds }),
-  });
-  if (!response.ok) throw new Error('Failed to update query brands');
+  return apiMutate(`/api/queries/${id}/brands`, 'PUT', { brandIds });
 }
 
 // === 테스트 API ===
@@ -88,16 +119,7 @@ export interface TestQueryParams {
 }
 
 export async function testQuery(params: TestQueryParams): Promise<TestResult> {
-  const response = await fetch('/api/test-query', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to test query');
-  }
-  return response.json();
+  return apiMutate('/api/test-query', 'POST', params);
 }
 
 export interface PaginatedResults {
@@ -109,60 +131,39 @@ export interface PaginatedResults {
 }
 
 export async function getResults(): Promise<{ results: TestResult[] }> {
-  const response = await fetch('/api/results?page=0');
-  if (!response.ok) throw new Error('Failed to fetch results');
-  return response.json();
+  return apiGet('/api/results?page=0');
 }
 
 export async function getResultsPaginated(page = 1, limit = 20): Promise<PaginatedResults> {
-  const response = await fetch(`/api/results?page=${page}&limit=${limit}`);
-  if (!response.ok) throw new Error('Failed to fetch results');
-  return response.json();
+  return apiGet(`/api/results?page=${page}&limit=${limit}`);
 }
 
 export async function getResultById(id: string): Promise<TestResult | null> {
-  const response = await fetch(`/api/results/${id}`);
-  if (!response.ok) {
-    if (response.status === 404) return null;
-    throw new Error('Failed to fetch result');
+  try {
+    return await apiGet(`/api/results/${id}`);
+  } catch {
+    return null;
   }
-  return response.json();
 }
 
 // === 통계 API ===
 
 export async function getStats(): Promise<Stats> {
-  const response = await fetch('/api/stats');
-  if (!response.ok) throw new Error('Failed to fetch stats');
-  return response.json();
+  return apiGet('/api/stats');
 }
 
 // === 리포트 API ===
 
 export async function getReports(): Promise<{ reports: Report[] }> {
-  const response = await fetch('/api/reports');
-  if (!response.ok) throw new Error('Failed to fetch reports');
-  return response.json();
+  return apiGet('/api/reports');
 }
 
 export async function generateReport(type: 'weekly' | 'monthly'): Promise<Report> {
-  const response = await fetch('/api/reports', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type }),
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to generate report');
-  }
-  return response.json();
+  return apiMutate('/api/reports', 'POST', { type });
 }
 
 export async function deleteReport(id: string): Promise<void> {
-  const response = await fetch(`/api/reports?id=${id}`, {
-    method: 'DELETE',
-  });
-  if (!response.ok) throw new Error('Failed to delete report');
+  return apiMutate(`/api/reports?id=${id}`, 'DELETE');
 }
 
 // === GEO Score API ===
@@ -230,24 +231,11 @@ export interface GeoScoreResult {
 }
 
 export async function analyzeGeoScore(request: GeoScoreRequest): Promise<GeoScoreResult> {
-  const response = await fetch('/api/geo-score/analyze', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(request),
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to analyze site');
-  }
-  return response.json();
+  return apiMutate('/api/geo-score/analyze', 'POST', request);
 }
 
 export async function checkGeoScoreHealth(): Promise<{ status: string; timestamp: string }> {
-  const response = await fetch('/api/geo-score/health');
-  if (!response.ok) {
-    throw new Error('GEO Score service unavailable');
-  }
-  return response.json();
+  return apiGet('/api/geo-score/health');
 }
 
 // === PDF 리포트 API ===
@@ -289,43 +277,17 @@ export interface PdfReportData {
 }
 
 export async function downloadReportPdf(reportData: PdfReportData): Promise<Blob> {
-  const response = await fetch('/api/reports/pdf', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(reportData),
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to generate PDF' }));
-    throw new Error(error.error || 'Failed to generate PDF');
-  }
-
-  return response.blob();
+  return apiBlob('/api/reports/pdf', reportData);
 }
 
 export async function checkPdfServiceHealth(): Promise<{ status: string; timestamp: string }> {
-  const response = await fetch('/api/reports/pdf/health');
-  if (!response.ok) {
-    throw new Error('PDF service unavailable');
-  }
-  return response.json();
+  return apiGet('/api/reports/pdf/health');
 }
 
 // === GEO Score PDF API ===
 
 export async function downloadGeoScorePdf(scoreData: GeoScoreResult): Promise<Blob> {
-  const response = await fetch('/api/reports/geo-score', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(scoreData),
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to generate PDF' }));
-    throw new Error(error.error || 'Failed to generate PDF');
-  }
-
-  return response.blob();
+  return apiBlob('/api/reports/geo-score', scoreData);
 }
 
 // === AI 인사이트 API ===
@@ -383,31 +345,15 @@ export interface SavedInsight extends AIInsightsResult {
 }
 
 export async function getAIInsights(brandId: string): Promise<SavedInsight> {
-  const response = await fetch('/api/insights', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type: 'patterns', brandId }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to analyze' }));
-    throw new Error(error.error || 'Failed to get AI insights');
-  }
-
-  return response.json();
+  return apiMutate('/api/insights', 'POST', { type: 'patterns', brandId });
 }
 
 export async function getSavedInsights(): Promise<{ insights: SavedInsight[] }> {
-  const response = await fetch('/api/insights');
-  if (!response.ok) throw new Error('Failed to fetch insights');
-  return response.json();
+  return apiGet('/api/insights');
 }
 
 export async function deleteInsight(id: string): Promise<void> {
-  const response = await fetch(`/api/insights?id=${id}`, {
-    method: 'DELETE',
-  });
-  if (!response.ok) throw new Error('Failed to delete insight');
+  return apiMutate(`/api/insights?id=${id}`, 'DELETE');
 }
 
 // === AI 인사이트 PDF API ===
@@ -451,18 +397,7 @@ export interface InsightsPdfData {
 }
 
 export async function downloadInsightsPdf(insightsData: InsightsPdfData): Promise<Blob> {
-  const response = await fetch('/api/reports/insights', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(insightsData),
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to generate PDF' }));
-    throw new Error(error.error || 'Failed to generate PDF');
-  }
-
-  return response.blob();
+  return apiBlob('/api/reports/insights', insightsData);
 }
 
 // === 스케줄러 API ===
@@ -506,52 +441,48 @@ export interface SchedulerData {
 }
 
 export async function getSchedulerStatus(): Promise<SchedulerData> {
-  const response = await fetch('/api/scheduler');
-  if (!response.ok) throw new Error('Failed to fetch scheduler status');
-  return response.json();
+  return apiGet('/api/scheduler');
 }
 
 export async function getSchedulerRunningStatus(): Promise<SchedulerStatus & { nextScheduled: SchedulerData['nextScheduled'] }> {
-  const response = await fetch('/api/scheduler/status');
-  if (!response.ok) throw new Error('Failed to fetch scheduler running status');
-  return response.json();
+  return apiGet('/api/scheduler/status');
 }
 
 export async function startScheduler(): Promise<{ success: boolean; status: SchedulerData }> {
-  const response = await fetch('/api/scheduler/start', {
-    method: 'POST',
-  });
-  if (!response.ok) throw new Error('Failed to start scheduler');
-  return response.json();
+  return apiMutate('/api/scheduler/start', 'POST');
 }
 
 export async function stopScheduler(): Promise<{ success: boolean; status: SchedulerData }> {
-  const response = await fetch('/api/scheduler/stop', {
-    method: 'POST',
-  });
-  if (!response.ok) throw new Error('Failed to stop scheduler');
-  return response.json();
+  return apiMutate('/api/scheduler/stop', 'POST');
 }
 
 export async function runScheduleNow(type: 'daily' | 'weekly' | 'monthly'): Promise<{ success: boolean; history: SchedulerHistory }> {
-  const response = await fetch('/api/scheduler/run-now', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type }),
-  });
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to run schedule' }));
-    throw new Error(error.error || 'Failed to run schedule');
-  }
-  return response.json();
+  return apiMutate('/api/scheduler/run-now', 'POST', { type });
 }
 
 export async function updateSchedulerConfig(config: Partial<SchedulerConfig>): Promise<{ success: boolean; config: SchedulerConfig }> {
-  const response = await fetch('/api/scheduler/config', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(config),
-  });
-  if (!response.ok) throw new Error('Failed to update scheduler config');
-  return response.json();
+  return apiMutate('/api/scheduler/config', 'PUT', config);
+}
+
+// === GEO Score 히스토리 API ===
+
+export interface GeoScoreHistoryItem extends GeoScoreResult {
+  id: string;
+  savedAt: string;
+}
+
+export async function getGeoScoreHistory(): Promise<{ scores: GeoScoreHistoryItem[] }> {
+  return apiGet('/api/geo-scores');
+}
+
+export async function saveGeoScoreHistory(data: GeoScoreResult): Promise<GeoScoreHistoryItem> {
+  return apiMutate('/api/geo-scores', 'POST', data);
+}
+
+export async function deleteGeoScoreHistoryItem(id: string): Promise<void> {
+  return apiMutate(`/api/geo-scores/${id}`, 'DELETE');
+}
+
+export async function clearGeoScoreHistory(): Promise<void> {
+  return apiMutate('/api/geo-scores', 'DELETE');
 }
