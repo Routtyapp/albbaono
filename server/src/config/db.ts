@@ -140,6 +140,36 @@ db.exec(`
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   );
 
+  -- 스케줄러 설정 테이블 (사용자별)
+  CREATE TABLE IF NOT EXISTS scheduler_configs (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL UNIQUE,
+    enabled INTEGER DEFAULT 0,
+    daily_run_time TEXT DEFAULT '09:00',
+    weekly_run_day INTEGER DEFAULT 1,
+    weekly_run_time TEXT DEFAULT '09:00',
+    monthly_run_day INTEGER DEFAULT 1,
+    monthly_run_time TEXT DEFAULT '09:00',
+    default_engine TEXT DEFAULT 'gpt',
+    concurrent_queries INTEGER DEFAULT 3,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+
+  -- 스케줄러 히스토리 테이블 (사용자별)
+  CREATE TABLE IF NOT EXISTS scheduler_history (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    type TEXT NOT NULL,
+    started_at TEXT NOT NULL,
+    completed_at TEXT NOT NULL,
+    queries_processed INTEGER DEFAULT 0,
+    success INTEGER DEFAULT 0,
+    failed INTEGER DEFAULT 0,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+
   -- 인덱스 생성
   CREATE INDEX IF NOT EXISTS idx_brands_user_id ON brands(user_id);
   CREATE INDEX IF NOT EXISTS idx_queries_user_id ON queries(user_id);
@@ -148,6 +178,8 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_reports_user_id ON reports(user_id);
   CREATE INDEX IF NOT EXISTS idx_insights_user_id ON insights(user_id);
   CREATE INDEX IF NOT EXISTS idx_geo_scores_user_id ON geo_scores(user_id);
+  CREATE INDEX IF NOT EXISTS idx_scheduler_configs_user_id ON scheduler_configs(user_id);
+  CREATE INDEX IF NOT EXISTS idx_scheduler_history_user_id ON scheduler_history(user_id);
 `);
 
 export default db;

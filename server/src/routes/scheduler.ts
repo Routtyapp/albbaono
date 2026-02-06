@@ -4,9 +4,10 @@ import { scheduler } from '../services/scheduler.js';
 const router = Router();
 
 // GET /api/scheduler - 전체 상태 조회
-router.get('/', (_req: Request, res: Response) => {
+router.get('/', (req: Request, res: Response) => {
   try {
-    const status = scheduler.getStatus();
+    const userId = req.user!.id;
+    const status = scheduler.getStatus(userId);
     res.json(status);
   } catch (error) {
     console.error('[Scheduler API] Get status error:', error);
@@ -15,9 +16,10 @@ router.get('/', (_req: Request, res: Response) => {
 });
 
 // GET /api/scheduler/status - 실행 상태만 조회
-router.get('/status', (_req: Request, res: Response) => {
+router.get('/status', (req: Request, res: Response) => {
   try {
-    const status = scheduler.getRunningStatus();
+    const userId = req.user!.id;
+    const status = scheduler.getRunningStatus(userId);
     res.json(status);
   } catch (error) {
     console.error('[Scheduler API] Get running status error:', error);
@@ -25,11 +27,11 @@ router.get('/status', (_req: Request, res: Response) => {
   }
 });
 
-// POST /api/scheduler/start - 스케줄러 시작
-router.post('/start', (_req: Request, res: Response) => {
+// POST /api/scheduler/start - 스케줄러 시작 (유저별)
+router.post('/start', (req: Request, res: Response) => {
   try {
-    scheduler.start(true); // 수동 시작
-    const status = scheduler.getStatus();
+    const userId = req.user!.id;
+    const status = scheduler.startForUser(userId);
     res.json({ success: true, status });
   } catch (error) {
     console.error('[Scheduler API] Start error:', error);
@@ -37,11 +39,11 @@ router.post('/start', (_req: Request, res: Response) => {
   }
 });
 
-// POST /api/scheduler/stop - 스케줄러 중지
-router.post('/stop', (_req: Request, res: Response) => {
+// POST /api/scheduler/stop - 스케줄러 중지 (유저별)
+router.post('/stop', (req: Request, res: Response) => {
   try {
-    scheduler.stop();
-    const status = scheduler.getStatus();
+    const userId = req.user!.id;
+    const status = scheduler.stopForUser(userId);
     res.json({ success: true, status });
   } catch (error) {
     console.error('[Scheduler API] Stop error:', error);
@@ -52,13 +54,14 @@ router.post('/stop', (_req: Request, res: Response) => {
 // POST /api/scheduler/run-now - 즉시 실행
 router.post('/run-now', async (req: Request, res: Response) => {
   try {
+    const userId = req.user!.id;
     const { type } = req.body as { type?: 'daily' | 'weekly' | 'monthly' };
 
     if (!type || !['daily', 'weekly', 'monthly'].includes(type)) {
       return res.status(400).json({ error: 'Invalid type. Must be daily, weekly, or monthly' });
     }
 
-    const history = await scheduler.runNow(type);
+    const history = await scheduler.runNow(userId, type);
     res.json({ success: true, history });
   } catch (error) {
     console.error('[Scheduler API] Run now error:', error);
@@ -70,8 +73,9 @@ router.post('/run-now', async (req: Request, res: Response) => {
 // PUT /api/scheduler/config - 설정 변경
 router.put('/config', (req: Request, res: Response) => {
   try {
+    const userId = req.user!.id;
     const config = req.body;
-    const updatedConfig = scheduler.updateConfig(config);
+    const updatedConfig = scheduler.updateConfig(userId, config);
     res.json({ success: true, config: updatedConfig });
   } catch (error) {
     console.error('[Scheduler API] Update config error:', error);

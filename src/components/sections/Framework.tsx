@@ -1,91 +1,76 @@
 import {
-  Container,
-  Title,
-  Text,
   Box,
+  Container,
   SimpleGrid,
   ThemeIcon,
+  Divider,
   Stack,
-  Paper,
+  Text,
+  Group,
 } from '@mantine/core';
-import {
-  IconNumber1,
-  IconNumber2,
-  IconNumber3,
-} from '@tabler/icons-react';
+import { SectionTitle } from '../ui/SectionTitle';
 
 const steps = [
   {
-    icon: IconNumber1,
-    title: '브랜드 & 쿼리 등록',
-    description: '모니터링할 브랜드와 AI에게 물어볼 질문을 등록합니다. 경쟁사도 함께 등록하여 비교 분석이 가능합니다.',
+    number: '01',
+    title: '브랜드와 핵심 쿼리 등록',
+    description: '브랜드명, 카테고리, 제품군 중심의 질의를 등록해 모니터링 범위를 설정합니다.',
   },
   {
-    icon: IconNumber2,
-    title: 'AI 테스트 실행',
-    description: 'ChatGPT, Perplexity 등 주요 AI 플랫폼에 쿼리를 실행하고 브랜드 인용 여부를 자동으로 분석합니다.',
+    number: '02',
+    title: 'AI 엔진별 테스트 실행',
+    description: 'ChatGPT, Gemini, Perplexity에 동일한 쿼리를 실행하고 언급 결과를 수집합니다.',
   },
   {
-    icon: IconNumber3,
-    title: '인사이트 확인',
-    description: '대시보드에서 인용률, 트렌드, AI 인사이트를 확인하고 브랜드 가시성을 개선하세요.',
+    number: '03',
+    title: '개선 액션 도출',
+    description: '가시성 점수와 인사이트를 기반으로 콘텐츠 개선 우선순위를 즉시 확보합니다.',
   },
 ];
 
 export function Framework() {
   return (
-    <Box
-      py={80}
-      style={{
-        backgroundColor: '#f8f9fa',
-      }}
-    >
-      <Container size="lg">
-        <Stack align="center" gap="xl">
-          <Box ta="center">
-            <Text size="sm" fw={600} c="brand.6" mb="xs">
-              사용 방법
-            </Text>
-            <Title order={2} size="2.2rem" fw={700} c="gray.9">
-              3단계로 시작하세요
-            </Title>
-            <Text size="lg" c="gray.6" mt="md" maw={600} mx="auto">
-              복잡한 설정 없이 바로 AI 가시성 측정을 시작할 수 있습니다.
-            </Text>
-          </Box>
+    <Box component="section" id="framework" py={{ base: 80, md: 140 }} bg="#f0efed">
+      <Container size={1440} px={{ base: 20, md: 40 }}>
+        <SectionTitle
+          title={<>3단계로 GEO 운영을<br />시작하세요</>}
+          description="복잡한 설정 없이, 핵심 쿼리만 등록하면 바로 AI 가시성 분석을 시작합니다."
+        />
 
-          <SimpleGrid cols={{ base: 1, md: 3 }} spacing="xl" mt="xl" w="100%">
-            {steps.map((step) => (
-              <Paper
-                key={step.title}
-                p="xl"
-                radius="lg"
-                style={{
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e9ecef',
-                  textAlign: 'center',
-                }}
-              >
-                <Stack align="center" gap="md">
-                  <ThemeIcon
-                    size={64}
-                    radius="xl"
-                    color="brand"
-                    variant="light"
-                  >
-                    <step.icon size={32} />
-                  </ThemeIcon>
-                  <Text size="lg" fw={600} c="gray.9">
-                    {step.title}
+        <SimpleGrid cols={{ base: 1, md: 3 }} spacing={0}>
+          {steps.map((step, i) => (
+            <Box key={step.number} px={{ base: 0, md: 28 }} style={{ ...(i === 0 && { paddingLeft: 0 }), ...(i === steps.length - 1 && { paddingRight: 0 }) }}>
+              <Group gap={0} mb={20} align="center">
+                <ThemeIcon
+                  size={48}
+                  radius="md"
+                  color="dark"
+                  variant="filled"
+                >
+                  <Text fw={700} fz="sm" style={{ letterSpacing: '-0.02em' }}>
+                    {step.number}
                   </Text>
-                  <Text size="sm" c="gray.6" lh={1.6}>
-                    {step.description}
-                  </Text>
-                </Stack>
-              </Paper>
-            ))}
-          </SimpleGrid>
-        </Stack>
+                </ThemeIcon>
+                {i < steps.length - 1 && (
+                  <Divider
+                    style={{ flex: 1 }}
+                    ml={16}
+                    color="gray.3"
+                    visibleFrom="md"
+                  />
+                )}
+              </Group>
+              <Stack gap={8}>
+                <Text fw={600} fz="md" style={{ letterSpacing: '-0.01em' }}>
+                  {step.title}
+                </Text>
+                <Text fz="md" c="dimmed" lh={1.65}>
+                  {step.description}
+                </Text>
+              </Stack>
+            </Box>
+          ))}
+        </SimpleGrid>
       </Container>
     </Box>
   );

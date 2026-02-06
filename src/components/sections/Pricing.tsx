@@ -1,257 +1,114 @@
+import { IconArrowRight, IconCheck } from '@tabler/icons-react';
 import {
+  Box,
   Container,
   SimpleGrid,
-  Text,
-  Box,
   Paper,
   Stack,
-  ThemeIcon,
   Group,
-  List,
+  ThemeIcon,
+  Text,
   Button,
-  Badge,
 } from '@mantine/core';
-import {
-  IconFileAnalytics,
-  IconRefresh,
-  IconCheck,
-  IconArrowRight,
-} from '@tabler/icons-react';
-import { SectionTitle } from '../ui';
+import { SectionTitle } from '../ui/SectionTitle';
 
-const pricingPlans = [
+const plans = [
   {
-    icon: IconFileAnalytics,
-    title: '진단 리포트',
+    title: 'GEO 진단 리포트',
     type: '1회성',
-    description: '기업 규모 및 분석 범위에 따른 맞춤 진단',
+    description: '핵심 쿼리 기반으로 AI 가시성 현황과 개선 포인트를 진단합니다.',
     features: [
-      '5대 AI 엔진 브랜드 가시성 검사',
-      '핵심 질문 50~100개 테스트',
-      '경쟁사 대비 인용 점유율 분석',
-      '잘못된 학습 정보 식별',
-      'AI 가시성 감사 리포트 제공',
+      '주요 LLM 5종 언급률 점검',
+      '핵심 쿼리 50~100개 테스트',
+      '경쟁사 대비 가시성 분석',
+      '우선 개선 항목 제안',
+      'AI 가시성 요약 리포트 제공',
     ],
-    cta: '진단 신청하기',
-    popular: false,
+    cta: '진단 요청하기',
+    featured: false,
   },
   {
-    icon: IconRefresh,
-    title: '월 구독 서비스',
+    title: 'GEO 성장 구독',
     type: '월간 구독',
-    description: '지속적인 콘텐츠 업데이트와 방어가 필요한 고부가가치 시장',
+    description: '지속적으로 AI 검색 성과를 모니터링하고 개선 액션을 실행합니다.',
     features: [
-      '진단 리포트 모든 기능 포함',
-      'CITABLE 프레임워크 기반 최적화',
-      'RAG 최적화 및 스키마 적용',
-      '디지털 PR 및 지식 베이스 등록',
-      '월간 인용률 모니터링 리포트',
-      '경쟁사 동향 분석 및 방어 전략',
+      '진단 리포트 전체 포함',
+      '주간/월간 자동 리포트',
+      'CITABLE 콘텐츠 개선 제안',
+      '스키마/FAQ 최적화 가이드',
+      '경쟁사 추적 및 알림',
+      '팀 공유용 대시보드 제공',
     ],
-    cta: '상담 신청하기',
-    popular: true,
-  },
-];
-
-const metrics = [
-  {
-    label: '인용률',
-    description: 'AI 답변 포함 비율',
-  },
-  {
-    label: '점유율',
-    description: '경쟁사 대비 추천 빈도',
-  },
-  {
-    label: '파이프라인 가치',
-    description: '일반 검색 대비 전환율',
-  },
-];
-
-const targets = [
-  {
-    type: 'B2B',
-    items: ['SaaS', '핀테크', '엔터프라이즈 솔루션'],
-  },
-  {
-    type: 'B2C',
-    items: ['헬스케어', '전문직 서비스', '고가 가전'],
+    cta: '상담 요청하기',
+    featured: false,
   },
 ];
 
 export function Pricing() {
   return (
-    <Box
-      id="pricing"
-      py={100}
-      style={{
-        backgroundColor: 'rgba(0, 0, 0, 0.3)',
-      }}
-    >
-      <Container size="lg">
+    <Box component="section" id="pricing" py={{ base: 80, md: 140 }} bg="#f0efed">
+      <Container size={1440} px={{ base: 20, md: 40 }}>
         <SectionTitle
-          badge="수익 모델"
-          title={
-            <>
-              비즈니스에 맞는{' '}
-              <Text component="span" c="brand.4" inherit>
-                플랜
-              </Text>
-              을 선택하세요
-            </>
-          }
-          description="일회성 진단부터 지속적인 구독 서비스까지, 브랜드의 상황에 맞는 최적의 솔루션을 제공합니다."
+          title={<>브랜드 상황에 맞춘<br />GEO 플랜</>}
+          description="단기 진단부터 지속 성장까지, 팀 규모와 목표에 맞게 선택할 수 있습니다."
         />
 
-        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="xl" mt={60}>
-          {pricingPlans.map((plan) => (
+        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing={20} maw={800} mx="auto">
+          {plans.map((plan) => (
             <Paper
               key={plan.title}
-              p="xl"
-              radius="lg"
+              radius="md"
+              withBorder
+              p={40}
               style={{
-                backgroundColor: plan.popular
-                  ? 'rgba(57, 132, 254, 0.08)'
-                  : 'rgba(255, 255, 255, 0.03)',
-                border: plan.popular
-                  ? '2px solid rgba(57, 132, 254, 0.4)'
-                  : '1px solid rgba(255, 255, 255, 0.1)',
-                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
+                ...(plan.featured && {
+                  borderColor: 'var(--mantine-color-dark-9)',
+                  boxShadow: '0 12px 32px rgba(0,0,0,0.08)',
+                }),
               }}
             >
-              {plan.popular && (
-                <Badge
-                  variant="gradient"
-                  gradient={{ from: 'brand.5', to: 'brand.7' }}
-                  style={{
-                    position: 'absolute',
-                    top: -12,
-                    right: 24,
-                  }}
-                >
-                  추천
-                </Badge>
-              )}
-              <Stack gap="lg">
-                <Group gap="md">
-                  <ThemeIcon
-                    size={56}
-                    radius="md"
-                    variant="gradient"
-                    gradient={{ from: 'brand.5', to: 'brand.7' }}
-                  >
-                    <plan.icon size={28} />
-                  </ThemeIcon>
-                  <div>
-                    <Text size="xl" fw={700} c="white">
-                      {plan.title}
-                    </Text>
-                    <Badge variant="light" color="gray" size="sm">
-                      {plan.type}
-                    </Badge>
-                  </div>
-                </Group>
-
-                <Text size="sm" c="dimmed">
-                  {plan.description}
-                </Text>
-
-                <List
-                  spacing="sm"
-                  size="sm"
-                  icon={
-                    <ThemeIcon size={20} radius="xl" color="brand" variant="light">
-                      <IconCheck size={12} />
-                    </ThemeIcon>
-                  }
-                >
-                  {plan.features.map((feature) => (
-                    <List.Item key={feature}>
-                      <Text size="sm" c="gray.4">
-                        {feature}
-                      </Text>
-                    </List.Item>
-                  ))}
-                </List>
-
-                <Button
-                  size="md"
-                  variant={plan.popular ? 'gradient' : 'outline'}
-                  gradient={{ from: 'brand.5', to: 'brand.7' }}
-                  color={plan.popular ? undefined : 'gray'}
-                  rightSection={<IconArrowRight size={16} />}
-                  fullWidth
-                  mt="auto"
-                >
-                  {plan.cta}
-                </Button>
-              </Stack>
-            </Paper>
-          ))}
-        </SimpleGrid>
-
-        {/* Target Markets & Metrics */}
-        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="xl" mt={60}>
-          <Paper
-            p="xl"
-            radius="lg"
-            style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.03)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-            }}
-          >
-            <Stack gap="lg">
-              <Text size="lg" fw={700} c="white">
-                타겟 시장
+              <Text fz="lg" fw={700} style={{ letterSpacing: '-0.02em' }}>
+                {plan.title}
               </Text>
-              <SimpleGrid cols={2}>
-                {targets.map((target) => (
-                  <Stack key={target.type} gap="xs">
-                    <Badge variant="light" color="brand" w="fit-content">
-                      {target.type}
-                    </Badge>
-                    {target.items.map((item) => (
-                      <Text key={item} size="sm" c="gray.4">
-                        {item}
-                      </Text>
-                    ))}
-                  </Stack>
-                ))}
-              </SimpleGrid>
-            </Stack>
-          </Paper>
-
-          <Paper
-            p="xl"
-            radius="lg"
-            style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.03)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-            }}
-          >
-            <Stack gap="lg">
-              <Text size="lg" fw={700} c="white">
-                성과 측정 지표
+              <Text fz="sm" c="gray.5" mt={4}>
+                {plan.type}
               </Text>
-              <Stack gap="md">
-                {metrics.map((metric) => (
-                  <Group key={metric.label} gap="md">
-                    <ThemeIcon size={32} radius="md" color="brand" variant="light">
-                      <IconCheck size={16} />
+              <Text fz="md" c="dimmed" lh={1.6} mt={20} mb={24}>
+                {plan.description}
+              </Text>
+
+              <Stack gap={12} mb={32} style={{ flex: 1 }}>
+                {plan.features.map((f) => (
+                  <Group key={f} gap={10} wrap="nowrap">
+                    <ThemeIcon
+                      size={18}
+                      radius="xl"
+                      variant="light"
+                      color="accent.4"
+                      c="dark"
+                    >
+                      <IconCheck size={11} stroke={2.5} />
                     </ThemeIcon>
-                    <div>
-                      <Text size="sm" fw={600} c="white">
-                        {metric.label}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        {metric.description}
-                      </Text>
-                    </div>
+                    <Text fz="md">{f}</Text>
                   </Group>
                 ))}
               </Stack>
-            </Stack>
-          </Paper>
+
+              <Button
+                radius="xl"
+                color={plan.featured ? 'dark' : 'gray'}
+                variant={plan.featured ? 'filled' : 'outline'}
+                size="md"
+                fw={600}
+                fullWidth
+                rightSection={<IconArrowRight size={15} />}
+              >
+                {plan.cta}
+              </Button>
+            </Paper>
+          ))}
         </SimpleGrid>
       </Container>
     </Box>

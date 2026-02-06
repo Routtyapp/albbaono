@@ -1,129 +1,92 @@
+import { IconArrowRight } from '@tabler/icons-react';
+import { useNavigate } from 'react-router-dom';
 import {
+  Box,
   Container,
+  Stack,
   Title,
   Text,
-  Button,
   Group,
-  Box,
-  SimpleGrid,
-  Stack,
+  Button,
+  Divider,
   Image,
 } from '@mantine/core';
-import { IconArrowRight, IconPlayerPlay } from '@tabler/icons-react';
-import { useNavigate } from 'react-router-dom';
-
-const stats = [
-  { value: '54.5%', label: '평균 AI 인용률 달성' },
-  { value: '3.2x', label: '브랜드 노출 증가' },
-  { value: '127+', label: '분석된 AI 응답' },
-];
 
 export function Hero() {
   const navigate = useNavigate();
 
   return (
-    <Box
-      style={{
-        backgroundColor: '#ffffff',
-        paddingTop: 80,
-        paddingBottom: 80,
-      }}
-    >
-      <Container size="lg">
-        <Stack align="center" gap="xl">
-          {/* Logo */}
-          <Image
-            src="/YeogiJeogiFontLogo (1).png"
-            alt="여기저기"
-            h={48}
-            w="auto"
-            fit="contain"
-          />
-
-          {/* Badge */}
-          <Box
-            px="md"
-            py={6}
-            style={{
-              backgroundColor: '#f1f3f4',
-              borderRadius: 20,
-            }}
-          >
-            <Text size="sm" fw={500} c="gray.7">
-              AI 시대의 새로운 브랜드 가시성 솔루션
-            </Text>
-          </Box>
-
-          {/* Main Title */}
+    <Box component="section" className="hero">
+      <Container size={720} px={{ base: 20, md: 40 }} py={{ base: 40, md: 60 }} pos="relative" style={{ zIndex: 1 }}>
+        <Stack align="center" ta="center" gap="lg">
           <Title
             order={1}
-            size="3.2rem"
+            fz={{ base: 'calc(1.3rem + 1vw)', md: '1.8rem' }}
             fw={700}
-            ta="center"
-            lh={1.3}
-            maw={800}
-            c="gray.9"
+            lh={1}
+            className="reveal"
+            style={{ animationDelay: '0.1s', letterSpacing: '-0.03em', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
           >
-            AI가 당신의 브랜드를
-            <br />
-            <Text component="span" inherit c="brand.6">
-              추천
-            </Text>
-            하게 만드세요
+            <span style={{ textShadow: '0 1px 3px rgba(255,255,255,0.8)' }}>내 브랜드</span>
+            <Image
+              src="/YeogiJeogiFontLogo (1).png"
+              alt="여기저기"
+              h="2.2em"
+              w="auto"
+            />
+            <span style={{ textShadow: '0 1px 3px rgba(255,255,255,0.8)' }}>뜨고 있을까?</span>
           </Title>
 
-          {/* Subtitle */}
           <Text
-            size="lg"
-            c="gray.6"
-            ta="center"
-            maw={600}
-            lh={1.7}
+            size="md"
+            c="dimmed"
+            lh={1.75}
+            maw={480}
+            className="reveal"
+            style={{ animationDelay: '0.18s', textShadow: '0 1px 3px rgba(255,255,255,0.8)' }}
           >
-            ChatGPT, Perplexity, Claude가 고객에게 브랜드를 추천하도록
-            <br />
-            AI 가시성을 측정하고 최적화하세요
+            ChatGPT, Gemini, Perplexity에서 브랜드가 어떻게 언급되는지
+            추적하고, 경쟁사 대비 성과를 즉시 파악합니다.
           </Text>
 
-          {/* CTA Buttons */}
-          <Group gap="md" mt="md">
+          <Group gap={14} className="reveal" style={{ animationDelay: '0.24s' }} wrap="wrap" justify="center">
             <Button
-              size="lg"
+              radius="xl"
               color="dark"
-              rightSection={<IconArrowRight size={18} />}
+              size="md"
+              fw={600}
+              rightSection={<IconArrowRight size={16} />}
               onClick={() => navigate('/dashboard')}
             >
-              무료로 시작하기
+              GEO 분석 시작하기
             </Button>
             <Button
-              size="lg"
+              radius="xl"
               variant="outline"
               color="gray"
-              leftSection={<IconPlayerPlay size={18} />}
+              size="md"
+              fw={600}
             >
-              데모 보기
+              작동 방식 보기
             </Button>
           </Group>
 
-          {/* Stats */}
-          <SimpleGrid
-            cols={{ base: 1, sm: 3 }}
-            spacing="xl"
-            mt={60}
-            w="100%"
-            maw={700}
-          >
-            {stats.map((stat) => (
-              <Box key={stat.label} ta="center">
-                <Text size="2.5rem" fw={700} c="gray.9">
-                  {stat.value}
-                </Text>
-                <Text size="sm" c="gray.5" mt={4}>
-                  {stat.label}
-                </Text>
-              </Box>
-            ))}
-          </SimpleGrid>
+          <Group gap={32} className="reveal" style={{ animationDelay: '0.3s' }} wrap="nowrap">
+            <Stack gap={2} align="center">
+              <Text fw={700} fz="lg" lh={1} style={{ letterSpacing: '-0.03em', textShadow: '0 1px 3px rgba(255,255,255,0.8)' }}>150+</Text>
+              <Text fz="sm" c="gray.5" style={{ textShadow: '0 1px 3px rgba(255,255,255,0.8)' }}>추적 브랜드</Text>
+            </Stack>
+            <Divider orientation="vertical" h={36} color="gray.3" />
+            <Stack gap={2} align="center">
+              <Text fw={700} fz="lg" lh={1} style={{ letterSpacing: '-0.03em', textShadow: '0 1px 3px rgba(255,255,255,0.8)' }}>2.4M</Text>
+              <Text fz="sm" c="gray.5" style={{ textShadow: '0 1px 3px rgba(255,255,255,0.8)' }}>분석 쿼리</Text>
+            </Stack>
+            <Divider orientation="vertical" h={36} color="gray.3" />
+            <Stack gap={2} align="center">
+              <Text fw={700} fz="lg" lh={1} style={{ letterSpacing: '-0.03em', textShadow: '0 1px 3px rgba(255,255,255,0.8)' }}>98%</Text>
+              <Text fz="sm" c="gray.5" style={{ textShadow: '0 1px 3px rgba(255,255,255,0.8)' }}>고객 유지율</Text>
+            </Stack>
+          </Group>
         </Stack>
       </Container>
     </Box>

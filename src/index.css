@@ -1,5 +1,7 @@
-/* Global Styles */
-* {
+/* ── Global Reset ── */
+*,
+*::before,
+*::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -7,11 +9,10 @@
 
 html {
   scroll-behavior: smooth;
-  overflow-y: scroll; /* 항상 스크롤바 표시하여 레이아웃 밀림 방지 */
+  scrollbar-gutter: stable;
 }
 
 body {
-  margin: 0;
   min-width: 320px;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -19,10 +20,15 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom scrollbar */
+::selection {
+  background-color: #B6E63A;
+  color: #0a0a0a;
+}
+
+/* ── Scrollbar ── */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -30,21 +36,53 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #dee2e6;
-  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #adb5bd;
+  background: rgba(0, 0, 0, 0.24);
 }
 
-/* Remove default button styles to prevent conflicts */
-button {
-  font-family: inherit;
+/* ── Hero (background SVG positioning) ── */
+.hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 72px);
+  overflow: hidden;
 }
 
-/* Selection color */
-::selection {
-  background-color: rgba(57, 132, 254, 0.3);
-  color: white;
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('/images/hero-background.svg') center / cover no-repeat;
+  pointer-events: none;
+}
+
+/* ── Reveal Animation ── */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  animation: reveal 0.8s ease forwards;
+}
+
+@keyframes reveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
 }

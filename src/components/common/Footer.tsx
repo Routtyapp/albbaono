@@ -1,104 +1,71 @@
 import {
+  Box,
   Container,
-  Group,
-  Text,
+  Grid,
   Stack,
   Anchor,
   Divider,
-  SimpleGrid,
-  Box,
+  Group,
+  Text,
   Image,
 } from '@mantine/core';
-import { IconBrandLinkedin, IconBrandTwitter, IconMail } from '@tabler/icons-react';
 
 const footerLinks = {
-  제품: [
-    { label: 'AI 가시성 측정', href: '#' },
-    { label: '인용률 분석', href: '#' },
-    { label: 'AI 인사이트', href: '#' },
-    { label: '리포트', href: '#' },
-  ],
-  리소스: [
-    { label: '블로그', href: '#' },
-    { label: '가이드', href: '#' },
-    { label: 'FAQ', href: '#' },
-  ],
-  회사: [
-    { label: '소개', href: '#' },
-    { label: '연락처', href: '#' },
-  ],
+  제품: ['AI 가시성 측정', '인용률 분석', 'AI 인사이트', '리포트'],
+  리소스: ['블로그', '가이드', 'FAQ'],
+  회사: ['소개', '연락처'],
 };
 
 export function Footer() {
   return (
-    <Box
-      component="footer"
-      style={{
-        backgroundColor: '#f8f9fa',
-        borderTop: '1px solid #e9ecef',
-      }}
-    >
-      <Container size="lg" py={60}>
-        <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="xl">
-          <Stack gap="md">
+    <Box component="footer" py={60} bg="#f0efed" style={{ borderTop: '1px solid var(--mantine-color-gray-2)' }}>
+      <Container size={1440} px={{ base: 20, md: 40 }}>
+        <Grid gutter={{ base: 32, md: 48 }}>
+          <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
             <Image
               src="/YeogiJeogiFontLogo (1).png"
               alt="여기저기"
-              h={32}
+              h={24}
               w="auto"
-              fit="contain"
-              style={{ alignSelf: 'flex-start' }}
             />
-            <Text size="sm" c="gray.6" maw={250}>
+            <Text fz="md" c="gray.5" lh={1.6} maw={260} mt={12}>
               AI 시대의 브랜드 가시성을 측정하고 최적화하세요
             </Text>
-            <Group gap="md" mt="sm">
-              <Anchor href="#" c="gray.5">
-                <IconBrandLinkedin size={20} />
-              </Anchor>
-              <Anchor href="#" c="gray.5">
-                <IconBrandTwitter size={20} />
-              </Anchor>
-              <Anchor href="mailto:contact@yeogieogi.com" c="gray.5">
-                <IconMail size={20} />
-              </Anchor>
-            </Group>
-          </Stack>
+          </Grid.Col>
 
           {Object.entries(footerLinks).map(([title, links]) => (
-            <Stack key={title} gap="sm">
-              <Text fw={600} c="gray.8" mb="xs">
+            <Grid.Col key={title} span={{ base: 6, sm: 3, md: 'auto' }}>
+              <Text fz="sm" fw={600} tt="uppercase" lts="0.1em" mb={16}>
                 {title}
               </Text>
-              {links.map((link) => (
-                <Anchor
-                  key={link.label}
-                  href={link.href}
-                  c="gray.6"
-                  size="sm"
-                  underline="never"
-                  style={{ transition: 'color 0.2s' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = '#212529')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = '')}
-                >
-                  {link.label}
-                </Anchor>
-              ))}
-            </Stack>
+              <Stack gap={4}>
+                {links.map((link) => (
+                  <Anchor
+                    key={link}
+                    href="#"
+                    fz="md"
+                    c="dimmed"
+                    underline="never"
+                  >
+                    {link}
+                  </Anchor>
+                ))}
+              </Stack>
+            </Grid.Col>
           ))}
-        </SimpleGrid>
+        </Grid>
 
-        <Divider my="xl" color="gray.3" />
+        <Divider my="xl" color="gray.2" />
 
-        <Group justify="space-between" wrap="wrap" gap="md">
-          <Text size="xs" c="gray.5">
-            © 2025 여기저기. All rights reserved.
+        <Group justify="space-between" wrap="wrap" gap={12}>
+          <Text fz="sm" c="gray.5">
+            © 2026 여기저기. All rights reserved.
           </Text>
-          <Group gap="md">
-            <Anchor href="#" size="xs" c="gray.5" underline="never">
+          <Group gap={20}>
+            <Anchor href="#" fz="sm" c="gray.5" underline="never">
               개인정보처리방침
             </Anchor>
-            <Anchor href="#" size="xs" c="gray.5" underline="never">
+            <Anchor href="#" fz="sm" c="gray.5" underline="never">
               이용약관
             </Anchor>
           </Group>

@@ -1,5 +1,5 @@
-import { Box } from '@mantine/core';
 import type { ReactNode } from 'react';
+import { Box } from '@mantine/core';
 import { Header } from './Header';
 import { Footer } from './Footer';
 
@@ -9,14 +9,9 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   return (
-    <Box
-      style={{
-        minHeight: '100vh',
-        backgroundColor: '#ffffff',
-      }}
-    >
+    <Box bg="#f0efed" mih="100vh">
       <Header />
-      <Box component="main" pt={60}>
+      <Box component="main" pt={72}>
         {children}
       </Box>
       <Footer />

@@ -1,20 +1,18 @@
 import cron from 'node-cron';
-import * as fs from 'fs';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
+import { randomUUID } from 'crypto';
 import { config } from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { db } from '../config/db.js';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = dirname(__filename);
 
 // .env 파일 로드 (프로젝트 루트에서)
-const envPath = path.join(__dirname, '..', '..', '..', '.env');
+const envPath = join(__dirname, '..', '..', '..', '.env');
 config({ path: envPath });
-
-// 데이터 디렉토리 경로 (src/data)
-const DATA_DIR = path.join(__dirname, '..', '..', '..', 'src', 'data');
 
 // 타입 정의
 interface SchedulerConfig {
@@ -26,12 +24,6 @@ interface SchedulerConfig {
   monthlyRunTime: string;
   defaultEngine: 'gpt' | 'gemini';
   concurrentQueries: number;
-}
-
-interface SchedulerStatus {
-  isRunning: boolean;
-  currentTask: string | null;
-  lastCompletedAt: string | null;
 }
 
 interface SchedulerHistory {
@@ -46,7 +38,11 @@ interface SchedulerHistory {
 
 interface SchedulerData {
   config: SchedulerConfig;
-  status: SchedulerStatus;
+  status: {
+    isRunning: boolean;
+    currentTask: string | null;
+    lastCompletedAt: string | null;
+  };
   history: SchedulerHistory[];
   nextScheduled: {
     daily: string | null;
@@ -55,20 +51,46 @@ interface SchedulerData {
   };
 }
 
-interface Query {
+interface DbSchedulerConfig {
   id: string;
-  query: string;
-  category: string;
-  frequency: 'daily' | 'weekly' | 'monthly';
-  isActive: boolean;
-  brandIds?: string[];
-  lastTested?: string;
+  user_id: string;
+  enabled: number;
+  daily_run_time: string;
+  weekly_run_day: number;
+  weekly_run_time: string;
+  monthly_run_day: number;
+  monthly_run_time: string;
+  default_engine: string;
+  concurrent_queries: number;
+  created_at: string;
+  updated_at: string;
 }
 
-interface Brand {
+interface DbSchedulerHistory {
   id: string;
+  user_id: string;
+  type: string;
+  started_at: string;
+  completed_at: string;
+  queries_processed: number;
+  success: number;
+  failed: number;
+}
+
+interface DbQuery {
+  id: string;
+  user_id: string;
+  query: string;
+  category: string;
+  frequency: string;
+  is_active: number;
+}
+
+interface DbBrand {
+  id: string;
+  user_id: string;
   name: string;
-  competitors: string[];
+  competitors: string;
 }
 
 interface BrandResult {
@@ -79,40 +101,11 @@ interface BrandResult {
   competitorMentions: string[];
 }
 
-interface TestResult {
-  id: string;
-  queryId: string | null;
-  query: string;
-  category: string;
-  engine: string;
-  cited: boolean;
-  brandResults: BrandResult[];
-  response: string;
-  fullResponse: string;
-  testedAt: string;
-}
-
-// JSON 파일 헬퍼
-function readJsonFile<T>(filename: string): T | null {
-  const filePath = path.join(DATA_DIR, filename);
-  try {
-    const data = fs.readFileSync(filePath, 'utf-8');
-    return JSON.parse(data);
-  } catch {
-    return null;
-  }
-}
-
-function writeJsonFile(filename: string, data: unknown): void {
-  const filePath = path.join(DATA_DIR, filename);
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
-}
-
 export class QueryScheduler {
   private openai: OpenAI | null = null;
   private geminiModel: any = null;
-  private cronJobs: Map<string, cron.ScheduledTask> = new Map();
-  private isInitialized = false;
+  private pollingJob: cron.ScheduledTask | null = null;
+  private runningUsers: Set<string> = new Set();
 
   constructor() {
     this.initializeAI();
@@ -138,147 +131,40 @@ export class QueryScheduler {
     }
   }
 
-  private getSchedulerData(): SchedulerData {
-    const data = readJsonFile<SchedulerData>('scheduler.json');
-    if (!data) {
-      const defaultData: SchedulerData = {
-        config: {
-          enabled: true,
-          dailyRunTime: '09:00',
-          weeklyRunDay: 1,
-          weeklyRunTime: '09:00',
-          monthlyRunDay: 1,
-          monthlyRunTime: '09:00',
-          defaultEngine: 'gpt',
-          concurrentQueries: 3,
-        },
-        status: {
-          isRunning: false,
-          currentTask: null,
-          lastCompletedAt: null,
-        },
-        history: [],
-        nextScheduled: {
-          daily: null,
-          weekly: null,
-          monthly: null,
-        },
-      };
-      writeJsonFile('scheduler.json', defaultData);
-      return defaultData;
-    }
-    return data;
+  // --- DB 접근 ---
+
+  private getUserConfig(userId: string): DbSchedulerConfig {
+    db.prepare(
+      'INSERT OR IGNORE INTO scheduler_configs (id, user_id) VALUES (?, ?)'
+    ).run(randomUUID(), userId);
+
+    return db.prepare(
+      'SELECT * FROM scheduler_configs WHERE user_id = ?'
+    ).get(userId) as DbSchedulerConfig;
   }
 
-  private saveSchedulerData(data: SchedulerData): void {
-    writeJsonFile('scheduler.json', data);
-  }
-
-  public getStatus(): SchedulerData {
-    return this.getSchedulerData();
-  }
-
-  public getRunningStatus(): SchedulerStatus & { nextScheduled: SchedulerData['nextScheduled'] } {
-    const data = this.getSchedulerData();
+  private mapDbConfigToSchedulerConfig(row: DbSchedulerConfig): SchedulerConfig {
     return {
-      ...data.status,
-      nextScheduled: data.nextScheduled,
+      enabled: row.enabled === 1,
+      dailyRunTime: row.daily_run_time,
+      weeklyRunDay: row.weekly_run_day,
+      weeklyRunTime: row.weekly_run_time,
+      monthlyRunDay: row.monthly_run_day,
+      monthlyRunTime: row.monthly_run_time,
+      defaultEngine: row.default_engine as 'gpt' | 'gemini',
+      concurrentQueries: row.concurrent_queries,
     };
   }
 
-  public updateConfig(config: Partial<SchedulerConfig>): SchedulerConfig {
-    const data = this.getSchedulerData();
-    data.config = { ...data.config, ...config };
-    this.saveSchedulerData(data);
-
-    // 설정 변경 시 크론 잡 재시작
-    if (data.config.enabled) {
-      this.stop();
-      this.start();
+  private calculateNextScheduled(config: SchedulerConfig): SchedulerData['nextScheduled'] {
+    if (!config.enabled) {
+      return { daily: null, weekly: null, monthly: null };
     }
 
-    return data.config;
-  }
-
-  public start(manualStart: boolean = false): void {
-    if (this.isInitialized) {
-      console.log('[Scheduler] Already running');
-      return;
-    }
-
-    const data = this.getSchedulerData();
-
-    // 수동 시작이면 enabled를 true로 설정
-    if (manualStart) {
-      data.config.enabled = true;
-      this.saveSchedulerData(data);
-    } else if (!data.config.enabled) {
-      // 자동 시작(서버 부팅)인데 비활성화 상태면 시작하지 않음
-      console.log('[Scheduler] Disabled, not starting');
-      return;
-    }
-
-    console.log('[Scheduler] Starting scheduler...');
-
-    // Daily 스케줄 설정
-    const [dailyHour, dailyMinute] = data.config.dailyRunTime.split(':');
-    const dailyCron = `${dailyMinute} ${dailyHour} * * *`;
-    const dailyJob = cron.schedule(dailyCron, () => {
-      console.log('[Scheduler] Running daily schedule');
-      this.runSchedule('daily');
-    });
-    this.cronJobs.set('daily', dailyJob);
-
-    // Weekly 스케줄 설정 (weeklyRunDay: 0=일요일, 1=월요일, ...)
-    const [weeklyHour, weeklyMinute] = data.config.weeklyRunTime.split(':');
-    const weeklyCron = `${weeklyMinute} ${weeklyHour} * * ${data.config.weeklyRunDay}`;
-    const weeklyJob = cron.schedule(weeklyCron, () => {
-      console.log('[Scheduler] Running weekly schedule');
-      this.runSchedule('weekly');
-    });
-    this.cronJobs.set('weekly', weeklyJob);
-
-    // Monthly 스케줄 설정
-    const [monthlyHour, monthlyMinute] = data.config.monthlyRunTime.split(':');
-    const monthlyCron = `${monthlyMinute} ${monthlyHour} ${data.config.monthlyRunDay} * *`;
-    const monthlyJob = cron.schedule(monthlyCron, () => {
-      console.log('[Scheduler] Running monthly schedule');
-      this.runSchedule('monthly');
-    });
-    this.cronJobs.set('monthly', monthlyJob);
-
-    this.isInitialized = true;
-    this.updateNextScheduled();
-    console.log('[Scheduler] Started with schedules:', {
-      daily: dailyCron,
-      weekly: weeklyCron,
-      monthly: monthlyCron,
-    });
-  }
-
-  public stop(): void {
-    console.log('[Scheduler] Stopping scheduler...');
-    this.cronJobs.forEach((job, key) => {
-      job.stop();
-      console.log(`[Scheduler] Stopped ${key} job`);
-    });
-    this.cronJobs.clear();
-    this.isInitialized = false;
-
-    // enabled 상태 업데이트
-    const data = this.getSchedulerData();
-    data.config.enabled = false;
-    this.saveSchedulerData(data);
-
-    console.log('[Scheduler] Stopped');
-  }
-
-  private updateNextScheduled(): void {
-    const data = this.getSchedulerData();
     const now = new Date();
 
     // Daily next
-    const [dailyHour, dailyMinute] = data.config.dailyRunTime.split(':').map(Number);
+    const [dailyHour, dailyMinute] = config.dailyRunTime.split(':').map(Number);
     const nextDaily = new Date(now);
     nextDaily.setHours(dailyHour, dailyMinute, 0, 0);
     if (nextDaily <= now) {
@@ -286,79 +172,268 @@ export class QueryScheduler {
     }
 
     // Weekly next
-    const [weeklyHour, weeklyMinute] = data.config.weeklyRunTime.split(':').map(Number);
+    const [weeklyHour, weeklyMinute] = config.weeklyRunTime.split(':').map(Number);
     const nextWeekly = new Date(now);
     nextWeekly.setHours(weeklyHour, weeklyMinute, 0, 0);
     const currentDay = now.getDay();
-    let daysUntilWeekly = data.config.weeklyRunDay - currentDay;
+    let daysUntilWeekly = config.weeklyRunDay - currentDay;
     if (daysUntilWeekly < 0 || (daysUntilWeekly === 0 && nextWeekly <= now)) {
       daysUntilWeekly += 7;
     }
     nextWeekly.setDate(nextWeekly.getDate() + daysUntilWeekly);
 
     // Monthly next
-    const [monthlyHour, monthlyMinute] = data.config.monthlyRunTime.split(':').map(Number);
+    const [monthlyHour, monthlyMinute] = config.monthlyRunTime.split(':').map(Number);
     const nextMonthly = new Date(now);
-    nextMonthly.setDate(data.config.monthlyRunDay);
+    nextMonthly.setDate(config.monthlyRunDay);
     nextMonthly.setHours(monthlyHour, monthlyMinute, 0, 0);
     if (nextMonthly <= now) {
       nextMonthly.setMonth(nextMonthly.getMonth() + 1);
     }
 
-    data.nextScheduled = {
+    return {
       daily: nextDaily.toISOString(),
       weekly: nextWeekly.toISOString(),
       monthly: nextMonthly.toISOString(),
     };
-
-    this.saveSchedulerData(data);
   }
 
-  public async runNow(type: 'daily' | 'weekly' | 'monthly'): Promise<SchedulerHistory> {
-    return this.runSchedule(type);
+  private getUserHistory(userId: string): SchedulerHistory[] {
+    const rows = db.prepare(
+      'SELECT * FROM scheduler_history WHERE user_id = ? ORDER BY completed_at DESC LIMIT 100'
+    ).all(userId) as DbSchedulerHistory[];
+
+    return rows.map((row) => ({
+      id: row.id,
+      type: row.type as 'daily' | 'weekly' | 'monthly',
+      startedAt: row.started_at,
+      completedAt: row.completed_at,
+      queriesProcessed: row.queries_processed,
+      success: row.success,
+      failed: row.failed,
+    }));
   }
 
-  private async runSchedule(type: 'daily' | 'weekly' | 'monthly'): Promise<SchedulerHistory> {
-    const schedulerData = this.getSchedulerData();
+  // --- Public API ---
 
-    if (schedulerData.status.isRunning) {
-      throw new Error('Another schedule is already running');
+  public getStatus(userId: string): SchedulerData {
+    const dbConfig = this.getUserConfig(userId);
+    const config = this.mapDbConfigToSchedulerConfig(dbConfig);
+    const history = this.getUserHistory(userId);
+    const lastCompleted = history.length > 0 ? history[0].completedAt : null;
+
+    return {
+      config,
+      status: {
+        isRunning: this.runningUsers.has(userId),
+        currentTask: this.runningUsers.has(userId) ? 'schedule' : null,
+        lastCompletedAt: lastCompleted,
+      },
+      history,
+      nextScheduled: this.calculateNextScheduled(config),
+    };
+  }
+
+  public getRunningStatus(userId: string) {
+    const dbConfig = this.getUserConfig(userId);
+    const config = this.mapDbConfigToSchedulerConfig(dbConfig);
+    const history = this.getUserHistory(userId);
+    const lastCompleted = history.length > 0 ? history[0].completedAt : null;
+
+    return {
+      isRunning: this.runningUsers.has(userId),
+      currentTask: this.runningUsers.has(userId) ? 'schedule' : null,
+      lastCompletedAt: lastCompleted,
+      nextScheduled: this.calculateNextScheduled(config),
+    };
+  }
+
+  public updateConfig(userId: string, configUpdate: Partial<SchedulerConfig>): SchedulerConfig {
+    // 먼저 기존 config 보장
+    this.getUserConfig(userId);
+
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    if (configUpdate.enabled !== undefined) {
+      updates.push('enabled = ?');
+      values.push(configUpdate.enabled ? 1 : 0);
+    }
+    if (configUpdate.dailyRunTime !== undefined) {
+      updates.push('daily_run_time = ?');
+      values.push(configUpdate.dailyRunTime);
+    }
+    if (configUpdate.weeklyRunDay !== undefined) {
+      updates.push('weekly_run_day = ?');
+      values.push(configUpdate.weeklyRunDay);
+    }
+    if (configUpdate.weeklyRunTime !== undefined) {
+      updates.push('weekly_run_time = ?');
+      values.push(configUpdate.weeklyRunTime);
+    }
+    if (configUpdate.monthlyRunDay !== undefined) {
+      updates.push('monthly_run_day = ?');
+      values.push(configUpdate.monthlyRunDay);
+    }
+    if (configUpdate.monthlyRunTime !== undefined) {
+      updates.push('monthly_run_time = ?');
+      values.push(configUpdate.monthlyRunTime);
+    }
+    if (configUpdate.defaultEngine !== undefined) {
+      updates.push('default_engine = ?');
+      values.push(configUpdate.defaultEngine);
+    }
+    if (configUpdate.concurrentQueries !== undefined) {
+      updates.push('concurrent_queries = ?');
+      values.push(configUpdate.concurrentQueries);
     }
 
-    // 상태 업데이트
-    schedulerData.status.isRunning = true;
-    schedulerData.status.currentTask = `${type} schedule`;
-    this.saveSchedulerData(schedulerData);
+    if (updates.length > 0) {
+      updates.push("updated_at = datetime('now')");
+      values.push(userId);
+      db.prepare(
+        `UPDATE scheduler_configs SET ${updates.join(', ')} WHERE user_id = ?`
+      ).run(...values);
+    }
 
+    const dbConfig = this.getUserConfig(userId);
+    return this.mapDbConfigToSchedulerConfig(dbConfig);
+  }
+
+  public startForUser(userId: string): SchedulerData {
+    this.getUserConfig(userId);
+    db.prepare(
+      "UPDATE scheduler_configs SET enabled = 1, updated_at = datetime('now') WHERE user_id = ?"
+    ).run(userId);
+    return this.getStatus(userId);
+  }
+
+  public stopForUser(userId: string): SchedulerData {
+    db.prepare(
+      "UPDATE scheduler_configs SET enabled = 0, updated_at = datetime('now') WHERE user_id = ?"
+    ).run(userId);
+    return this.getStatus(userId);
+  }
+
+  public async runNow(userId: string, type: 'daily' | 'weekly' | 'monthly'): Promise<SchedulerHistory> {
+    const dbConfig = this.getUserConfig(userId);
+    const engine = dbConfig.default_engine as 'gpt' | 'gemini';
+    return this.runScheduleForUser(userId, type, engine);
+  }
+
+  // --- 글로벌 폴링 ---
+
+  public start(): void {
+    if (this.pollingJob) {
+      console.log('[Scheduler] Polling already running');
+      return;
+    }
+
+    console.log('[Scheduler] Starting 1-minute polling loop...');
+
+    this.pollingJob = cron.schedule('* * * * *', () => {
+      this.pollAndExecute().catch((err) => {
+        console.error('[Scheduler] Polling error:', err);
+      });
+    });
+
+    console.log('[Scheduler] Polling started');
+  }
+
+  public stop(): void {
+    if (this.pollingJob) {
+      this.pollingJob.stop();
+      this.pollingJob = null;
+      console.log('[Scheduler] Polling stopped');
+    }
+  }
+
+  private async pollAndExecute(): Promise<void> {
+    const configs = db.prepare(
+      `SELECT sc.* FROM scheduler_configs sc
+       JOIN users u ON sc.user_id = u.id
+       WHERE sc.enabled = 1 AND u.is_active = 1`
+    ).all() as DbSchedulerConfig[];
+
+    if (configs.length === 0) return;
+
+    const now = new Date();
+    const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const currentDayOfWeek = now.getDay();
+    const currentDayOfMonth = now.getDate();
+
+    for (const cfg of configs) {
+      const userId = cfg.user_id;
+
+      // 이미 실행 중이면 스킵
+      if (this.runningUsers.has(userId)) continue;
+
+      const engine = cfg.default_engine as 'gpt' | 'gemini';
+
+      // Daily 체크
+      if (currentHHMM === cfg.daily_run_time) {
+        this.runScheduleForUser(userId, 'daily', engine).catch((err) => {
+          console.error(`[Scheduler] Daily run failed for user ${userId}:`, err);
+        });
+      }
+
+      // Weekly 체크
+      if (currentDayOfWeek === cfg.weekly_run_day && currentHHMM === cfg.weekly_run_time) {
+        this.runScheduleForUser(userId, 'weekly', engine).catch((err) => {
+          console.error(`[Scheduler] Weekly run failed for user ${userId}:`, err);
+        });
+      }
+
+      // Monthly 체크
+      if (currentDayOfMonth === cfg.monthly_run_day && currentHHMM === cfg.monthly_run_time) {
+        this.runScheduleForUser(userId, 'monthly', engine).catch((err) => {
+          console.error(`[Scheduler] Monthly run failed for user ${userId}:`, err);
+        });
+      }
+    }
+  }
+
+  // --- 유저별 스케줄 실행 ---
+
+  private async runScheduleForUser(
+    userId: string,
+    type: 'daily' | 'weekly' | 'monthly',
+    engine: 'gpt' | 'gemini'
+  ): Promise<SchedulerHistory> {
+    if (this.runningUsers.has(userId)) {
+      throw new Error('Another schedule is already running for this user');
+    }
+
+    this.runningUsers.add(userId);
     const startedAt = new Date().toISOString();
     let queriesProcessed = 0;
     let success = 0;
     let failed = 0;
 
     try {
-      // 해당 frequency의 활성 쿼리 가져오기
-      const queriesData = readJsonFile<{ queries: Query[] }>('queries.json');
-      const brandsData = readJsonFile<{ brands: Brand[] }>('brands.json');
+      // 해당 유저의 활성 쿼리 가져오기 (frequency 일치)
+      const queries = db.prepare(
+        'SELECT * FROM queries WHERE user_id = ? AND is_active = 1 AND frequency = ?'
+      ).all(userId, type) as DbQuery[];
 
-      if (!queriesData || !brandsData || brandsData.brands.length === 0) {
-        throw new Error('No queries or brands found');
+      // 해당 유저의 활성 브랜드 가져오기
+      const brands = db.prepare(
+        'SELECT * FROM brands WHERE user_id = ? AND is_active = 1'
+      ).all(userId) as DbBrand[];
+
+      if (brands.length === 0) {
+        console.log(`[Scheduler] No active brands for user ${userId}`);
       }
 
-      const activeQueries = queriesData.queries.filter(
-        (q) => q.isActive && q.frequency === type
-      );
-
-      if (activeQueries.length === 0) {
-        console.log(`[Scheduler] No active ${type} queries found`);
+      if (queries.length === 0) {
+        console.log(`[Scheduler] No active ${type} queries for user ${userId}`);
       }
 
-      const engine = schedulerData.config.defaultEngine;
-
-      // 순차 처리 (하나씩 실행)
-      for (const query of activeQueries) {
+      // 순차 처리
+      for (const query of queries) {
         queriesProcessed++;
         try {
-          await this.testQuery(query, brandsData.brands, engine);
+          await this.testQueryForUser(userId, query, brands, engine);
           success++;
         } catch (err) {
           failed++;
@@ -366,14 +441,21 @@ export class QueryScheduler {
         }
       }
     } catch (error) {
-      console.error('[Scheduler] Schedule run failed:', error);
+      console.error(`[Scheduler] Schedule run failed for user ${userId}:`, error);
     } finally {
-      // 상태 및 히스토리 업데이트
-      const updatedData = this.getSchedulerData();
+      this.runningUsers.delete(userId);
+
       const completedAt = new Date().toISOString();
+      const historyId = randomUUID();
+
+      // 히스토리 저장
+      db.prepare(
+        `INSERT INTO scheduler_history (id, user_id, type, started_at, completed_at, queries_processed, success, failed)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+      ).run(historyId, userId, type, startedAt, completedAt, queriesProcessed, success, failed);
 
       const historyEntry: SchedulerHistory = {
-        id: String(Date.now()),
+        id: historyId,
         type,
         startedAt,
         completedAt,
@@ -382,20 +464,7 @@ export class QueryScheduler {
         failed,
       };
 
-      updatedData.status.isRunning = false;
-      updatedData.status.currentTask = null;
-      updatedData.status.lastCompletedAt = completedAt;
-      updatedData.history.unshift(historyEntry);
-
-      // 히스토리 최대 100개 유지
-      if (updatedData.history.length > 100) {
-        updatedData.history = updatedData.history.slice(0, 100);
-      }
-
-      this.saveSchedulerData(updatedData);
-      this.updateNextScheduled();
-
-      console.log(`[Scheduler] ${type} schedule completed:`, {
+      console.log(`[Scheduler] ${type} schedule completed for user ${userId}:`, {
         queriesProcessed,
         success,
         failed,
@@ -405,11 +474,12 @@ export class QueryScheduler {
     }
   }
 
-  private async testQuery(
-    query: Query,
-    brands: Brand[],
+  private async testQueryForUser(
+    userId: string,
+    query: DbQuery,
+    brands: DbBrand[],
     engine: 'gpt' | 'gemini'
-  ): Promise<TestResult> {
+  ): Promise<void> {
     let response = '';
 
     try {
@@ -457,8 +527,9 @@ export class QueryScheduler {
         }
       }
 
+      const competitors: string[] = JSON.parse(brand.competitors || '[]');
       const competitorMentions: string[] = [];
-      for (const competitor of brand.competitors || []) {
+      for (const competitor of competitors) {
         if (responseLower.includes(competitor.toLowerCase())) {
           competitorMentions.push(competitor);
         }
@@ -474,40 +545,47 @@ export class QueryScheduler {
     }
 
     const anyCited = brandResults.some((br) => br.cited);
+    const resultId = randomUUID();
+    const testedAt = new Date().toISOString();
 
-    const result: TestResult = {
-      id: String(Date.now()),
-      queryId: query.id,
-      query: query.query,
-      category: query.category,
+    // 결과를 results 테이블에 저장
+    db.prepare(
+      `INSERT INTO results (id, user_id, query_id, query, category, engine, cited, response, full_response, tested_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
+      resultId,
+      userId,
+      query.id,
+      query.query,
+      query.category,
       engine,
-      cited: anyCited,
-      brandResults,
-      response: response.slice(0, 500),
-      fullResponse: response,
-      testedAt: new Date().toISOString(),
-    };
+      anyCited ? 1 : 0,
+      response.slice(0, 500),
+      response,
+      testedAt
+    );
 
-    // 결과 저장
-    const resultsData = readJsonFile<{ results: TestResult[] }>('results.json') || {
-      results: [],
-    };
-    resultsData.results.unshift(result);
-    if (resultsData.results.length > 500) {
-      resultsData.results = resultsData.results.slice(0, 500);
+    // 브랜드별 결과를 brand_results 테이블에 저장
+    const insertBrandResult = db.prepare(
+      `INSERT INTO brand_results (result_id, brand_id, brand_name, cited, rank, competitor_mentions)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    );
+
+    for (const br of brandResults) {
+      insertBrandResult.run(
+        resultId,
+        br.brandId,
+        br.brandName,
+        br.cited ? 1 : 0,
+        br.rank,
+        JSON.stringify(br.competitorMentions)
+      );
     }
-    writeJsonFile('results.json', { ...resultsData, lastUpdated: new Date().toISOString() });
 
     // 쿼리의 lastTested 업데이트
-    const queriesData = readJsonFile<{ queries: Query[] }>('queries.json');
-    if (queriesData) {
-      queriesData.queries = queriesData.queries.map((q) =>
-        q.id === query.id ? { ...q, lastTested: result.testedAt } : q
-      );
-      writeJsonFile('queries.json', { ...queriesData, lastUpdated: new Date().toISOString() });
-    }
-
-    return result;
+    db.prepare(
+      'UPDATE queries SET last_tested = ? WHERE id = ?'
+    ).run(testedAt, query.id);
   }
 }
 

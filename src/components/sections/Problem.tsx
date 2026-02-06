@@ -1,96 +1,83 @@
 import {
-  Container,
-  Title,
-  Text,
+  IconTrendingDown,
+  IconChartBar,
+  IconAlertTriangle,
+} from '@tabler/icons-react';
+import {
   Box,
+  Container,
   SimpleGrid,
+  Paper,
   ThemeIcon,
   Stack,
-  Paper,
+  Text,
 } from '@mantine/core';
-import {
-  IconTrendingDown,
-  IconRobot,
-  IconQuestionMark,
-  IconEyeOff,
-} from '@tabler/icons-react';
+import { SectionTitle } from '../ui/SectionTitle';
 
 const problems = [
   {
+    icon: IconAlertTriangle,
+    title: '개선 우선순위 불명확',
+    description: 'FAQ, 스키마, 콘텐츠 중 무엇을 먼저 해야 하는지 판단 기준이 없습니다.',
+    gradient: 'linear-gradient(135deg, #f5f0dc 0%, #e5c4b2 100%)',
+  },
+  {
     icon: IconTrendingDown,
-    title: '검색 트래픽 감소',
-    description: 'AI 검색으로 인해 기존 SEO 전략의 효과가 급격히 감소하고 있습니다.',
+    title: '언급률 하락을 체감하기 어려움',
+    description: '기존 SEO 지표만으로는 AI 언급 변화를 정량적으로 보기 어렵습니다.',
+    gradient: 'linear-gradient(135deg, #b6cde0 0%, #c9b8bd 100%)',
   },
   {
-    icon: IconRobot,
-    title: 'AI가 경쟁사를 추천',
-    description: 'ChatGPT, Perplexity가 고객 질문에 경쟁사 브랜드만 언급합니다.',
-  },
-  {
-    icon: IconEyeOff,
-    title: '측정 불가',
-    description: 'AI에서 브랜드가 얼마나 노출되는지 파악할 방법이 없습니다.',
-  },
-  {
-    icon: IconQuestionMark,
-    title: '최적화 방법 부재',
-    description: 'AI 추천을 받기 위해 무엇을 해야 하는지 알 수 없습니다.',
+    icon: IconChartBar,
+    title: '엔진·쿼리별 성과 편차',
+    description: 'ChatGPT, Gemini, Perplexity마다 결과가 달라 대응 우선순위를 놓칩니다.',
+    gradient: 'linear-gradient(135deg, #d0d0ce 0%, #0a0a0a 100%)',
   },
 ];
 
 export function Problem() {
   return (
-    <Box
-      py={80}
-      style={{
-        backgroundColor: '#f8f9fa',
-      }}
-    >
-      <Container size="lg">
-        <Stack align="center" gap="xl">
-          <Box ta="center">
-            <Text size="sm" fw={600} c="brand.6" mb="xs">
-              문제 인식
-            </Text>
-            <Title order={2} size="2.2rem" fw={700} c="gray.9">
-              AI 시대, 브랜드가 사라지고 있습니다
-            </Title>
-            <Text size="lg" c="gray.6" mt="md" maw={600} mx="auto">
-              소비자의 40%가 이제 AI에게 제품 추천을 요청합니다.
-              <br />
-              당신의 브랜드는 AI의 답변에 포함되어 있나요?
-            </Text>
-          </Box>
+    <Box component="section" id="problem" py={{ base: 80, md: 140 }} bg="#f0efed">
+      <Container size={1440} px={{ base: 20, md: 40 }}>
+        <SectionTitle
+          title={<>AI 검색 환경에서 발생하는<br />가시성 공백</>}
+          description="AI 검색이 빠르게 확산되지만, 브랜드가 어떻게 추천되는지 보여주는 지표는 부족합니다."
+        />
 
-          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg" mt="xl" w="100%">
-            {problems.map((problem) => (
-              <Paper
-                key={problem.title}
-                p="xl"
-                radius="lg"
+        <SimpleGrid cols={{ base: 1, md: 3 }} spacing={20}>
+          {problems.map((item) => (
+            <Paper
+              key={item.title}
+              radius="md"
+              withBorder
+              style={{ overflow: 'hidden' }}
+              shadow="sm"
+            >
+              <Box h={180} style={{ background: item.gradient }} />
+              <ThemeIcon
+                size={48}
+                radius="xl"
+                variant="default"
                 style={{
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e9ecef',
+                  position: 'relative',
+                  marginTop: -24,
+                  marginLeft: 28,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
                 }}
               >
-                <ThemeIcon
-                  size={48}
-                  radius="md"
-                  variant="light"
-                  color="gray"
-                >
-                  <problem.icon size={24} />
-                </ThemeIcon>
-                <Text size="lg" fw={600} c="gray.9" mt="md">
-                  {problem.title}
+                <item.icon size={22} stroke={1.6} />
+              </ThemeIcon>
+              <Stack gap={8} p="20px 28px 28px">
+                <Text fw={600} fz="md" style={{ letterSpacing: '-0.01em' }}>
+                  {item.title}
                 </Text>
-                <Text size="sm" c="gray.6" mt="xs" lh={1.6}>
-                  {problem.description}
+                <Text fz="md" c="dimmed" lh={1.65}>
+                  {item.description}
                 </Text>
-              </Paper>
-            ))}
-          </SimpleGrid>
-        </Stack>
+              </Stack>
+            </Paper>
+          ))}
+        </SimpleGrid>
       </Container>
     </Box>
   );

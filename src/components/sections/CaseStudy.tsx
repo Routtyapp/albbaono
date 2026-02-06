@@ -1,246 +1,128 @@
+import { IconCheck } from '@tabler/icons-react';
 import {
+  Box,
   Container,
   SimpleGrid,
-  Text,
-  Box,
   Paper,
+  Badge,
+  Group,
   Stack,
   ThemeIcon,
-  Group,
-  Badge,
-  Progress,
+  Text,
 } from '@mantine/core';
-import {
-  IconBuildingSkyscraper,
-  IconArrowUpRight,
-  IconCheck,
-} from '@tabler/icons-react';
-import { SectionTitle } from '../ui';
+import { SectionTitle } from '../ui/SectionTitle';
 
-const caseData = {
-  company: 'B2B SaaS A사',
-  situation: '기술력 우수, 인지도 부족',
-  results: [
-    { label: 'AI 인용률', before: 12, after: 67, unit: '%' },
-    { label: '경쟁사 대비 점유율', before: 8, after: 45, unit: '%' },
-    { label: '파이프라인 가치', before: 100, after: 340, unit: 'M' },
-  ],
-};
-
-const auditProcess = [
-  {
-    title: 'AI 가시성 검사',
-    description: '5대 AI 엔진에서 브랜드 관련 핵심 질문 50~100개 테스트',
-  },
-  {
-    title: '인용 점유율 도출',
-    description: '경쟁사 대비 자사 브랜드가 답변에 포함되는 비율 측정',
-  },
-  {
-    title: '오학습 정보 식별',
-    description: 'AI가 브랜드에 대해 잘못 학습한 정보 발견 및 수정 방안 제시',
-  },
-  {
-    title: '누락 원인 분석',
-    description: '경쟁사는 인용되지만 자사는 누락되는 원인 파악',
-  },
+const results = [
+  { label: 'AI 추천 언급률', before: '12%', after: '67%' },
+  { label: '경쟁사 대비 점유율', before: '9%', after: '41%' },
+  { label: '보고서 생성 시간', before: '5시간', after: '30분' },
 ];
 
-const reverseEngineering = [
-  {
-    title: '쿼리 재구성 추적',
-    description:
-      'AI가 사용자 질문을 백그라운드에서 어떤 검색어 조합으로 변환하는지 분석',
-  },
-  {
-    title: '검색 의도 역추적',
-    description:
-      '변형된 쿼리를 기반으로 AI가 찾는 정보 유형을 파악하여 콘텐츠 매칭',
-  },
-  {
-    title: '경쟁사 인용 소스 분석',
-    description:
-      '경쟁사가 답변에 노출될 때 참조된 원천 소스를 역추적하여 공략 대상 설정',
-  },
+const auditProcess = [
+  { title: 'AI 가시성 진단', desc: '주요 LLM 질의 50~100개를 실행해 브랜드 언급 현황을 점검합니다.' },
+  { title: '쿼리별 점수 산출', desc: '쿼리군별로 GEO 점수를 계산하고 개선 난이도를 분류합니다.' },
+  { title: '콘텐츠 개선 우선순위', desc: 'FAQ, 스키마, 제품 페이지 중 영향도가 큰 항목을 먼저 제안합니다.' },
+  { title: '경쟁사 비교 리포트', desc: '동일한 질의에서 경쟁사가 어떻게 노출되는지 비교합니다.' },
+];
+
+const reverseEng = [
+  { title: '질의 의도 리버스 엔지니어링', desc: 'AI가 어떤 문맥에서 브랜드를 추천하는지 질문 구조를 분석합니다.' },
+  { title: '근거 콘텐츠 매핑', desc: 'AI가 인용하는 근거 콘텐츠를 추적하고 누락 영역을 보완합니다.' },
+  { title: '성과 추적 자동화', desc: '변경 사항이 GEO 점수에 미친 영향을 자동으로 기록합니다.' },
 ];
 
 export function CaseStudy() {
   return (
-    <Box id="case-study" py={100}>
-      <Container size="lg">
+    <Box component="section" id="case-study" py={{ base: 80, md: 140 }}>
+      <Container size={1440} px={{ base: 20, md: 40 }}>
         <SectionTitle
-          badge="사례 연구"
-          title={
-            <>
-              실제 성과로{' '}
-              <Text component="span" c="brand.4" inherit>
-                증명
-              </Text>
-              합니다
-            </>
-          }
-          description="기술력은 있지만 인지도가 부족했던 B2B SaaS 기업의 AI 가시성 개선 사례"
+          title={<>실제 고객사 성과로<br />증명합니다</>}
+          description="AI 검색 유입이 감소하던 B2B SaaS 브랜드가 GEO 점수를 개선한 사례입니다."
         />
 
-        {/* Case Study Card */}
-        <Paper
-          p="xl"
-          radius="lg"
-          mt={60}
-          style={{
-            backgroundColor: 'rgba(57, 132, 254, 0.05)',
-            border: '1px solid rgba(57, 132, 254, 0.2)',
-          }}
-        >
-          <Stack gap="xl">
-            <Group justify="space-between" align="flex-start" wrap="wrap">
-              <Group gap="md">
-                <ThemeIcon
-                  size={56}
-                  radius="md"
-                  variant="gradient"
-                  gradient={{ from: 'brand.5', to: 'brand.7' }}
-                >
-                  <IconBuildingSkyscraper size={28} />
-                </ThemeIcon>
-                <div>
-                  <Text size="xl" fw={700} c="white">
-                    {caseData.company}
-                  </Text>
-                  <Badge variant="light" color="orange">
-                    {caseData.situation}
-                  </Badge>
-                </div>
-              </Group>
-              <Badge
-                variant="gradient"
-                gradient={{ from: 'green.5', to: 'teal.5' }}
-                size="lg"
-                leftSection={<IconArrowUpRight size={14} />}
-              >
-                성과 달성
-              </Badge>
-            </Group>
+        {/* Metrics */}
+        <Paper radius="md" withBorder p={{ base: 24, md: 48 }} mb={24}>
+          <Group gap={12} mb={32}>
+            <Text fz="lg" fw={700}>B2B SaaS 브랜드 A</Text>
+            <Badge
+              size="sm"
+              radius="xl"
+              variant="outline"
+              color="gray"
+              fw={600}
+            >
+              AI 검색 유입 감소
+            </Badge>
+          </Group>
 
-            <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="xl">
-              {caseData.results.map((result) => (
-                <Paper
-                  key={result.label}
-                  p="lg"
-                  radius="md"
-                  style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                  }}
-                >
-                  <Stack gap="sm">
-                    <Text size="sm" c="dimmed">
-                      {result.label}
-                    </Text>
-                    <Group gap="xs" align="flex-end">
-                      <Text size="sm" c="dimmed" td="line-through">
-                        {result.before}
-                        {result.unit}
-                      </Text>
-                      <Text
-                        size="2rem"
-                        fw={800}
-                        variant="gradient"
-                        gradient={{ from: 'green.4', to: 'teal.4' }}
-                      >
-                        {result.after}
-                        {result.unit}
-                      </Text>
-                    </Group>
-                    <Progress
-                      value={(result.after / (result.before + result.after)) * 100}
-                      color="teal"
-                      size="sm"
-                      radius="xl"
-                    />
-                  </Stack>
-                </Paper>
-              ))}
-            </SimpleGrid>
-          </Stack>
+          <SimpleGrid cols={{ base: 1, sm: 3 }} spacing={16}>
+            {results.map((r) => (
+              <Paper
+                key={r.label}
+                radius="sm"
+                withBorder
+                p={28}
+                ta="center"
+                bg="#f0efed"
+              >
+                <Text fz="sm" c="gray.5" mb={8}>{r.label}</Text>
+                <Text fz="md" c="gray.5" td="line-through" mb={4}>{r.before}</Text>
+                <Text fz={32} fw={700} lh={1} style={{ letterSpacing: '-0.03em' }}>{r.after}</Text>
+              </Paper>
+            ))}
+          </SimpleGrid>
         </Paper>
 
-        {/* Audit Process */}
-        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="xl" mt={60}>
-          <Paper
-            p="xl"
-            radius="lg"
-            style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.03)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-            }}
-          >
-            <Stack gap="lg">
-              <Group gap="sm">
-                <Text size="lg" fw={700} c="white">
-                  AUDIT 프로세스
-                </Text>
-                <Badge variant="light" color="brand">
-                  4단계
-                </Badge>
+        {/* Process cards */}
+        <SimpleGrid cols={{ base: 1, md: 2 }} spacing={20}>
+          <Paper radius="md" withBorder p={32}>
+            <Text fz="lg" fw={700} mb={20} style={{ letterSpacing: '-0.01em' }}>
+              GEO Audit 프로세스
+            </Text>
+            {auditProcess.map((item, i) => (
+              <Group
+                key={item.title}
+                gap={14}
+                align="flex-start"
+                py={16}
+                style={{
+                  borderBottom: i < auditProcess.length - 1 ? '1px solid var(--mantine-color-gray-2)' : 'none',
+                }}
+              >
+                <ThemeIcon size={28} radius="xl" variant="light" color="gray">
+                  <Text fz={11} fw={700}>{i + 1}</Text>
+                </ThemeIcon>
+                <Stack gap={2} style={{ flex: 1 }}>
+                  <Text fz="md" fw={600}>{item.title}</Text>
+                  <Text fz="md" c="dimmed" lh={1.5}>{item.desc}</Text>
+                </Stack>
               </Group>
-              <Stack gap="md">
-                {auditProcess.map((item, index) => (
-                  <Group key={item.title} gap="md" align="flex-start" wrap="nowrap">
-                    <ThemeIcon size={28} radius="xl" color="brand" variant="light">
-                      <Text size="xs" fw={700}>
-                        {index + 1}
-                      </Text>
-                    </ThemeIcon>
-                    <div>
-                      <Text size="sm" fw={600} c="white">
-                        {item.title}
-                      </Text>
-                      <Text size="xs" c="dimmed" lh={1.6}>
-                        {item.description}
-                      </Text>
-                    </div>
-                  </Group>
-                ))}
-              </Stack>
-            </Stack>
+            ))}
           </Paper>
 
-          <Paper
-            p="xl"
-            radius="lg"
-            style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.03)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-            }}
-          >
-            <Stack gap="lg">
-              <Group gap="sm">
-                <Text size="lg" fw={700} c="white">
-                  리버스 엔지니어링
-                </Text>
-                <Badge variant="light" color="violet">
-                  AI 알고리즘 추적
-                </Badge>
+          <Paper radius="md" withBorder p={32}>
+            <Text fz="lg" fw={700} mb={20} style={{ letterSpacing: '-0.01em' }}>
+              리버스 엔지니어링
+            </Text>
+            {reverseEng.map((item, i) => (
+              <Group
+                key={item.title}
+                gap={14}
+                align="flex-start"
+                py={16}
+                style={{
+                  borderBottom: i < reverseEng.length - 1 ? '1px solid var(--mantine-color-gray-2)' : 'none',
+                }}
+              >
+                <ThemeIcon size={28} radius="xl" variant="light" color="accent.4" c="dark">
+                  <IconCheck size={12} stroke={2.5} />
+                </ThemeIcon>
+                <Stack gap={2} style={{ flex: 1 }}>
+                  <Text fz="md" fw={600}>{item.title}</Text>
+                  <Text fz="md" c="dimmed" lh={1.5}>{item.desc}</Text>
+                </Stack>
               </Group>
-              <Stack gap="md">
-                {reverseEngineering.map((item) => (
-                  <Group key={item.title} gap="md" align="flex-start" wrap="nowrap">
-                    <ThemeIcon size={28} radius="xl" color="violet" variant="light">
-                      <IconCheck size={14} />
-                    </ThemeIcon>
-                    <div>
-                      <Text size="sm" fw={600} c="white">
-                        {item.title}
-                      </Text>
-                      <Text size="xs" c="dimmed" lh={1.6}>
-                        {item.description}
-                      </Text>
-                    </div>
-                  </Group>
-                ))}
-              </Stack>
-            </Stack>
+            ))}
           </Paper>
         </SimpleGrid>
       </Container>
