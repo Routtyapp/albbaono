@@ -6,7 +6,6 @@ import {
   Stack,
   Title,
   Text,
-  Group,
 } from '@mantine/core';
 
 const faqs = [
