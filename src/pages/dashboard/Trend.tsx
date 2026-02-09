@@ -20,7 +20,6 @@ const ENGINE_COLORS: Record<string, string> = {
   Gemini: 'blue.6',
 };
 
-const CATEGORY_COLORS = ['teal.6', 'blue.6', 'grape.6', 'orange.6', 'cyan.6', 'pink.6'];
 
 export function Trend() {
   const navigate = useNavigate();

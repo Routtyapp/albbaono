@@ -5,7 +5,6 @@ import {
   Group,
   Stepper,
   Button,
-  ThemeIcon,
 } from '@mantine/core';
 import {
   IconTags,

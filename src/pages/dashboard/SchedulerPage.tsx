@@ -22,8 +22,6 @@ import {
   ThemeIcon,
   Switch,
   Checkbox,
-  ActionIcon,
-  Loader,
   Pagination,
 } from '@mantine/core';
 import { Calendar } from '@mantine/dates';
