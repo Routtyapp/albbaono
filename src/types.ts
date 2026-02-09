@@ -79,6 +79,23 @@ export interface TestResult {
 }
 
 // ============================================
+// 트렌드 관련 타입
+// ============================================
+
+export interface TrendDataPoint {
+  date: string;          // "2026-01-27" or "2026-W05"
+  totalTests: number;
+  citedCount: number;
+  citationRate: number;
+}
+
+export interface TrendData {
+  overall: TrendDataPoint[];
+  byEngine: Record<string, TrendDataPoint[]>;
+  byCategory: Record<string, TrendDataPoint[]>;
+}
+
+// ============================================
 // 통계 관련 타입
 // ============================================
 
@@ -134,6 +151,14 @@ export interface ReportMetrics {
   brandPerformance: BrandPerformance[];
 }
 
+export interface AIAnalysis {
+  summary: string;
+  categoryAnalysis: Array<{ category: string; insight: string; citationRate: number }>;
+  competitorAnalysis: string;
+  actionItems: string[];
+  highlights: string[];
+}
+
 export interface Report {
   id: string;
   title: string;
@@ -146,6 +171,7 @@ export interface Report {
   highlights: string[];
   topQueries: Array<{ query: string; citationRate: number }>;
   worstQueries: Array<{ query: string; citationRate: number }>;
+  aiAnalysis?: AIAnalysis | null;
 }
 
 // ============================================

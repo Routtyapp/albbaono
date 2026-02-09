@@ -182,4 +182,11 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_scheduler_history_user_id ON scheduler_history(user_id);
 `);
 
+// reports 테이블에 ai_analysis 컬럼 추가 (기존 DB 호환)
+try {
+  db.exec(`ALTER TABLE reports ADD COLUMN ai_analysis TEXT DEFAULT NULL`);
+} catch {
+  // 이미 컬럼이 존재하면 무시
+}
+
 export default db;

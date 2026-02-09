@@ -40,6 +40,13 @@ export interface ReportData {
     categories: string[];
     values: number[];
   };
+  aiAnalysis?: {
+    summary: string;
+    categoryAnalysis: Array<{ category: string; insight: string; citationRate: number }>;
+    competitorAnalysis: string;
+    actionItems: string[];
+    highlights: string[];
+  } | null;
 }
 
 async function runPythonScript(

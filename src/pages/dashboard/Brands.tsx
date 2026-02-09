@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import {
   Stack,
   Title,
@@ -41,6 +42,7 @@ export function Brands() {
 
   // 모달 상태
   const [opened, { open, close }] = useDisclosure(false);
+  useBodyScrollLock(opened);
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
   const [brandName, setBrandName] = useState('');
   const [competitors, setCompetitors] = useState<string[]>([]);
@@ -330,6 +332,7 @@ export function Brands() {
         onClose={close}
         title={editingBrand ? '브랜드 수정' : '새 브랜드 추가'}
         centered
+        lockScroll={false}
       >
         <Stack gap="md">
           <TextInput

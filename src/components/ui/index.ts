@@ -15,7 +15,10 @@ export {
   VisibilitySkeleton,
   BrandsSkeleton,
   QueriesSkeleton,
+  SchedulerSkeleton,
   ReportsSkeleton,
   InsightsSkeleton,
   ScoreSkeleton,
+  TrendSkeleton,
 } from './PageSkeleton';
+export { SetupGuide } from './SetupGuide';

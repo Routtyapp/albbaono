@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Grid, Title, Text, Stack, Group, Button, Alert, Badge, Select, Center } from '@mantine/core';
+import { Grid, Title, Text, Stack, Group, Button, Alert, Badge, Select } from '@mantine/core';
 import { BarChart } from '@mantine/charts';
 import {
   IconTrendingUp,
@@ -10,7 +10,7 @@ import {
   IconAlertCircle,
   IconBuilding,
 } from '@tabler/icons-react';
-import { MetricCard, ChartCard, OverviewSkeleton } from '../../components/ui';
+import { MetricCard, ChartCard, OverviewSkeleton, SetupGuide } from '../../components/ui';
 import { getStats, getQueries, getBrands } from '../../services/api';
 import type { Stats, MonitoredQuery, TestResult, Brand } from '../../types';
 import { AI_ENGINES as ENGINES } from '../../types';
@@ -265,14 +265,11 @@ export function Overview() {
           </Grid.Col>
         </Grid>
       ) : (
-        <ChartCard title="테스트 결과" actions={false}>
-          <Center h={200}>
-            <Stack align="center" gap="sm">
-              <Text c="dimmed">아직 테스트 결과가 없습니다</Text>
-              <Text size="sm" c="dimmed">쿼리 관리에서 쿼리를 추가하고 테스트해보세요</Text>
-            </Stack>
-          </Center>
-        </ChartCard>
+        <SetupGuide
+          brandsCount={brands.length}
+          queriesCount={queries.length}
+          resultsCount={stats?.totalTests || 0}
+        />
       )}
 
       {/* 최근 테스트 결과 */}

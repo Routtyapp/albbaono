@@ -570,6 +570,191 @@ def create_worst_query_section(data: dict, styles) -> list:
     return elements
 
 
+def create_ai_summary_section(data: dict, styles) -> list:
+    """AI 종합 분석 섹션 - 좌우 분리"""
+    elements = []
+
+    ai = data.get('aiAnalysis')
+    if not ai or not ai.get('summary'):
+        return elements
+
+    left = create_left_column(
+        "AI Analysis",
+        "AI가 데이터를 분석하여 도출한 종합 인사이트입니다. 핵심 추세와 전략적 시사점을 확인하세요.",
+        styles
+    )
+
+    # 오른쪽: 요약 + 하이라이트
+    right_elements = []
+    right_elements.append(Paragraph(ai['summary'], styles['Body']))
+    right_elements.append(Spacer(1, 8))
+
+    ai_highlights = ai.get('highlights', [])
+    if ai_highlights:
+        for i, h in enumerate(ai_highlights[:5], 1):
+            right_elements.append(Paragraph(
+                f"<font color='{COLORS['gray']}'>{i:02d}</font>  {h}",
+                styles['Body']
+            ))
+
+    right_table = Table([[c] for c in right_elements], colWidths=[RIGHT_COL_WIDTH - 0.5*cm])
+    right_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ('TOPPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+    ]))
+
+    elements.append(create_two_column_section(left, right_table))
+    elements.append(Spacer(1, 20))
+
+    return elements
+
+
+def create_ai_category_section(data: dict, styles) -> list:
+    """AI 카테고리별 분석 섹션 - 좌우 분리"""
+    elements = []
+
+    ai = data.get('aiAnalysis')
+    if not ai:
+        return elements
+
+    cat_analysis = ai.get('categoryAnalysis', [])
+    if not cat_analysis:
+        return elements
+
+    left = create_left_column(
+        "Category Insights",
+        "카테고리별 인용 성과와 원인 분석입니다. 각 카테고리의 강점과 개선 방향을 파악하세요.",
+        styles
+    )
+
+    header_row = [
+        Paragraph("Category", styles['TableHeader']),
+        Paragraph("Rate", styles['TableHeader']),
+        Paragraph("Insight", styles['TableHeader']),
+    ]
+    table_data = [header_row]
+
+    for ca in cat_analysis[:6]:
+        category = ca.get('category', '')
+        rate = ca.get('citationRate', 0)
+        insight = ca.get('insight', '')
+        if len(insight) > 80:
+            insight = insight[:80] + '...'
+
+        rate_color = get_verdict_color(rate)
+
+        row = [
+            Paragraph(f"<b>{category}</b>", styles['TableCell']),
+            Paragraph(f"<font color='{rate_color}'><b>{rate}%</b></font>", styles['TableCellCenter']),
+            Paragraph(insight, styles['TableCell']),
+        ]
+        table_data.append(row)
+
+    right_table = Table(table_data, colWidths=[2.5*cm, 1.8*cm, 7.2*cm])
+    right_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4c1d95')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor(COLORS['gray_lighter'])),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor(COLORS['gray_lightest'])]),
+    ]))
+
+    elements.append(create_two_column_section(left, right_table))
+    elements.append(Spacer(1, 20))
+
+    return elements
+
+
+def create_ai_competitor_section(data: dict, styles) -> list:
+    """AI 경쟁사 분석 섹션 - 좌우 분리"""
+    elements = []
+
+    ai = data.get('aiAnalysis')
+    if not ai or not ai.get('competitorAnalysis'):
+        return elements
+
+    left = create_left_column(
+        "Competitor Analysis",
+        "AI 검색 결과에서의 경쟁사 포지셔닝 분석입니다. 차별화 전략 수립에 활용하세요.",
+        styles
+    )
+
+    right_elements = []
+    right_elements.append(Paragraph(ai['competitorAnalysis'], styles['Body']))
+
+    right_table = Table([[c] for c in right_elements], colWidths=[RIGHT_COL_WIDTH - 0.5*cm])
+    right_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ('TOPPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+    ]))
+
+    elements.append(create_two_column_section(left, right_table))
+    elements.append(Spacer(1, 20))
+
+    return elements
+
+
+def create_ai_action_items_section(data: dict, styles) -> list:
+    """AI 개선 제안 섹션 - 좌우 분리"""
+    elements = []
+
+    ai = data.get('aiAnalysis')
+    if not ai:
+        return elements
+
+    action_items = ai.get('actionItems', [])
+    if not action_items:
+        return elements
+
+    left = create_left_column(
+        "Action Items",
+        "AI 분석 기반의 구체적 개선 제안입니다. 우선순위에 따라 실행하세요.",
+        styles
+    )
+
+    header_row = [
+        Paragraph("No.", styles['TableHeader']),
+        Paragraph("Action Item", styles['TableHeader']),
+    ]
+    table_data = [header_row]
+
+    for i, item in enumerate(action_items[:7], 1):
+        if len(item) > 100:
+            item = item[:100] + '...'
+        row = [
+            Paragraph(f"<b>{i:02d}</b>", styles['TableCellCenter']),
+            Paragraph(item, styles['TableCell']),
+        ]
+        table_data.append(row)
+
+    right_table = Table(table_data, colWidths=[1.2*cm, 10.3*cm])
+    right_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#065f46')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (0, -1), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor(COLORS['gray_lighter'])),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor(COLORS['gray_lightest'])]),
+    ]))
+
+    elements.append(create_two_column_section(left, right_table))
+    elements.append(Spacer(1, 20))
+
+    return elements
+
+
 def create_recommendation_section(data: dict, styles) -> list:
     """Recommendations 섹션 - 좌우 분리"""
     elements = []
@@ -703,6 +888,27 @@ def generate_pdf(data: dict, charts_dir: str, output_path: str):
     ]))
     elements.append(header_table)
     elements.append(Spacer(1, 20))
+
+    # AI Analysis Sections (aiAnalysis가 있을 때만 렌더링)
+    if data.get('aiAnalysis'):
+        elements.extend(create_ai_summary_section(data, styles))
+        elements.extend(create_ai_category_section(data, styles))
+        elements.extend(create_ai_competitor_section(data, styles))
+        elements.extend(create_ai_action_items_section(data, styles))
+
+        # AI 섹션이 있으면 새 페이지에서 쿼리 섹션 시작
+        elements.append(PageBreak())
+        header_data2 = [[
+            Paragraph(f"<b>{report_type} REPORT</b>", styles['PageHeader']),
+            Paragraph("GEO VISIBILITY AUDIT", styles['PageHeader']),
+        ]]
+        header_table2 = Table(header_data2, colWidths=[8*cm, 8.5*cm])
+        header_table2.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+            ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+        ]))
+        elements.append(header_table2)
+        elements.append(Spacer(1, 20))
 
     # Top Queries
     elements.extend(create_query_section(data, styles, charts_dir))

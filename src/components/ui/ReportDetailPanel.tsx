@@ -17,6 +17,10 @@ import {
   IconStar,
   IconAlertTriangle,
   IconTrash,
+  IconBrain,
+  IconCategory,
+  IconUsers,
+  IconBulb,
 } from '@tabler/icons-react';
 import type { Report } from '../../types';
 
@@ -79,7 +83,7 @@ export function ReportDetailPanel({
   const isWeekly = report.type === 'weekly';
 
   // 엔진별 성능 차트 데이터
-  const engineChartData = report.metrics.enginePerformance.map((ep) => ({
+  const engineChartData = (report.metrics.enginePerformance ?? []).map((ep) => ({
     name: ep.engine,
     citationRate: ep.citationRate,
     avgRank: ep.avgRank ?? 0,
@@ -154,7 +158,7 @@ export function ReportDetailPanel({
         <Grid.Col span={{ base: 6, sm: 3 }}>
           <StatBox
             label="평균 순위"
-            value={report.metrics.avgRank !== null ? `#${report.metrics.avgRank.toFixed(1)}` : '-'}
+            value={report.metrics.avgRank != null ? `#${report.metrics.avgRank.toFixed(1)}` : '-'}
             change={report.metrics.avgRankChange}
             color="blue"
           />
@@ -185,6 +189,87 @@ export function ReportDetailPanel({
             ))}
           </List>
         </Paper>
+      )}
+
+      {/* AI 분석 결과 */}
+      {report.aiAnalysis && (
+        <>
+          {/* AI 종합 분석 */}
+          <Paper p="md" radius="md" withBorder>
+            <Group gap="xs" mb="md">
+              <ThemeIcon size="sm" variant="light" color="violet">
+                <IconBrain size={14} />
+              </ThemeIcon>
+              <Text fw={500}>AI 종합 분석</Text>
+            </Group>
+            <Text size="sm" style={{ lineHeight: 1.7 }}>
+              {report.aiAnalysis.summary}
+            </Text>
+          </Paper>
+
+          {/* 카테고리별 분석 */}
+          {report.aiAnalysis.categoryAnalysis.length > 0 && (
+            <Paper p="md" radius="md" withBorder>
+              <Group gap="xs" mb="md">
+                <ThemeIcon size="sm" variant="light" color="blue">
+                  <IconCategory size={14} />
+                </ThemeIcon>
+                <Text fw={500}>카테고리별 분석</Text>
+              </Group>
+              <Grid>
+                {report.aiAnalysis.categoryAnalysis.map((ca, i) => (
+                  <Grid.Col key={i} span={{ base: 12, sm: 6 }}>
+                    <Paper p="sm" radius="sm" withBorder>
+                      <Group justify="space-between" mb="xs">
+                        <Text size="sm" fw={500}>{ca.category}</Text>
+                        <Badge
+                          color={ca.citationRate >= 70 ? 'green' : ca.citationRate >= 40 ? 'yellow' : 'red'}
+                          variant="light"
+                          size="sm"
+                        >
+                          {ca.citationRate}%
+                        </Badge>
+                      </Group>
+                      <Text size="xs" c="dimmed">{ca.insight}</Text>
+                    </Paper>
+                  </Grid.Col>
+                ))}
+              </Grid>
+            </Paper>
+          )}
+
+          {/* 경쟁사 분석 */}
+          {report.aiAnalysis.competitorAnalysis && (
+            <Paper p="md" radius="md" withBorder>
+              <Group gap="xs" mb="md">
+                <ThemeIcon size="sm" variant="light" color="orange">
+                  <IconUsers size={14} />
+                </ThemeIcon>
+                <Text fw={500}>경쟁사 분석</Text>
+              </Group>
+              <Text size="sm" style={{ lineHeight: 1.7 }}>
+                {report.aiAnalysis.competitorAnalysis}
+              </Text>
+            </Paper>
+          )}
+
+          {/* 개선 제안 */}
+          {report.aiAnalysis.actionItems.length > 0 && (
+            <Paper p="md" radius="md" withBorder>
+              <Group gap="xs" mb="md">
+                <ThemeIcon size="sm" variant="light" color="green">
+                  <IconBulb size={14} />
+                </ThemeIcon>
+                <Text fw={500}>개선 제안</Text>
+              </Group>
+              <List size="sm" spacing="xs" type="ordered">
+                {report.aiAnalysis.actionItems.map((item, i) => (
+                  <List.Item key={i}>{item}</List.Item>
+                ))}
+              </List>
+            </Paper>
+          )}
+        </>
       )}
 
       {/* AI 엔진별 성능 */}

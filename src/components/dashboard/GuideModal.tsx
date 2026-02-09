@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import {
   Modal,
   NavLink,
@@ -23,6 +24,7 @@ import {
   IconTrophy,
   IconAlertTriangle,
   IconInfoCircle,
+  IconTrendingUp,
 } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 
@@ -36,6 +38,7 @@ const menuItems = [
   { key: 'brands', label: '브랜드 설정', icon: IconTags },
   { key: 'queries', label: '쿼리 관리', icon: IconMessageQuestion },
   { key: 'visibility', label: 'AI 가시성', icon: IconEye },
+  { key: 'trend', label: '트렌드 분석', icon: IconTrendingUp },
   { key: 'insights', label: 'AI 인사이트', icon: IconBrain },
   { key: 'reports', label: '리포트', icon: IconFileDescription },
   { key: 'score', label: 'GEO 점수', icon: IconTrophy },
@@ -100,7 +103,8 @@ function GuideContent({ active }: { active: string }) {
         </Section>
         <Section title="최근 테스트 차트">
           <Text fz="sm" c="dimmed" lh={1.7}>
-            최근 10건의 테스트 결과가 막대 차트로 표시됩니다. 인용 여부를 시각적으로 확인하여 시간에 따른 추이를 파악하세요.
+            최근 10건의 테스트 결과가 막대 차트로 표시됩니다. 인용 여부를 시각적으로 확인하여 단기적인 추이를 파악하세요.
+            장기적인 시계열 분석은 "트렌드" 탭에서 확인할 수 있습니다.
           </Text>
         </Section>
         <Section title="처음 시작하기">
@@ -109,6 +113,7 @@ function GuideContent({ active }: { active: string }) {
             '"쿼리 관리"에서 AI에게 테스트할 질문을 추가합니다.',
             '쿼리를 브랜드에 연결하고 테스트를 실행합니다.',
             '개요 페이지로 돌아와 전체 성과를 확인합니다.',
+            '데이터가 쌓이면 "트렌드" 탭에서 시간에 따른 인용률 변화를 분석합니다.',
           ]} />
         </Section>
       </Stack>
@@ -240,6 +245,52 @@ function GuideContent({ active }: { active: string }) {
         </Tip>
       </Stack>
     ),
+    trend: (
+      <Stack gap="lg">
+        <Section title="트렌드 분석이란?">
+          <Text fz="sm" c="dimmed" lh={1.7}>
+            트렌드 분석은 시간에 따른 AI 인용률의 변화를 시각적으로 보여줍니다.
+            "개요" 탭이 현재 시점의 스냅샷이라면, "트렌드" 탭은 시간축을 기반으로
+            인용률이 올라가고 있는지, 내려가고 있는지를 파악할 수 있는 시계열 분석 도구입니다.
+          </Text>
+        </Section>
+        <Section title="기간 선택">
+          <List spacing="xs" fz="sm" c="dimmed">
+            <List.Item><b>1주</b> — 최근 7일간의 일별 추이를 확인합니다. 단기 변동 파악에 적합합니다.</List.Item>
+            <List.Item><b>1개월</b> — 최근 30일간의 주별 추이를 확인합니다. 기본 선택값입니다.</List.Item>
+            <List.Item><b>3개월</b> — 최근 90일간의 주별 추이를 확인합니다. 장기 트렌드 파악에 적합합니다.</List.Item>
+          </List>
+        </Section>
+        <Section title="3가지 차트">
+          <List spacing="xs" fz="sm" c="dimmed">
+            <List.Item>
+              <b>전체 인용률 추이</b> — 전체 테스트에 대한 인용률(%)을 시간순으로 표시합니다.
+              인용률의 상승/하락 추세를 한눈에 파악할 수 있습니다.
+            </List.Item>
+            <List.Item>
+              <b>엔진별 인용률 추이</b> — ChatGPT와 Gemini 각 엔진의 인용률을 색상별로 구분하여 비교합니다.
+              특정 엔진에서 인용률이 더 높거나 낮은 패턴을 발견할 수 있습니다.
+            </List.Item>
+            <List.Item>
+              <b>카테고리별 인용률</b> — 쿼리 카테고리(제품 추천, 서비스 비교 등)별 평균 인용률을 비교합니다.
+              어떤 유형의 질문에서 브랜드가 잘 인용되는지 파악하세요.
+            </List.Item>
+          </List>
+        </Section>
+        <Section title="활용 방법">
+          <Steps steps={[
+            '1개월 또는 3개월 기간을 선택하여 전체적인 추세를 파악합니다.',
+            '인용률이 하락한 시점이 있다면 해당 기간에 어떤 변화가 있었는지 점검합니다.',
+            '엔진별 차이가 크다면 특정 엔진에 맞춘 콘텐츠 전략을 수립합니다.',
+            '인용률이 낮은 카테고리를 집중적으로 개선합니다.',
+          ]} />
+        </Section>
+        <Tip>
+          데이터가 충분히 쌓여야 의미 있는 트렌드를 볼 수 있습니다. 스케줄러를 활용하여
+          정기적으로 테스트를 실행하면 더 정확한 시계열 분석이 가능합니다.
+        </Tip>
+      </Stack>
+    ),
     insights: (
       <Stack gap="lg">
         <Section title="인사이트 생성 방법">
@@ -318,7 +369,7 @@ function GuideContent({ active }: { active: string }) {
         </Section>
         <Tip>
           주간 리포트로 단기 변화를 추적하고, 월간 리포트로 장기적인 트렌드를 파악하세요.
-          리포트를 정기적으로 생성하면 시간에 따른 개선 효과를 객관적으로 측정할 수 있습니다.
+          리포트와 함께 "트렌드" 탭의 시계열 차트를 활용하면 인용률 변화를 더 직관적으로 분석할 수 있습니다.
         </Tip>
       </Stack>
     ),
@@ -394,6 +445,7 @@ function GuideContent({ active }: { active: string }) {
 }
 
 export function GuideModal({ opened, onClose }: GuideModalProps) {
+  useBodyScrollLock(opened);
   const [active, setActive] = useState('overview');
 
   return (
@@ -408,6 +460,7 @@ export function GuideModal({ opened, onClose }: GuideModalProps) {
       }
       size="xl"
       centered
+      lockScroll={false}
       styles={{
         body: { padding: 0, overflow: 'hidden' },
       }}

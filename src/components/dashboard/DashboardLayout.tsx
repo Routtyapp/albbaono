@@ -1,18 +1,39 @@
+import { useState, useEffect } from 'react';
 import { AppShell } from '@mantine/core';
 import { useDisclosure, useLocalStorage } from '@mantine/hooks';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { DashboardHeader } from './DashboardHeader';
+import { WelcomeModal } from './WelcomeModal';
+import { useAuth } from '../../contexts/AuthContext';
 
 type SidebarPosition = 'left' | 'right';
 
 export function DashboardLayout() {
+  const { user } = useAuth();
   const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
   const [desktopCollapsed, { toggle: toggleDesktop }] = useDisclosure();
   const [sidebarPosition, setSidebarPosition] = useLocalStorage<SidebarPosition>({
     key: 'sidebar-position',
     defaultValue: 'right',
   });
+
+  const [welcomeDismissed, setWelcomeDismissed] = useLocalStorage<boolean>({
+    key: 'welcome-dismissed',
+    defaultValue: false,
+  });
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+
+  useEffect(() => {
+    if (!welcomeDismissed) {
+      setWelcomeOpen(true);
+    }
+  }, [welcomeDismissed]);
+
+  const handleCloseWelcome = () => {
+    setWelcomeOpen(false);
+    setWelcomeDismissed(true);
+  };
 
   const sidebarWidth = desktopCollapsed ? 64 : 320;
 
@@ -26,6 +47,12 @@ export function DashboardLayout() {
   );
 
   return (
+    <>
+    <WelcomeModal
+      opened={welcomeOpen}
+      onClose={handleCloseWelcome}
+      userName={user?.name}
+    />
     <AppShell
       layout="alt"
       header={{ height: 52 }}
@@ -82,5 +109,6 @@ export function DashboardLayout() {
         </div>
       </AppShell.Main>
     </AppShell>
+    </>
   );
 }

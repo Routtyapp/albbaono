@@ -46,6 +46,7 @@ router.post('/pdf', async (req: Request, res: Response) => {
       worstQueries: reportData.worstQueries || [],
       trend: reportData.trend,
       categoryDistribution: reportData.categoryDistribution,
+      aiAnalysis: reportData.aiAnalysis || null,
     };
 
     console.log('Generating PDF report:', fullReportData.title);

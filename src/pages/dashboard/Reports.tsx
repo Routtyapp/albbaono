@@ -21,12 +21,15 @@ import {
   IconCalendarWeek,
   IconCalendarMonth,
   IconSelect,
+  IconPlayerPlay,
 } from '@tabler/icons-react';
+import { useNavigate } from 'react-router-dom';
 import { getReports, getStats, generateReport, downloadReportPdf, deleteReport } from '../../services/api';
 import type { Report, Stats } from '../../types';
 import { ReportsSkeleton, ReportListItem, ReportDetailPanel } from '../../components/ui';
 
 export function Reports() {
+  const navigate = useNavigate();
   const [reports, setReports] = useState<Report[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -132,6 +135,7 @@ export function Reports() {
         highlights: selectedReport.highlights,
         topQueries: selectedReport.topQueries,
         worstQueries: selectedReport.worstQueries,
+        aiAnalysis: selectedReport.aiAnalysis || null,
       };
 
       const blob = await downloadReportPdf(pdfData);
@@ -241,21 +245,31 @@ export function Reports() {
 
       {reports.length === 0 ? (
         <Paper p="xl" radius="md" withBorder>
-          <Center>
-            <Stack align="center" gap="md">
-              <ThemeIcon size="xl" variant="light" color="gray">
-                <IconFileDescription size={24} />
-              </ThemeIcon>
-              <div style={{ textAlign: 'center' }}>
-                <Text fw={500}>생성된 리포트가 없습니다</Text>
-                <Text size="sm" c="dimmed">
-                  {stats && stats.totalTests >= 5
-                    ? '상단의 "리포트 생성" 버튼을 클릭하여 리포트를 생성하세요'
-                    : `리포트 생성을 위해 최소 5개의 테스트가 필요합니다 (현재: ${stats?.totalTests || 0}개)`}
+          <Stack align="center" gap="md">
+            <ThemeIcon size="xl" variant="light" color="gray">
+              <IconFileDescription size={24} />
+            </ThemeIcon>
+            <Text fw={500}>생성된 리포트가 없습니다</Text>
+            {stats && stats.totalTests >= 5 ? (
+              <Text size="sm" c="dimmed" ta="center">
+                상단의 "리포트 생성" 버튼을 클릭하여 주간 또는 월간 리포트를 생성하세요.
+              </Text>
+            ) : (
+              <>
+                <Text size="sm" c="dimmed" ta="center" maw={400}>
+                  리포트를 생성하려면 최소 5개의 테스트가 필요합니다.
+                  현재 {stats?.totalTests || 0}개의 테스트가 완료되었습니다.
                 </Text>
-              </div>
-            </Stack>
-          </Center>
+                <Button
+                  variant="light"
+                  leftSection={<IconPlayerPlay size={16} />}
+                  onClick={() => navigate('/dashboard/query-ops')}
+                >
+                  쿼리 운영에서 테스트 실행하기
+                </Button>
+              </>
+            )}
+          </Stack>
         </Paper>
       ) : (
         <Grid>

@@ -233,7 +233,7 @@ export function ScoreOverview() {
                 value={maxSubpages}
                 onChange={(val) => setMaxSubpages(val === '' ? '' : Number(val))}
                 min={1}
-                max={20}
+                max={50}
                 w={150}
                 disabled={loading}
               />

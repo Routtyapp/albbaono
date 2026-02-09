@@ -2,14 +2,297 @@
 
 AI 가시성(GEO - Generative Engine Optimization) 분석 및 리포팅 플랫폼
 
+ChatGPT, Gemini 등 생성형 AI 검색 결과에서 브랜드가 얼마나 노출되고 인용되는지를 추적하고, 분석 리포트와 개선 인사이트를 제공합니다.
+
 ---
 
-## PDF 생성 시스템 아키텍처
+## 주요 기능
 
-### 1. 전체 파이프라인 개요
+### 브랜드 관리
+- 모니터링 대상 브랜드 등록/수정/삭제
+- 경쟁사 브랜드 추적
+- 브랜드별 인용 통계
 
-본 프로젝트의 PDF 생성 시스템은 **3계층 하이브리드 아키텍처**를 채택하고 있습니다.
+### 쿼리 모니터링
+- AI 엔진에 테스트할 쿼리 관리 (일간/주간/월간 빈도 설정)
+- 쿼리-브랜드 연결 관리
+- ChatGPT (GPT-4o-mini), Gemini (2.0 Flash) 엔진 대상 실시간 테스트
+- 인용 여부, 응답 내용, 브랜드 노출 순위 기록
 
+### 성과 대시보드
+- 전체 인용률, 테스트 수, SOV(Share of Voice) 등 핵심 KPI
+- 기간별 가시성 트렌드 차트
+- AI 엔진별 성과 비교
+- **트렌드 분석**: 시계열 인용률 추이 (1주/1개월/3개월 기간 선택)
+  - 전체 인용률 추이 AreaChart
+  - 엔진별(ChatGPT vs Gemini) 인용률 비교 AreaChart
+  - 카테고리별 평균 인용률 비교 BarChart
+
+### GEO Score 분석
+- URL 기반 GEO 최적화 점수 측정 (100점 만점, A+~F 등급)
+- 5개 카테고리 분석: 콘텐츠, 구조, 스키마 마크업, 메타태그, URL
+- 항목별 통과/미통과 상태 및 개선 권장사항
+- 경쟁사 URL 비교 분석
+
+### 리포트 & 인사이트
+- 주간/월간 AI 가시성 리포트 자동 생성
+- AI 기반 인사이트 생성 (키워드 패턴, 카테고리별 분석, 콘텐츠 갭)
+- PDF 리포트 다운로드 (가시성 리포트, GEO Score 리포트, 인사이트 리포트)
+
+### 자동화 스케줄러
+- node-cron 기반 쿼리 자동 실행 (일간/주간/월간)
+- 실행 시간/요일 설정
+- 실행 이력 관리
+
+---
+
+## 기술 스택
+
+| 계층 | 기술 | 설명 |
+|------|------|------|
+| **프론트엔드** | React 19, TypeScript, Vite 7 | SPA 프레임워크 |
+| **UI 라이브러리** | Mantine 8 | 컴포넌트, 폼, 차트, 알림 |
+| **차트** | Mantine Charts (BarChart, AreaChart) | 대시보드 데이터 시각화 |
+| **라우팅** | React Router DOM 7 | 페이지 라우팅 |
+| **리치 텍스트** | TipTap 3 | 에디터 컴포넌트 |
+| **백엔드** | Node.js, Express 4, TypeScript | REST API 서버 |
+| **데이터베이스** | SQLite (better-sqlite3) | 로컬 영구 저장소 |
+| **인증** | Passport.js (Local Strategy) | 세션 기반 인증 |
+| **AI 연동** | OpenAI API, Google Generative AI | 쿼리 테스트 엔진 |
+| **웹 크롤링** | Puppeteer-core, Cheerio | GEO Score 분석용 |
+| **PDF 엔진** | Python ReportLab, Matplotlib | 리포트 PDF 생성 |
+| **스케줄러** | node-cron | 자동화 작업 |
+| **테스트** | Vitest, Testing Library, jsdom | 단위/컴포넌트 테스트 |
+| **린팅** | ESLint 9, TypeScript ESLint | 코드 품질 |
+
+---
+
+## 프로젝트 구조
+
+```
+geo-tracker/
+├── src/                           # 프론트엔드 (React)
+│   ├── components/
+│   │   ├── common/                # 공통 레이아웃 (Header, Footer)
+│   │   ├── dashboard/             # 대시보드 레이아웃, 사이드바
+│   │   ├── ui/                    # UI 컴포넌트 (카드, 패널)
+│   │   ├── sections/              # 랜딩 페이지 섹션
+│   │   └── ProtectedRoute.tsx     # 인증 라우트 가드
+│   ├── contexts/
+│   │   └── AuthContext.tsx         # 인증 Context & useAuth 훅
+│   ├── pages/
+│   │   ├── Landing.tsx            # 랜딩 페이지
+│   │   ├── Login.tsx              # 로그인
+│   │   ├── Register.tsx           # 회원가입
+│   │   └── dashboard/
+│   │       ├── PerformancePage.tsx # 성과 대시보드 (개요/가시성/트렌드 탭)
+│   │       ├── Overview.tsx       # 대시보드 오버뷰 탭
+│   │       ├── Visibility.tsx     # 가시성 탭
+│   │       ├── Trend.tsx          # 트렌드 분석 탭 (시계열 차트)
+│   │       ├── QueryOpsPage.tsx   # 쿼리 관리 & 테스트
+│   │       ├── ReportsInsightsPage.tsx # 리포트 & 인사이트
+│   │       ├── ScorePage.tsx      # GEO Score 분석
+│   │       ├── Brands.tsx         # 브랜드 관리
+│   │       └── ...
+│   ├── services/                  # API 클라이언트 모듈
+│   │   ├── client.ts             # Fetch 래퍼 (인증 헤더)
+│   │   ├── auth.ts               # 인증 API
+│   │   ├── brands.ts             # 브랜드 API
+│   │   ├── queries.ts            # 쿼리 API
+│   │   ├── results.ts            # 결과 API
+│   │   ├── reports.ts            # 리포트 API
+│   │   ├── insights.ts           # 인사이트 API
+│   │   ├── geoScore.ts           # GEO Score API
+│   │   ├── scheduler.ts          # 스케줄러 API
+│   │   └── stats.ts              # 통계 & 트렌드 API
+│   ├── db/
+│   │   ├── repositories/         # Repository 패턴 데이터 접근
+│   │   └── schema.ts             # SQLite 스키마 정의
+│   ├── types.ts                   # 공통 TypeScript 타입 (TrendData 등)
+│   ├── theme.ts                   # Mantine 테마 설정
+│   └── App.tsx                    # 루트 컴포넌트 (라우터 설정)
+│
+├── server/                        # 백엔드 (Express)
+│   └── src/
+│       ├── index.ts              # 서버 엔트리포인트 (포트 3001)
+│       ├── routes/
+│       │   ├── auth.ts           # 인증 라우트
+│       │   ├── data.ts           # 데이터 CRUD 라우트
+│       │   ├── geoScore.ts       # GEO Score 분석 라우트
+│       │   ├── reports.ts        # PDF 리포트 생성 라우트
+│       │   └── scheduler.ts      # 스케줄러 라우트
+│       ├── services/
+│       │   ├── authService.ts    # 인증 비즈니스 로직
+│       │   ├── crawler.ts        # Puppeteer 웹 크롤링
+│       │   ├── reportGenerator.ts # PDF 생성 오케스트레이션
+│       │   ├── scheduler.ts      # cron 스케줄링
+│       │   └── analyzer/         # GEO Score 분석 모듈
+│       │       ├── content.ts    # 콘텐츠 분석
+│       │       ├── structure.ts  # DOM 구조 분석
+│       │       ├── schema.ts     # 스키마 마크업 분석
+│       │       ├── meta.ts       # 메타태그 분석
+│       │       └── url.ts        # URL 구조 분석
+│       ├── utils/
+│       │   ├── scoring.ts        # 점수 계산 알고리즘
+│       │   └── recommendations.ts # 개선 권장사항 생성
+│       ├── config/
+│       │   ├── db.ts             # DB 설정
+│       │   └── passport.ts       # Passport.js 설정
+│       ├── middleware/
+│       │   └── auth.ts           # 인증 미들웨어
+│       └── scripts/              # Python PDF 생성 스크립트
+│
+├── prisma/
+│   └── dev.db                    # SQLite 데이터베이스 파일
+│
+├── vite.config.ts                 # Vite 빌드 & API 프록시 설정
+├── vitest.config.ts               # Vitest 테스트 설정
+├── tsconfig.json                  # TypeScript 설정
+├── eslint.config.js               # ESLint 설정
+└── postcss.config.cjs             # PostCSS (Mantine) 설정
+```
+
+---
+
+## API 엔드포인트
+
+### 인증 (`/api/auth`)
+
+| 메서드 | 경로 | 설명 |
+|--------|------|------|
+| POST | `/register` | 회원가입 |
+| POST | `/login` | 로그인 |
+| POST | `/logout` | 로그아웃 |
+| GET | `/me` | 현재 사용자 정보 |
+
+### 데이터 (`/api`) — 인증 필요
+
+| 메서드 | 경로 | 설명 |
+|--------|------|------|
+| GET/POST | `/brands` | 브랜드 목록 조회 / 생성 |
+| PUT/DELETE | `/brands/:id` | 브랜드 수정 / 삭제 |
+| GET/POST | `/queries` | 쿼리 목록 조회 / 생성 |
+| PUT/DELETE | `/queries/:id` | 쿼리 수정 / 삭제 |
+| PUT | `/queries/:id/brands` | 쿼리-브랜드 연결 |
+| POST | `/test-query` | AI 엔진 쿼리 테스트 실행 |
+| GET/POST | `/results` | 테스트 결과 조회 / 저장 |
+| GET/POST/DELETE | `/reports` | 리포트 관리 |
+| GET/POST/DELETE | `/insights` | 인사이트 관리 |
+| GET | `/stats` | 통계 데이터 |
+| GET | `/trends?range=week\|month\|quarter` | 시계열 트렌드 데이터 (전체/엔진별/카테고리별) |
+
+### GEO Score (`/api/geo-score`)
+
+| 메서드 | 경로 | 설명 |
+|--------|------|------|
+| POST | `/analyze` | URL GEO 점수 분석 |
+| GET | `/health` | 서비스 상태 확인 |
+
+### PDF 리포트 (`/api/reports`)
+
+| 메서드 | 경로 | 설명 |
+|--------|------|------|
+| POST | `/pdf` | AI 가시성 리포트 PDF 생성 |
+| POST | `/geo-score` | GEO Score 리포트 PDF 생성 |
+| POST | `/insights` | 인사이트 리포트 PDF 생성 |
+
+### 스케줄러 (`/api/scheduler`)
+
+| 메서드 | 경로 | 설명 |
+|--------|------|------|
+| GET | `/` | 스케줄러 상태 조회 |
+| POST | `/start` | 스케줄러 시작 |
+| POST | `/stop` | 스케줄러 중지 |
+| POST | `/run-now` | 즉시 실행 |
+| PUT | `/config` | 설정 변경 |
+
+---
+
+## 데이터베이스 스키마
+
+| 테이블 | 설명 |
+|--------|------|
+| `brands` | 브랜드 정보 (이름, 경쟁사, 활성 상태) |
+| `queries` | 모니터링 쿼리 (검색어, 카테고리, 빈도) |
+| `query_brands` | 쿼리-브랜드 다대다 관계 |
+| `results` | AI 엔진 테스트 결과 (엔진, 인용여부, 응답) |
+| `brand_results` | 브랜드별 결과 (인용여부, 순위, 경쟁사 언급) |
+| `reports` | 생성된 리포트 (기간, 지표, 하이라이트) |
+| `insights` | AI 인사이트 (키워드, 패턴, 콘텐츠 갭) |
+| `scheduler_config` | 스케줄러 설정 (싱글톤) |
+| `scheduler_history` | 스케줄러 실행 이력 |
+| `geo_scores` | GEO 점수 분석 결과 |
+
+---
+
+## 개발 환경 설정
+
+### 사전 요구사항
+- Node.js 18+
+- Python 3.8+ (PDF 생성용)
+- Chrome/Chromium (Puppeteer 크롤링용)
+
+### 환경 변수 (`.env`)
+```env
+OPENAI_API_KEY=your-openai-key
+GEMINI_API_KEY=your-gemini-key
+SESSION_SECRET=your-session-secret
+VITE_API_URL=http://localhost:3001/api
+```
+
+### 프론트엔드
+```bash
+npm install
+npm run dev          # 개발 서버 (Vite, 포트 5173)
+```
+
+### 백엔드
+```bash
+cd server
+npm install
+pip install reportlab matplotlib numpy
+npm run dev          # Express 서버 (포트 3001)
+```
+
+### 테스트
+```bash
+npm test             # 테스트 실행
+npm run test:watch   # 워치 모드
+```
+
+### 빌드
+```bash
+npm run build        # 프로덕션 빌드
+npm run preview      # 빌드 미리보기
+```
+
+---
+
+## 아키텍처
+
+### 전체 구조
+```
+[브라우저]  ──HTTP──  [Vite Dev Server :5173]  ──프록시──  [Express :3001]  ──  [SQLite]
+                                                              │
+                                                    ┌────────┼────────┐
+                                                    │        │        │
+                                               [OpenAI] [Gemini] [Puppeteer]
+                                                    │
+                                           [Python PDF 엔진]
+```
+
+### 설계 패턴
+- **Repository 패턴**: 데이터 접근 레이어 추상화
+- **Service 패턴**: 비즈니스 로직 분리 (프론트엔드 서비스 모듈, 백엔드 서비스)
+- **Context API**: React 전역 인증 상태 관리 (`useAuth` 훅)
+- **미들웨어 패턴**: Express 인증, CORS, 세션 관리
+- **하이브리드 프로세스**: Node.js → Python child_process 스폰 (PDF 생성)
+
+---
+
+## PDF 생성 시스템
+
+### 파이프라인
 ```
 [클라이언트 (React)]
         ↓ HTTP POST (JSON 데이터)
@@ -22,209 +305,35 @@ AI 가시성(GEO - Generative Engine Optimization) 분석 및 리포팅 플랫�
 [클라이언트 다운로드]
 ```
 
-이 구조는 각 언어의 강점을 활용합니다:
-- **JavaScript/TypeScript**: 웹 인터페이스 및 API 라우팅
-- **Python**: 과학 계산, 시각화, PDF 렌더링에 최적화된 라이브러리 생태계
+### 리포트 유형
 
----
+**AI 가시성 리포트 (주간/월간)**
+- 핵심 KPI 카드 (인용률, 테스트 수, SOV, 평균 순위)
+- 기간별 인용률 트렌드 차트
+- AI 엔진별 성과 비교
+- 상위/하위 쿼리 분석
+- 데이터 기반 개선 권장사항
 
-### 2. 데이터 흐름 상세
+**GEO Score 분석 리포트**
+- 종합 점수 및 등급 (A+~F)
+- 5개 카테고리별 상세 분석
+- 항목별 통과/미통과 상태
+- 우선순위별 개선 권장사항
 
-#### Phase 1: 요청 초기화
-클라이언트에서 리포트 데이터를 JSON 형태로 서버에 전송합니다. 데이터에는 핵심 지표(인용률, 테스트 수, 엔진별 성과 등)와 메타정보(기간, 타입)가 포함됩니다.
+**AI 인사이트 리포트**
+- 키워드 패턴 분석
+- 카테고리별 인사이트
+- 인용 패턴 및 콘텐츠 갭
 
-#### Phase 2: 임시 작업공간 생성
-서버는 유니크한 타임스탬프 기반 임시 디렉토리를 생성합니다. 이 공간은 중간 산출물(차트 이미지, JSON 파일)을 격리하여 동시 요청 간 충돌을 방지합니다.
+### 차트 유형
 
-#### Phase 3: 차트 렌더링 (선행 단계)
-Matplotlib 기반 Python 스크립트가 데이터를 시각화합니다:
-- **라인 차트**: 시계열 인용률 트렌드
-- **막대 차트**: AI 엔진별 성과 비교, 상위 쿼리
-- **도넛 차트**: 카테고리 분포, 달성률 게이지
-
-차트는 PNG 래스터 이미지로 저장되며, PDF 문서에 임베딩됩니다.
-
-#### Phase 4: PDF 문서 조립
-ReportLab의 Platypus 엔진이 문서를 구성합니다:
-1. **Flowable 요소 스택 구성**: Paragraph, Table, Image, Spacer 등의 요소를 순차적으로 스택에 추가
-2. **레이아웃 엔진 실행**: A4 페이지 사이즈 기준으로 자동 페이지 분할
-3. **PDF 바이너리 생성**: 벡터 그래픽과 래스터 이미지를 단일 PDF로 병합
-
-#### Phase 5: 응답 및 정리
-생성된 PDF를 바이너리 스트림으로 클라이언트에 전송한 후, 임시 디렉토리를 비동기로 삭제합니다.
-
----
-
-### 3. PDF 렌더링 알고리즘
-
-#### 3.1 문서의 설계 목표
-
-본 문서는 데이터 시각화와 감사 인증 문서의 신뢰감을 결합한다.
-
-| 목표 | 구현 방식 |
-|------|----------|
-| 데이터 가시성 | 차트, KPI 카드, 색상 코딩으로 핵심 지표 즉시 인지 |
-| 체계적 감사 인상 | 표준화된 표 구조, 섹션 넘버링, 반복 포맷 |
-| 객관적 판단 제시 | 감정 배제, 사실 나열, PASS/FAIL 명시 |
-| 기관 발행 인상 | 격식 있는 레이아웃, 인증 페이지 구성 |
-
----
-
-#### 3.2 디자인 시스템
-
-**컬러 체계**
-
-| 용도 | 컬러 | 적용 |
-|------|------|------|
-| 기본 배경 | 흑백 + 회색 | 문서 전반의 격식 |
-| 성과 지표 | 녹색/빨간색 | 증감, PASS/FAIL 판단 |
-| 등급 표시 | 그라데이션 팔레트 | A+ ~ F 시각적 구분 |
-| 엔진 구분 | 브랜드 컬러 | GPT(녹색), Gemini(파란색), Claude(주황색) |
-
-**타이포그래피**
-
-- 산세리프 폰트 사용 (Helvetica / 맑은고딕)
-- Bold / Regular 대비 명확히 구분
-- 섹션 제목은 넘버링 적용 (01, 02, 03...)
-- 자간 넓게 설정하여 가독성 확보
-
----
-
-#### 3.3 레이아웃 문법
-
-**표 기반 구조**
-
-본 문서는 표와 박스가 주인공이다. 시각적 지표도 표 구조 안에서 제시한다.
-
-| 요소 | 목적 |
-|------|------|
-| 표 (Table) | 논리와 체계 인상. 데이터 비교에 사용 |
-| 지표 카드 | KPI의 즉각적 인지. 표 셀 내 배치 |
-| 차트 | 트렌드와 분포의 시각화. 표와 함께 배치 |
-| 박스 | 통제된 정보 영역. 요약/결론에 사용 |
-| 선 | 섹션 구분과 정보 분해 |
-
-**좌우 분리 레이아웃**
-
-복합 정보 제시 시 좌우 분리를 활용한다.
-
-| 좌측 | 우측 |
-|------|------|
-| 분석 대상 (팩트) | 분석 관점 (해석/기준) |
-| 차트/지표 | 설명/판단 |
-
----
-
-#### 3.4 섹션 흐름 설계
-
-문서는 다음 순서를 따른다. 데이터 제시에서 인증으로 승격되는 구조이다.
-
-| 순서 | 섹션 | 역할 | 주요 요소 |
-|------|------|------|----------|
-| 01 | SUMMARY | 핵심 지표 요약 | KPI 카드, 증감 표시 |
-| 02 | TREND | 추이 분석 | 라인 차트 |
-| 03 | PROFILE | 상세 분석 | 엔진별/쿼리별 표, 막대 차트 |
-| 04 | ISSUE | 개선 필요 항목 | 문제점 테이블 |
-| 05 | RECOMMENDATION | 권장 사항 | 판단 및 제안 |
-| 06 | CERTIFICATION | 문서 인증 | 생성 정보, 푸터 |
-
----
-
-#### 3.5 문체 스타일
-
-| 요소 | 원칙 |
-|------|------|
-| 감정 | 배제 |
-| 형용사 | 최소화 |
-| 서술 | 사실 나열 |
-| 판단 | 명시적 (PASS/FAIL, 양호/개선필요) |
-
----
-
-#### 3.6 기술 구현
-
-**스타일 시트 패턴**: ParagraphStyle 객체를 통해 재사용 가능한 타이포그래피 정의를 관리한다. 폰트, 크기, 행간, 정렬, 색상을 캡슐화하여 일관성을 보장한다.
-
-**테이블 기반 레이아웃**: Table 객체와 TableStyle을 통해 지표 카드와 데이터 그리드를 구현한다. 셀 병합, 배경색, 테두리, 패딩을 선언적으로 정의한다.
-
-**한글 폰트 처리**:
-1. Windows 폰트 디렉토리에서 맑은 고딕 또는 나눔고딕 검색
-2. TTFont 객체로 등록 후 전역 폰트 변수에 할당
-3. 폰트 미발견 시 Helvetica 폴백
-
-**페이지 분할 로직**:
-- 요소가 현재 페이지 잔여 공간을 초과하면 자동으로 다음 페이지로 이동
-- KeepTogether 래퍼로 묶인 요소는 분리되지 않음
-- 주요 섹션은 PageBreak로 새 페이지에서 시작
-
----
-
-### 4. 차트 생성 알고리즘
-
-#### 4.1 시각화 설계 원칙
-
-**색상 시스템**: AI 엔진별 고유 색상(GPT: 녹색, Gemini: 파란색, Claude: 주황색 등)을 정의하여 브랜드 인식성을 높입니다.
-
-**반응형 레이블링**: 데이터 포인트 위에 값을 표시하고, 긴 텍스트는 말줄임 처리합니다.
-
-**그라데이션 및 투명도**: 라인 차트 아래 영역을 반투명으로 채워 시각적 무게감을 부여합니다.
-
-#### 4.2 차트 유형별 특성
-
-| 차트 유형 | 용도 | 주요 파라미터 |
-|-----------|------|---------------|
-| 라인 차트 | 시계열 트렌드 | 마커 크기, 선 두께, 영역 투명도 |
-| 수평 막대 | 엔진별 비교 | 막대 높이, 레이블 위치, 색상 매핑 |
-| 수직 막대 | 쿼리별 성과 | 그라데이션 색상, 회전 레이블 |
-| 도넛 차트 | 비율 표현 | 중앙 홀 크기, 폭발 효과, 시작 각도 |
-
----
-
-### 5. 리포트 유형
-
-#### 5.1 AI 가시성 리포트 (주간/월간)
-- **요약 섹션**: 핵심 KPI 카드 (인용률, 테스트 수, SOV, 평균 순위)
-- **트렌드 섹션**: 기간별 인용률 변화 차트
-- **엔진 분석**: AI 엔진별 성과 비교 테이블 및 차트
-- **쿼리 분석**: 상위/하위 쿼리 테이블
-- **권장 사항**: 데이터 기반 자동 생성 개선 제안
-
-#### 5.2 GEO Score 분석 리포트
-- **종합 점수**: 100점 만점 점수 및 등급 (A+ ~ F)
-- **카테고리 분석**: 구조, 스키마, URL, 메타태그, 콘텐츠 5개 영역
-- **상세 항목**: 각 카테고리 내 개별 체크 항목 통과/미통과 상태
-- **개선 권장사항**: 우선순위별 문제점 및 해결 제안
-- **페이지별 점수**: 다중 페이지 분석 시 개별 페이지 점수
-
----
-
-### 6. 기술 스택
-
-| 계층 | 기술 | 역할 |
-|------|------|------|
-| 프론트엔드 | React + TypeScript | 사용자 인터페이스 |
-| 서버 | Node.js + Express | API 라우팅, 프로세스 관리 |
-| PDF 엔진 | Python ReportLab | 벡터 PDF 생성 |
-| 차트 엔진 | Python Matplotlib | 래스터 시각화 |
-| 프로세스 통신 | child_process.spawn | Node-Python IPC |
-
----
-
-## 개발 환경 설정
-
-### 프론트엔드
-```bash
-npm install
-npm run dev
-```
-
-### 서버 (PDF 생성 포함)
-```bash
-cd server
-npm install
-pip install reportlab matplotlib numpy
-npm run dev
-```
+| 차트 | 용도 | 사용처 |
+|------|------|--------|
+| AreaChart | 시계열 인용률 추이 (전체, 엔진별) | 트렌드 탭, PDF 리포트 |
+| BarChart (수평) | AI 엔진별 성과 비교 | 리포트 상세, 오버뷰 |
+| BarChart (수직) | 카테고리별/쿼리별 성과 | 트렌드 탭, 리포트 |
+| 라인 차트 (PDF) | 시계열 인용률 트렌드 | PDF 리포트 |
+| 도넛 차트 (PDF) | 카테고리 분포, 달성률 | PDF 리포트 |
 
 ---
 

@@ -1,9 +1,14 @@
 export { Overview } from './Overview';
 export { Brands } from './Brands';
 export { Visibility } from './Visibility';
-export { Queries } from './Queries';
 export { Reports } from './Reports';
 export { Insights } from './Insights';
 export { ScoreOverview } from './ScoreOverview';
 export { ScoreAnalysis } from './ScoreAnalysis';
 export { ScoreCompetitors } from './ScoreCompetitors';
+export { PerformancePage } from './PerformancePage';
+export { QueryOpsPage } from './QueryOpsPage';
+export { SchedulerPage } from './SchedulerPage';
+export { ScorePage } from './ScorePage';
+export { ReportsInsightsPage } from './ReportsInsightsPage';
+export { Trend } from './Trend';

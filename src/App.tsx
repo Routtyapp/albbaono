@@ -2,14 +2,15 @@
 // All packages except `@mantine/hooks` require styles imports
 import '@mantine/core/styles.css';
 import '@mantine/charts/styles.css';
+import '@mantine/dates/styles.css';
 
 import { MantineProvider } from '@mantine/core';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { theme } from './theme';
 import { Layout } from './components/common';
 import { DashboardLayout } from './components/dashboard';
 import { Landing } from './pages';
-import { Overview, Brands, Visibility, Queries, Reports, ScoreOverview, ScoreAnalysis, ScoreCompetitors, Insights } from './pages/dashboard';
+import { Brands, PerformancePage, QueryOpsPage, ReportsInsightsPage, ScorePage, SchedulerPage } from './pages/dashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -44,17 +45,21 @@ export default function App() {
                 </ProtectedRoute>
               }
             >
-              {/* GEO Tracker */}
-              <Route index element={<Overview />} />
+              {/* New primary routes */}
+              <Route index element={<Navigate to="/dashboard/performance?tab=overview" replace />} />
+              <Route path="performance" element={<PerformancePage />} />
+              <Route path="query-ops" element={<QueryOpsPage />} />
+              <Route path="scheduler" element={<SchedulerPage />} />
               <Route path="brands" element={<Brands />} />
-              <Route path="visibility" element={<Visibility />} />
-              <Route path="queries" element={<Queries />} />
-              <Route path="reports" element={<Reports />} />
-              <Route path="insights" element={<Insights />} />
-              {/* GEO Score */}
-              <Route path="score" element={<ScoreOverview />} />
-              <Route path="score/analysis" element={<ScoreAnalysis />} />
-              <Route path="score/competitors" element={<ScoreCompetitors />} />
+              <Route path="reports" element={<ReportsInsightsPage />} />
+              <Route path="score" element={<ScorePage />} />
+
+              {/* Legacy route redirects */}
+              <Route path="visibility" element={<Navigate to="/dashboard/performance?tab=visibility" replace />} />
+              <Route path="queries" element={<Navigate to="/dashboard/query-ops?tab=queries" replace />} />
+              <Route path="insights" element={<Navigate to="/dashboard/reports?tab=insights" replace />} />
+              <Route path="score/analysis" element={<Navigate to="/dashboard/score?tab=technical" replace />} />
+              <Route path="score/competitors" element={<Navigate to="/dashboard/score?tab=competitors" replace />} />
             </Route>
           </Routes>
         </BrowserRouter>

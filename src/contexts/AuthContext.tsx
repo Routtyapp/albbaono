@@ -1,46 +1,37 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
+import {
+  getCurrentUser,
+  loginUser,
+  logoutUser,
+  registerUser,
+  type User,
+} from '../services/auth';
 
-// 사용자 타입
-export interface User {
-  id: string;
-  email: string;
-  name: string | null;
-  role: string;
-  is_active: number;
-  created_at: string;
-  updated_at: string;
-  last_login: string | null;
+interface AuthResult {
+  success: boolean;
+  message: string;
 }
 
-// 인증 컨텍스트 타입
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
-  register: (email: string, password: string, name?: string) => Promise<{ success: boolean; message: string }>;
+  login: (email: string, password: string) => Promise<AuthResult>;
+  register: (email: string, password: string, name?: string) => Promise<AuthResult>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// API Base URL - 환경변수 사용, 없으면 상대경로 (같은 도메인)
-const API_BASE = import.meta.env.VITE_API_URL || '';
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 인증 상태 확인
   const checkAuth = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/auth/me`, {
-        credentials: 'include',
-      });
-      const data = await response.json();
-
+      const data = await getCurrentUser();
       if (data.success && data.user) {
         setUser(data.user);
       } else {
@@ -53,59 +44,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // 초기 인증 상태 확인
   useEffect(() => {
     checkAuth();
   }, []);
 
-  // 로그인
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<AuthResult> => {
     try {
-      const response = await fetch(`${API_BASE}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await response.json();
+      const data = await loginUser(email, password);
 
       if (data.success && data.user) {
         setUser(data.user);
         return { success: true, message: data.message };
       }
+
       return { success: false, message: data.message || '로그인에 실패했습니다.' };
-    } catch {
-      return { success: false, message: '서버 연결에 실패했습니다.' };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '서버 연결에 실패했습니다.';
+      return { success: false, message };
     }
   };
 
-  // 회원가입
-  const register = async (email: string, password: string, name?: string) => {
+  const register = async (email: string, password: string, name?: string): Promise<AuthResult> => {
     try {
-      const response = await fetch(`${API_BASE}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password, name }),
-      });
-      const data = await response.json();
+      const data = await registerUser(email, password, name);
 
       if (data.success) {
         return { success: true, message: data.message };
       }
+
       return { success: false, message: data.message || '회원가입에 실패했습니다.' };
-    } catch {
-      return { success: false, message: '서버 연결에 실패했습니다.' };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '서버 연결에 실패했습니다.';
+      return { success: false, message };
     }
   };
 
-  // 로그아웃
   const logout = async () => {
     try {
-      await fetch(`${API_BASE}/api/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
+      await logoutUser();
     } finally {
       setUser(null);
     }

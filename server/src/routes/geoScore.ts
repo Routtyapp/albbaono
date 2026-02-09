@@ -30,7 +30,7 @@ router.post('/analyze', async (req: Request, res: Response) => {
     // 크롤링 옵션
     const crawlOptions = {
       includeSubpages: options?.includeSubpages ?? false,
-      maxSubpages: Math.min(options?.maxSubpages ?? 10, 20), // 최대 20페이지 제한
+      maxSubpages: Math.min(options?.maxSubpages ?? 10, 50), // 최대 50페이지 제한
     };
 
     console.log(`[GEO Score] 분석 시작: ${url}`);

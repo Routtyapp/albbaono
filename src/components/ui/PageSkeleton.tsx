@@ -355,6 +355,80 @@ export function InsightsSkeleton() {
   );
 }
 
+// Scheduler 페이지 스켈레톤
+export function SchedulerSkeleton() {
+  return (
+    <Stack gap="md">
+      {/* 헤더 */}
+      <Group justify="space-between">
+        <Stack gap={4}>
+          <Skeleton height={32} width={180} />
+          <Skeleton height={16} width={300} />
+        </Stack>
+        <Skeleton height={36} width={100} />
+      </Group>
+
+      {/* 캘린더 + 설정 */}
+      <Grid>
+        <Grid.Col span={{ base: 12, md: 8 }}>
+          <Paper p="md" radius="md" withBorder>
+            <Skeleton height={20} width={120} mb="md" />
+            <Skeleton height={280} radius="md" />
+          </Paper>
+        </Grid.Col>
+        <Grid.Col span={{ base: 12, md: 4 }}>
+          <Stack gap="md">
+            <Paper p="md" radius="md" withBorder>
+              <Group justify="space-between" mb="md">
+                <Skeleton height={20} width={120} />
+                <Skeleton height={24} width={40} />
+              </Group>
+              <Skeleton height={14} width="60%" />
+            </Paper>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Paper key={i} p="sm" radius="md" withBorder>
+                <Stack gap="xs">
+                  <Group justify="space-between">
+                    <Skeleton height={16} width={40} />
+                    <Skeleton height={16} width={60} radius="xl" />
+                  </Group>
+                  <Skeleton height={12} width="50%" />
+                  <Skeleton height={12} width="40%" />
+                  <Skeleton height={28} width="100%" />
+                </Stack>
+              </Paper>
+            ))}
+          </Stack>
+        </Grid.Col>
+      </Grid>
+
+      {/* 히스토리 테이블 */}
+      <TableSkeleton rows={5} />
+    </Stack>
+  );
+}
+
+// Trend 페이지 스켈레톤
+export function TrendSkeleton() {
+  return (
+    <Stack gap="md">
+      <Group justify="space-between">
+        <Skeleton height={32} width={180} />
+        <Skeleton height={36} width={220} radius="md" />
+      </Group>
+
+      {/* 전체 인용률 추이 차트 */}
+      <ChartCardSkeleton height={300} />
+
+      {/* 엔진별 추이 차트 */}
+      <ChartCardSkeleton height={300} />
+
+      {/* 카테고리별 비교 차트 */}
+      <ChartCardSkeleton height={250} />
+    </Stack>
+  );
+}
+
 // Score 페이지 스켈레톤
 export function ScoreSkeleton() {
   return (
