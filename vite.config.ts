@@ -14,6 +14,16 @@ import * as resultRepository from './src/db/repositories/resultRepository';
 import * as reportRepository from './src/db/repositories/reportRepository';
 import * as insightRepository from './src/db/repositories/insightRepository';
 
+// Responses API web_search 인용 마커 제거 (브랜드 매칭용)
+function stripCitations(text: string): string {
+  return text
+    .replace(/\u3010\d+†[^\u3011]*\u3011/g, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\[\d+\]/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   server: {
@@ -280,32 +290,29 @@ export default defineConfig({
               const result = await geminiModel.generateContent(query);
               response = result.response.text() || '';
             } else {
-              // ChatGPT API 호출 (기본값)
-              const completion = await openai.chat.completions.create({
-                model: 'gpt-4o-mini',
-                messages: [
-                  {
-                    role: 'user',
-                    content: query,
-                  },
-                ],
-                max_tokens: 1000,
+              // ChatGPT API 호출 (기본값) - Responses API + web_search
+              const gptResult = await openai.responses.create({
+                model: 'gpt-5-mini',
+                input: query,
+                tools: [{ type: 'web_search' }],
               });
-              response = completion.choices[0]?.message?.content || '';
+              response = gptResult.output_text || '';
             }
-            const responseLower = response.toLowerCase();
+            // 인용 마커 제거한 클린 텍스트로 브랜드 매칭
+            const cleanResponse = stripCitations(response);
+            const cleanLower = cleanResponse.toLowerCase();
 
             // 각 브랜드별 인용 체크
             const brandResults: resultRepository.BrandResult[] = [];
 
             for (const brand of brands) {
               // 브랜드 인용은 오직 브랜드명만으로 판단
-              const cited = responseLower.includes(brand.name.toLowerCase());
+              const cited = cleanLower.includes(brand.name.toLowerCase());
               let rank: number | null = null;
 
               // 인용된 경우 순위 찾기
               if (cited) {
-                const lines = response.split('\n');
+                const lines = cleanResponse.split('\n');
                 for (let i = 0; i < lines.length; i++) {
                   if (lines[i].toLowerCase().includes(brand.name.toLowerCase())) {
                     const match = lines[i].match(/^[\s]*(\d+)[.)\]]/);
@@ -320,7 +327,7 @@ export default defineConfig({
               // 경쟁사 언급 체크 (별도 추적)
               const competitorMentions: string[] = [];
               for (const competitor of brand.competitors || []) {
-                if (responseLower.includes(competitor.toLowerCase())) {
+                if (cleanLower.includes(competitor.toLowerCase())) {
                   competitorMentions.push(competitor);
                 }
               }
@@ -763,7 +770,7 @@ ${JSON.stringify(responses.slice(0, 20), null, 2)}
               try {
                 // GPT로 분석
                 const completion = await openai.chat.completions.create({
-                  model: 'gpt-4o-mini',
+                  model: 'gpt-5-mini',
                   messages: [
                     {
                       role: 'system',
@@ -774,7 +781,7 @@ ${JSON.stringify(responses.slice(0, 20), null, 2)}
                       content: analysisPrompt,
                     },
                   ],
-                  max_tokens: 3000,
+                  max_completion_tokens: 3000,
                   temperature: 0.3,
                 });
 

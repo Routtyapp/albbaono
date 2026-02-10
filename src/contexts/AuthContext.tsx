@@ -68,7 +68,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const data = await registerUser(email, password, name);
 
-      if (data.success) {
+      if (data.success && data.user) {
+        // 서버에서 자동 로그인(세션 생성)이 되었으므로 바로 user 설정
+        setUser(data.user);
         return { success: true, message: data.message };
       }
 

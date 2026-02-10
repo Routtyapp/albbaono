@@ -27,9 +27,17 @@ export interface SidebarData {
   resultsTotal: number;
   loadMoreResults: () => Promise<void>;
   isLoadingMore: boolean;
+  // 리포트 페이지네이션
+  reportsTotalCount: number;
+  reportsHasMore: boolean;
+  loadMoreReports: () => Promise<void>;
+  isLoadingMoreReports: boolean;
+  addReport: (report: Report) => void;
+  removeReport: (id: string) => void;
 }
 
 const RESULTS_PER_PAGE = 20;
+const REPORTS_PER_PAGE = 20;
 
 export function useSidebarData(): SidebarData {
   const [stats, setStats] = useState<Stats | null>(null);
@@ -47,6 +55,11 @@ export function useSidebarData(): SidebarData {
   const [resultsTotal, setResultsTotal] = useState(0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
+  // 리포트 페이지네이션 상태
+  const [reportsNextCursor, setReportsNextCursor] = useState<string | null>(null);
+  const [reportsTotalCount, setReportsTotalCount] = useState(0);
+  const [isLoadingMoreReports, setIsLoadingMoreReports] = useState(false);
+
   const loadData = async () => {
     setIsLoading(true);
     setError(null);
@@ -55,7 +68,7 @@ export function useSidebarData(): SidebarData {
         getStats().catch(() => null),
         getBrands().catch(() => ({ brands: [] })),
         getQueries().catch(() => ({ queries: [] })),
-        getReports().catch(() => ({ reports: [] })),
+        getReports({ limit: REPORTS_PER_PAGE }).catch(() => ({ reports: [], totalCount: 0, nextCursor: null })),
         getSavedInsights().catch(() => ({ insights: [] })),
         getResultsPaginated(1, RESULTS_PER_PAGE).catch(() => ({ results: [], total: 0, page: 1, limit: RESULTS_PER_PAGE, hasMore: false })),
       ]);
@@ -64,6 +77,8 @@ export function useSidebarData(): SidebarData {
       setBrands(brandsData.brands);
       setQueries(queriesData.queries);
       setReports(reportsData.reports);
+      setReportsNextCursor(reportsData.nextCursor);
+      setReportsTotalCount(reportsData.totalCount);
       setInsights(insightsData.insights);
       setResults(resultsData.results);
       setResultsPage(1);
@@ -94,6 +109,32 @@ export function useSidebarData(): SidebarData {
     }
   }, [isLoadingMore, resultsHasMore, resultsPage]);
 
+  const loadMoreReports = useCallback(async () => {
+    if (isLoadingMoreReports || !reportsNextCursor) return;
+
+    setIsLoadingMoreReports(true);
+    try {
+      const data = await getReports({ limit: REPORTS_PER_PAGE, cursor: reportsNextCursor });
+      setReports(prev => [...prev, ...data.reports]);
+      setReportsNextCursor(data.nextCursor);
+      setReportsTotalCount(data.totalCount);
+    } catch {
+      // silent
+    } finally {
+      setIsLoadingMoreReports(false);
+    }
+  }, [isLoadingMoreReports, reportsNextCursor]);
+
+  const addReport = useCallback((report: Report) => {
+    setReports(prev => [report, ...prev]);
+    setReportsTotalCount(prev => prev + 1);
+  }, []);
+
+  const removeReport = useCallback((id: string) => {
+    setReports(prev => prev.filter(r => r.id !== id));
+    setReportsTotalCount(prev => prev - 1);
+  }, []);
+
   useEffect(() => {
     loadData();
   }, []);
@@ -112,5 +153,11 @@ export function useSidebarData(): SidebarData {
     resultsTotal,
     loadMoreResults,
     isLoadingMore,
+    reportsTotalCount,
+    reportsHasMore: !!reportsNextCursor,
+    loadMoreReports,
+    isLoadingMoreReports,
+    addReport,
+    removeReport,
   };
 }

@@ -193,7 +193,7 @@ export function QueryHistoryPanel() {
               <Text size="sm" c="dimmed" mb="xs">브랜드별 인용 여부</Text>
               <Stack gap="xs">
                 {selectedResult.brandResults?.map((br) => (
-                  <Group key={br.brandId} justify="space-between" p="xs" style={{ background: 'var(--mantine-color-gray-1)', borderRadius: 8 }}>
+                  <Group key={br.brandId} justify="space-between" p="xs" style={{ background: 'light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))', borderRadius: 8 }}>
                     <Text fw={500}>{br.brandName}</Text>
                     <Group gap="xs">
                       {br.cited ? (

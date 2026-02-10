@@ -1,16 +1,12 @@
-import { useState, useEffect } from 'react';
-import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
-import { ActionIcon, Badge, Box, Button, Center, Divider, Group, Loader, Modal, Paper, ScrollArea, SegmentedControl, Skeleton, Stack, Switch, Text, Tooltip, UnstyledButton } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { useState, useEffect, useCallback } from 'react';
+import { ActionIcon, Badge, Box, Center, Divider, Group, Loader, Paper, Progress, ScrollArea, Skeleton, Stack, Switch, Text, Tooltip, UnstyledButton } from '@mantine/core';
 import {
   IconChartBar,
   IconCheck,
   IconChevronLeft,
   IconChevronRight,
-  IconClock,
+
   IconFileDescription,
-  IconLayoutSidebarLeftCollapse,
-  IconLayoutSidebarRightCollapse,
   IconCalendarEvent,
   IconMessageQuestion,
   IconPlayerPlay,
@@ -31,13 +27,14 @@ import {
 } from '../../services/scheduler';
 import { getQueries } from '../../services/queries';
 import type { MonitoredQuery } from '../../types';
+import { ReportListItem } from '../ui';
 
 const trackerMenuItems = [
-  { label: '성과 개요', shortLabel: '성과', icon: IconChartBar, path: '/dashboard/performance' },
+  { label: '브랜드', shortLabel: '브랜드', icon: IconTags, path: '/dashboard/brands' },
   { label: '쿼리 운영', shortLabel: '쿼리', icon: IconMessageQuestion, path: '/dashboard/query-ops' },
+  { label: '성과 개요', shortLabel: '성과', icon: IconChartBar, path: '/dashboard/performance' },
   { label: '스케줄러', shortLabel: '스케줄', icon: IconCalendarEvent, path: '/dashboard/scheduler' },
   { label: '리포트/인사이트', shortLabel: '리포트', icon: IconFileDescription, path: '/dashboard/reports' },
-  { label: '브랜드', shortLabel: '브랜드', icon: IconTags, path: '/dashboard/brands' },
 ];
 
 const scoreMenuItems = [
@@ -57,25 +54,17 @@ function PanelSkeleton() {
   );
 }
 
-function StatCard({ label, value, extra }: { label: string; value: string; extra?: string }) {
+function StatRow({ label, value, extra }: { label: string; value: string; extra?: string }) {
   return (
-    <Paper p="xs" withBorder radius="md">
-      <Text size="xs" c="dimmed" mb={2}>{label}</Text>
-      <Group justify="space-between" align="end">
+    <Group justify="space-between">
+      <Text size="sm" fw={500}>{label}</Text>
+      <Group gap={4}>
         <Text size="sm" fw={600}>{value}</Text>
-        {extra ? <Text size="xs" c="dimmed">{extra}</Text> : null}
+        {extra ? <Text size="sm" c="dimmed">{extra}</Text> : null}
       </Group>
-    </Paper>
+    </Group>
   );
 }
-
-const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
-
-const SCHEDULE_COLORS: Record<string, string> = {
-  daily: 'blue',
-  weekly: 'teal',
-  monthly: 'violet',
-};
 
 const SCHEDULE_LABELS: Record<string, string> = {
   daily: '매일',
@@ -142,75 +131,52 @@ function SchedulerSidebarPanel() {
   const getActiveQueryCount = (frequency: 'daily' | 'weekly' | 'monthly') =>
     queries.filter((q) => q.isActive && q.frequency === frequency).length;
 
-  const formatNextSchedule = (isoDate: string | null) => {
-    if (!isoDate) return '-';
-    return new Date(isoDate).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-  };
-
   if (isLoading) return <PanelSkeleton />;
   if (!schedulerData) return <Text size="xs" c="dimmed">스케줄러 데이터 없음</Text>;
 
   const isEnabled = schedulerData.config.enabled;
 
   return (
-    <Stack gap="sm">
-      <Paper p="xs" withBorder radius="md">
-        <Group justify="space-between">
-          <Text size="xs" fw={600}>자동 스케줄링</Text>
-          <Switch
-            checked={isEnabled}
-            onChange={handleToggle}
-            disabled={schedulerLoading}
-            size="xs"
-          />
-        </Group>
-        {schedulerData.status.isRunning && (
-          <Badge size="xs" color="blue" variant="light" leftSection={<Loader size={8} />} mt={4}>
-            실행 중
-          </Badge>
-        )}
-        <Text size="10px" c="dimmed" mt={4}>
-          {isEnabled ? '활성화됨' : '비활성화됨'}
-        </Text>
-      </Paper>
+    <Stack gap="xs">
+      <Group justify="space-between">
+        <Text size="sm" fw={600}>자동 스케줄링</Text>
+        <Switch
+          checked={isEnabled}
+          onChange={handleToggle}
+          disabled={schedulerLoading}
+          size="sm"
+        />
+      </Group>
+
+      <Divider />
 
       {(['daily', 'weekly', 'monthly'] as const).map((type) => {
         const count = getActiveQueryCount(type);
-        const next = schedulerData.nextScheduled[type];
         const isRunning = runningType === type;
-        let timeLabel = '';
-        if (type === 'daily') timeLabel = schedulerData.config.dailyRunTime;
-        else if (type === 'weekly') timeLabel = `${DAY_NAMES[schedulerData.config.weeklyRunDay]}요일 ${schedulerData.config.weeklyRunTime}`;
-        else timeLabel = `${schedulerData.config.monthlyRunDay}일 ${schedulerData.config.monthlyRunTime}`;
 
         return (
-          <Paper key={type} p="xs" withBorder radius="md" style={{ borderLeft: `3px solid var(--mantine-color-${SCHEDULE_COLORS[type]}-5)` }}>
-            <Group justify="space-between" mb={4}>
-              <Group gap={6}>
-                <Box w={6} h={6} style={{ borderRadius: '50%', backgroundColor: `var(--mantine-color-${SCHEDULE_COLORS[type]}-5)` }} />
-                <Text size="xs" fw={600}>{SCHEDULE_LABELS[type]}</Text>
+          <Stack key={type} gap="xs">
+            <Group justify="space-between">
+              <Group gap={8}>
+                <Text size="sm" fw={500}>{SCHEDULE_LABELS[type]}</Text>
+                <Text size="sm" c="dimmed">{count}개</Text>
               </Group>
-              <Badge size="xs" variant="light" color={SCHEDULE_COLORS[type]}>{count}개</Badge>
+              <UnstyledButton
+                onClick={() => handleRunNow(type)}
+                disabled={runningType !== null}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  opacity: runningType !== null && !isRunning ? 0.4 : 1,
+                }}
+              >
+                {isRunning ? <Loader size={14} /> : <IconPlayerPlay size={14} color="var(--mantine-color-dimmed)" />}
+                <Text size="sm" c="dimmed" fw={500}>실행</Text>
+              </UnstyledButton>
             </Group>
-            <Group gap={4} mb={4}>
-              <IconClock size={10} color="var(--mantine-color-dimmed)" />
-              <Text size="10px" c="dimmed">{timeLabel}</Text>
-            </Group>
-            <Text size="10px" c={isEnabled ? undefined : 'dimmed'} mb={4}>
-              다음: {isEnabled ? formatNextSchedule(next) : '-'}
-            </Text>
-            <Button
-              size="compact-xs"
-              variant="light"
-              color={SCHEDULE_COLORS[type]}
-              fullWidth
-              leftSection={isRunning ? <Loader size={10} /> : <IconPlayerPlay size={10} />}
-              onClick={() => handleRunNow(type)}
-              disabled={runningType !== null}
-            >
-              지금 실행
-            </Button>
-          </Paper>
+            <Divider />
+          </Stack>
         );
       })}
     </Stack>
@@ -221,13 +187,23 @@ function getExpandedPanel(
   pathname: string,
   tab: string | null,
   data: SidebarData,
-  options?: { onSelectResult?: (id: string) => void; selectedResultId?: string | null },
+  options?: {
+    onSelectResult?: (id: string) => void;
+    selectedResultId?: string | null;
+    onSelectReport?: (id: string) => void;
+    selectedReportId?: string | null;
+  },
 ): { title: string; content: ReactNode } {
-  const { stats, brands, queries, reports, insights, results, isLoading, resultsTotal } = data;
+  const { stats, brands, queries, reports, insights, results, isLoading, resultsTotal, reportsTotalCount, reportsHasMore, isLoadingMoreReports } = data;
 
   if (isLoading) {
     return { title: '로딩 중', content: <PanelSkeleton /> };
   }
+
+  // 온보딩 진행 상태 표시
+  const setupComplete = brands.length > 0 && queries.length > 0 && results.length > 0;
+  const setupSteps = [brands.length > 0, queries.length > 0, results.length > 0];
+  const setupDone = setupSteps.filter(Boolean).length;
 
   if (pathname === '/dashboard' || pathname.startsWith('/dashboard/performance')) {
     if (tab === 'visibility') {
@@ -247,10 +223,11 @@ function getExpandedPanel(
       return {
         title: 'AI 가시성',
         content: (
-          <Stack gap="sm">
-            <StatCard label="Citation Rate" value={`${stats?.citationRate ?? 0}%`} />
-            <StatCard label="인용 / 전체" value={`${stats?.citedCount ?? 0} / ${stats?.totalTests ?? 0}`} />
-            <Divider label={`테스트된 쿼리 (${testedQueries.length})`} labelPosition="left" />
+          <Stack gap="xs">
+            <StatRow label="Citation Rate" value={`${stats?.citationRate ?? 0}%`} />
+            <Divider />
+            <StatRow label="인용 / 전체" value={`${stats?.citedCount ?? 0} / ${stats?.totalTests ?? 0}`} />
+            <Divider />
             {testedQueries.length === 0 ? (
               <Text size="xs" c="dimmed">테스트된 쿼리가 없습니다. 쿼리 운영에서 테스트를 실행하세요.</Text>
             ) : (
@@ -310,10 +287,37 @@ function getExpandedPanel(
     return {
       title: '개요',
       content: (
-        <Stack gap="sm">
-          <StatCard label="인용률" value={`${stats?.citationRate ?? 0}%`} />
-          <StatCard label="총 테스트 수" value={`${stats?.totalTests ?? 0}`} />
-          <StatCard label="활성 브랜드 수" value={`${brands.length}`} />
+        <Stack gap="xs">
+          {!setupComplete && (
+            <>
+              <Group justify="space-between">
+                <Text size="sm" fw={500}>시작하기</Text>
+                <Text size="sm" c="dimmed">{setupDone}/3</Text>
+              </Group>
+              <Stack gap="xs">
+                {([
+                  { done: brands.length > 0, label: '브랜드 등록' },
+                  { done: queries.length > 0, label: '쿼리 추가' },
+                  { done: results.length > 0, label: '테스트 실행' },
+                ] as const).map((step) => (
+                  <Group key={step.label} gap={8}>
+                    {step.done
+                      ? <IconCheck size={14} color="var(--mantine-color-teal-5)" />
+                      : <Box w={14} h={14} style={{ borderRadius: '50%', border: '1.5px solid var(--mantine-color-gray-4)' }} />
+                    }
+                    <Text size="sm" c={step.done ? undefined : 'dimmed'}>{step.label}</Text>
+                  </Group>
+                ))}
+              </Stack>
+              <Divider />
+            </>
+          )}
+          <StatRow label="인용률" value={`${stats?.citationRate ?? 0}%`} />
+          <Divider />
+          <StatRow label="총 테스트 수" value={`${stats?.totalTests ?? 0}`} />
+          <Divider />
+          <StatRow label="활성 브랜드 수" value={`${brands.length}`} />
+          <Divider />
         </Stack>
       ),
     };
@@ -323,9 +327,11 @@ function getExpandedPanel(
     return {
       title: '쿼리 운영',
       content: (
-        <Stack gap="sm">
-          <StatCard label="쿼리 수" value={`${queries.length}`} />
-          <StatCard label="결과 수" value={`${results.length}`} extra={`전체 ${resultsTotal}`} />
+        <Stack gap="xs">
+          <StatRow label="쿼리 수" value={`${queries.length}`} />
+          <Divider />
+          <StatRow label="결과 수" value={`${results.length}`} extra={`/ ${resultsTotal}`} />
+          <Divider />
         </Stack>
       ),
     };
@@ -343,8 +349,17 @@ function getExpandedPanel(
       return {
         title: '인사이트',
         content: (
-          <Stack gap="sm">
-            <StatCard label="저장된 인사이트" value={`${insights.length}`} />
+          <Stack gap="xs">
+            <StatRow label="저장된 인사이트" value={`${insights.length}`} />
+            <Divider />
+            {brands.length === 0 && (
+              <>
+                <Text size="sm" c="dimmed">
+                  인사이트 분석을 시작하려면 먼저 브랜드를 등록하세요
+                </Text>
+                <Divider />
+              </>
+            )}
           </Stack>
         ),
       };
@@ -352,8 +367,46 @@ function getExpandedPanel(
     return {
       title: '리포트',
       content: (
-        <Stack gap="sm">
-          <StatCard label="리포트 수" value={`${reports.length}`} />
+        <Stack gap="xs">
+          <StatRow label="리포트 수" value={`${reportsTotalCount}`} />
+          <Divider />
+          {(stats?.totalTests ?? 0) < 5 && (
+            <>
+              <Group justify="space-between">
+                <Text size="sm" fw={500}>리포트 생성 조건</Text>
+                <Text size="sm" c="dimmed">{stats?.totalTests ?? 0}/5</Text>
+              </Group>
+              <Progress value={((stats?.totalTests ?? 0) / 5) * 100} size="sm" radius="xl" />
+              <Text size="sm" c="dimmed">
+                {5 - (stats?.totalTests ?? 0)}개 더 테스트 필요
+              </Text>
+              <Divider />
+            </>
+          )}
+          {reports.length > 0 && (
+            <>
+              <Text size="sm" fw={500}>목록 ({reportsTotalCount})</Text>
+              <Stack gap={4}>
+                {reports.map((report) => (
+                  <ReportListItem
+                    key={report.id}
+                    report={report}
+                    isSelected={options?.selectedReportId === report.id}
+                    onClick={() => options?.onSelectReport?.(report.id)}
+                    compact
+                  />
+                ))}
+                {isLoadingMoreReports && (
+                  <Center py="xs">
+                    <Loader size="xs" />
+                  </Center>
+                )}
+                {reportsHasMore && !isLoadingMoreReports && (
+                  <Box data-report-sentinel style={{ height: 1 }} />
+                )}
+              </Stack>
+            </>
+          )}
         </Stack>
       ),
     };
@@ -363,8 +416,9 @@ function getExpandedPanel(
     return {
       title: '브랜드',
       content: (
-        <Stack gap="sm">
-          <StatCard label="브랜드 수" value={`${brands.length}`} />
+        <Stack gap="xs">
+          <StatRow label="브랜드 수" value={`${brands.length}`} />
+          <Divider />
         </Stack>
       ),
     };
@@ -383,8 +437,9 @@ function getExpandedPanel(
   return {
     title: '개요',
     content: (
-      <Stack gap="sm">
-        <StatCard label="인용률" value={`${stats?.citationRate ?? 0}%`} />
+      <Stack gap="xs">
+        <StatRow label="인용률" value={`${stats?.citationRate ?? 0}%`} />
+        <Divider />
       </Stack>
     ),
   };
@@ -396,7 +451,7 @@ interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
   position: SidebarPosition;
-  onPositionChange: (position: SidebarPosition) => void;
+  onSettingsOpen: () => void;
 }
 
 function IconMenu({
@@ -406,6 +461,7 @@ function IconMenu({
   pathname,
   position,
   onSettingsOpen,
+  dotPath,
 }: {
   onToggle: () => void;
   collapsed: boolean;
@@ -413,6 +469,7 @@ function IconMenu({
   pathname: string;
   position: SidebarPosition;
   onSettingsOpen: () => void;
+  dotPath?: string | null;
 }) {
   const expandIcon = position === 'right' ? <IconChevronLeft size={18} /> : <IconChevronRight size={18} />;
   const collapseIcon = position === 'right' ? <IconChevronRight size={18} /> : <IconChevronLeft size={18} />;
@@ -430,11 +487,12 @@ function IconMenu({
 
       {trackerMenuItems.map((item) => {
         const isActive = pathname.startsWith(item.path);
+        const showDot = dotPath === item.path;
         return (
           <UnstyledButton
             key={item.path}
             onClick={() => navigate(item.path)}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 48, height: 64 }}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 48, height: 64, position: 'relative' }}
           >
             <Box
               style={{
@@ -445,9 +503,24 @@ function IconMenu({
                 height: 32,
                 borderRadius: 8,
                 backgroundColor: isActive ? 'var(--mantine-color-brand-1)' : 'transparent',
+                position: 'relative',
               }}
             >
               <item.icon size={20} stroke={1.5} color={isActive ? 'var(--mantine-color-brand-6)' : 'var(--mantine-color-gray-7)'} />
+              {showDot && (
+                <Box
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--mantine-color-blue-5)',
+                    border: '2px solid var(--mantine-color-body)',
+                  }}
+                />
+              )}
             </Box>
             <Text size="12px" mt={4} c={isActive ? 'brand.6' : 'gray.7'} fw={isActive ? 600 : 400}>
               {item.shortLabel}
@@ -486,98 +559,87 @@ function IconMenu({
         );
       })}
 
+      {/* Spacer to push settings to bottom */}
+      <Box style={{ flex: 1 }} />
+
       <Divider w="80%" my="xs" />
 
-      <Tooltip label="설정" position={tooltipPosition} withArrow>
-        <UnstyledButton
-          onClick={onSettingsOpen}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 48, height: 48 }}
-        >
-          <Box style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 8, backgroundColor: 'var(--mantine-color-gray-1)' }}>
-            <IconSettings size={20} stroke={1.5} color="var(--mantine-color-gray-7)" />
-          </Box>
-        </UnstyledButton>
-      </Tooltip>
+      <UnstyledButton
+        onClick={onSettingsOpen}
+        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 48, height: 64 }}
+      >
+        <Box style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 8, backgroundColor: 'light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5))' }}>
+          <IconSettings size={20} stroke={1.5} color="var(--mantine-color-gray-7)" />
+        </Box>
+        <Text size="12px" mt={4} c="gray.7">설정</Text>
+      </UnstyledButton>
     </Stack>
   );
 }
 
-export function Sidebar({ collapsed, onToggle, position, onPositionChange }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle, position, onSettingsOpen }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [settingsOpened, { open: openSettings, close: closeSettings }] = useDisclosure(false);
-  useBodyScrollLock(settingsOpened);
   const sidebarData = useSidebarData();
 
+  // 온보딩 진행 상태에 따른 dot 표시 대상 경로
+  const onboardingDotPath = (() => {
+    const brands = sidebarData.brands;
+    const queries = sidebarData.queries;
+    const results = sidebarData.results;
+    if (brands.length === 0) return '/dashboard/brands';
+    if (queries.length === 0) return '/dashboard/query-ops';
+    if (results.length === 0) return '/dashboard/query-ops';
+    return null;
+  })();
   const handleSelectResult = (id: string) => {
     const next = new URLSearchParams(searchParams);
     next.set('resultId', id);
     setSearchParams(next);
   };
 
+  const handleSelectReport = useCallback((id: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('reportId', id);
+    setSearchParams(next);
+  }, [searchParams, setSearchParams]);
+
+  // 리포트 무한스크롤 Observer
+  useEffect(() => {
+    if (collapsed) return;
+    const isReportPage = location.pathname.startsWith('/dashboard/reports');
+    if (!isReportPage || !sidebarData.reportsHasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && sidebarData.reportsHasMore && !sidebarData.isLoadingMoreReports) {
+          sidebarData.loadMoreReports();
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    // sentinel을 DOM에서 찾기
+    const sentinel = document.querySelector('[data-report-sentinel]');
+    if (sentinel) {
+      observer.observe(sentinel);
+    }
+
+    return () => observer.disconnect();
+  }, [collapsed, location.pathname, sidebarData.reportsHasMore, sidebarData.isLoadingMoreReports, sidebarData.loadMoreReports, sidebarData.reports.length]);
+
   const { title, content } = getExpandedPanel(location.pathname, searchParams.get('tab'), sidebarData, {
     onSelectResult: handleSelectResult,
     selectedResultId: searchParams.get('resultId'),
+    onSelectReport: handleSelectReport,
+    selectedReportId: searchParams.get('reportId'),
   });
-  const panelBorderStyle = position === 'right' ? { borderRight: '1px solid var(--mantine-color-gray-2)' } : { borderLeft: '1px solid var(--mantine-color-gray-2)' };
-
-  const settingsModal = (
-    <Modal opened={settingsOpened} onClose={closeSettings} title={<Text fw={600}>설정</Text>} centered size="sm" lockScroll={false}>
-      <Stack gap="md">
-        <Box>
-          <Text size="sm" fw={500} mb="xs">사이드바 위치</Text>
-          <SegmentedControl
-            value={position}
-            onChange={(value) => onPositionChange(value as SidebarPosition)}
-            fullWidth
-            data={[
-              {
-                value: 'left',
-                label: (
-                  <Center>
-                    <Group gap={8}>
-                      <IconLayoutSidebarLeftCollapse size={16} />
-                      <span>왼쪽</span>
-                    </Group>
-                  </Center>
-                ),
-              },
-              {
-                value: 'right',
-                label: (
-                  <Center>
-                    <Group gap={8}>
-                      <IconLayoutSidebarRightCollapse size={16} />
-                      <span>오른쪽</span>
-                    </Group>
-                  </Center>
-                ),
-              },
-            ]}
-          />
-        </Box>
-        {searchParams.get('resultId') ? (
-          <Paper withBorder p="xs" radius="md">
-            <Group justify="space-between">
-              <Text size="xs" c="dimmed">선택된 결과</Text>
-              <Badge size="xs" variant="light">{searchParams.get('resultId')}</Badge>
-            </Group>
-            <Group mt="xs" justify="flex-end">
-              <ActionIcon size="sm" variant="subtle" onClick={() => handleSelectResult('')}>
-                <IconSettings size={12} />
-              </ActionIcon>
-            </Group>
-          </Paper>
-        ) : null}
-      </Stack>
-    </Modal>
-  );
+  const panelBorderStyle = position === 'right' ? { borderRight: '1px solid var(--mantine-color-default-border)' } : { borderLeft: '1px solid var(--mantine-color-default-border)' };
 
   if (collapsed) {
     return (
       <>
-        {settingsModal}
         <Box h="100%" px={8}>
           <IconMenu
             onToggle={onToggle}
@@ -585,7 +647,8 @@ export function Sidebar({ collapsed, onToggle, position, onPositionChange }: Sid
             navigate={navigate}
             pathname={location.pathname}
             position={position}
-            onSettingsOpen={openSettings}
+            onSettingsOpen={onSettingsOpen}
+            dotPath={onboardingDotPath}
           />
         </Box>
       </>
@@ -594,7 +657,7 @@ export function Sidebar({ collapsed, onToggle, position, onPositionChange }: Sid
 
   const detailPanel = (
     <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', ...panelBorderStyle }}>
-      <Box p="md" pb="sm">
+      <Box p="md" pb={48}>
         <Text size="lg" fw={700}>{title}</Text>
       </Box>
       <ScrollArea flex={1} px="md" pb="md">
@@ -611,14 +674,14 @@ export function Sidebar({ collapsed, onToggle, position, onPositionChange }: Sid
         navigate={navigate}
         pathname={location.pathname}
         position={position}
-        onSettingsOpen={openSettings}
+        onSettingsOpen={onSettingsOpen}
+        dotPath={onboardingDotPath}
       />
     </Box>
   );
 
   return (
     <>
-      {settingsModal}
       <Group gap={0} h="100%" wrap="nowrap" align="stretch">
         {position === 'right' ? (
           <>

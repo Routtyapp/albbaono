@@ -9,6 +9,7 @@ export interface User {
   created_at: string;
   updated_at: string;
   last_login: string | null;
+  onboarding_step: number;
 }
 
 // Express 세션에 사용자 정보 확장
@@ -32,6 +33,7 @@ declare global {
       created_at: string;
       updated_at: string;
       last_login: string | null;
+      onboarding_step: number;
     }
   }
 }

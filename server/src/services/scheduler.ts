@@ -10,6 +10,16 @@ import { db } from '../config/db.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Responses API web_search 인용 마커 제거 (브랜드 매칭용 클린 텍스트)
+function stripCitations(text: string): string {
+  return text
+    .replace(/\u3010\d+†[^\u3011]*\u3011/g, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\[\d+\]/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 // .env 파일 로드 (프로젝트 루트에서)
 const envPath = join(__dirname, '..', '..', '..', '.env');
 config({ path: envPath });
@@ -493,29 +503,31 @@ export class QueryScheduler {
         if (!this.openai) {
           throw new Error('OpenAI API key not configured');
         }
-        const completion = await this.openai.chat.completions.create({
-          model: 'gpt-4o-mini',
-          messages: [{ role: 'user', content: query.query }],
-          max_tokens: 1000,
+        const result = await this.openai.responses.create({
+          model: 'gpt-5-mini',
+          input: query.query,
+          tools: [{ type: 'web_search' }],
         });
-        response = completion.choices[0]?.message?.content || '';
+        response = result.output_text || '';
       }
     } catch (error) {
       console.error(`[Scheduler] AI API error for query "${query.query}":`, error);
       throw error;
     }
 
-    const responseLower = response.toLowerCase();
+    // 인용 마커 제거한 클린 텍스트로 브랜드 매칭
+    const cleanResponse = stripCitations(response);
+    const cleanLower = cleanResponse.toLowerCase();
 
     // 브랜드별 인용 체크
     const brandResults: BrandResult[] = [];
 
     for (const brand of brands) {
-      const cited = responseLower.includes(brand.name.toLowerCase());
+      const cited = cleanLower.includes(brand.name.toLowerCase());
       let rank: number | null = null;
 
       if (cited) {
-        const lines = response.split('\n');
+        const lines = cleanResponse.split('\n');
         for (let i = 0; i < lines.length; i++) {
           if (lines[i].toLowerCase().includes(brand.name.toLowerCase())) {
             const match = lines[i].match(/^[\s]*(\d+)[.)\]]/);
@@ -530,7 +542,7 @@ export class QueryScheduler {
       const competitors: string[] = JSON.parse(brand.competitors || '[]');
       const competitorMentions: string[] = [];
       for (const competitor of competitors) {
-        if (responseLower.includes(competitor.toLowerCase())) {
+        if (cleanLower.includes(competitor.toLowerCase())) {
           competitorMentions.push(competitor);
         }
       }

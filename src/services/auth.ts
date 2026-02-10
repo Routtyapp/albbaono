@@ -9,6 +9,7 @@ export interface User {
   created_at: string;
   updated_at: string;
   last_login: string | null;
+  onboarding_step: number;
 }
 
 export interface AuthResponse {
@@ -43,4 +44,16 @@ export async function registerUser(email: string, password: string, name?: strin
 
 export async function logoutUser(): Promise<AuthResponse> {
   return apiMutate<AuthResponse>('/api/auth/logout', 'POST', undefined, authRequestOptions);
+}
+
+export async function updateProfile(name: string): Promise<AuthResponse> {
+  return apiMutate<AuthResponse>('/api/auth/profile', 'PATCH', { name });
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<AuthResponse> {
+  return apiMutate<AuthResponse>('/api/auth/change-password', 'POST', { currentPassword, newPassword });
+}
+
+export async function deleteAccount(password: string): Promise<AuthResponse> {
+  return apiMutate<AuthResponse>('/api/auth/account', 'DELETE', { password });
 }

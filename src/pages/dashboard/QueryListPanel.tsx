@@ -59,6 +59,7 @@ import {
 import { getResults } from '../../services/results';
 import { getBrands } from '../../services/brands';
 import { MetricCard, QueriesSkeleton, SetupGuide } from '../../components/ui';
+import { QUERY_TEMPLATES, applyTemplate } from '../../utils/queryTemplates';
 
 type SortField = 'createdAt' | 'lastTested' | 'query';
 type ViewMode = 'table' | 'card';
@@ -350,7 +351,19 @@ export function QueryListPanel() {
         </Grid.Col>
       </Grid>
 
-      {brands.length === 0 && (
+      {brands.length === 0 && queries.length > 0 && (
+        <Alert
+          icon={<IconTags size={16} />}
+          color="blue"
+          variant="light"
+        >
+          먼저 브랜드를 등록하면 쿼리 테스트 시 인용 여부를 자동 분석합니다.{' '}
+          <Button component="a" href="/dashboard/brands" variant="subtle" size="compact-xs" color="blue">
+            브랜드 등록하기
+          </Button>
+        </Alert>
+      )}
+      {brands.length === 0 && queries.length === 0 && (
         <SetupGuide
           brandsCount={brands.length}
           queriesCount={queries.length}
@@ -445,13 +458,38 @@ export function QueryListPanel() {
           brands.length > 0 ? (
             <Paper p="xl" radius="md" withBorder>
               <Stack align="center" gap="md">
-                <IconPlus size={40} stroke={1.5} color="gray" />
-                <Text fw={500}>등록된 쿼리가 없습니다</Text>
+                <IconPlus size={40} stroke={1.5} color="var(--mantine-color-brand-5)" />
+                <Text fw={600}>등록된 쿼리가 없습니다</Text>
                 <Text size="sm" c="dimmed" ta="center">
                   AI에게 테스트할 질문을 추가하면 브랜드 인용 여부를 자동으로 분석합니다.
                 </Text>
+                {/* 추천 템플릿 칩 */}
+                <Stack gap="xs" align="center">
+                  <Text size="xs" fw={500} c="dimmed">추천 쿼리 템플릿으로 빠르게 시작하세요</Text>
+                  <Group gap="xs" justify="center">
+                    {QUERY_TEMPLATES.slice(0, 4).map((t) => {
+                      const firstBrand = brands[0]?.name || '브랜드';
+                      const firstCompetitor = brands[0]?.competitors?.[0];
+                      return (
+                        <Button
+                          key={t.id}
+                          variant="light"
+                          size="xs"
+                          radius="xl"
+                          onClick={() => {
+                            setNewQueryText(applyTemplate(t.template, firstBrand, firstCompetitor));
+                            setNewCategory(t.category);
+                            open();
+                          }}
+                        >
+                          {applyTemplate(t.template, firstBrand, firstCompetitor)}
+                        </Button>
+                      );
+                    })}
+                  </Group>
+                </Stack>
                 <Button leftSection={<IconPlus size={16} />} onClick={open}>
-                  첫 쿼리 추가하기
+                  직접 쿼리 추가하기
                 </Button>
               </Stack>
             </Paper>
@@ -715,7 +753,7 @@ export function QueryListPanel() {
               <Text size="sm" c="dimmed" mb="xs">브랜드별 인용 여부</Text>
               <Stack gap="xs">
                 {latestResult.brandResults?.map((br) => (
-                  <Group key={br.brandId} justify="space-between" p="xs" style={{ background: 'var(--mantine-color-gray-1)', borderRadius: 8 }}>
+                  <Group key={br.brandId} justify="space-between" p="xs" style={{ background: 'light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))', borderRadius: 8 }}>
                     <Text fw={500}>{br.brandName}</Text>
                     <Group gap="xs">
                       {br.cited ? (

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Grid, Title, Text, Stack, Group, Button, Alert, Badge, Select } from '@mantine/core';
+import { useNavigate } from 'react-router-dom';
+import { Grid, Title, Text, Stack, Group, Button, Alert, Badge, Select, Paper, SimpleGrid, ThemeIcon } from '@mantine/core';
 import { BarChart } from '@mantine/charts';
 import {
   IconTrendingUp,
@@ -9,6 +10,9 @@ import {
   IconRefresh,
   IconAlertCircle,
   IconBuilding,
+  IconFileDescription,
+  IconBrain,
+  IconMessageQuestion,
 } from '@tabler/icons-react';
 import { MetricCard, ChartCard, OverviewSkeleton, SetupGuide } from '../../components/ui';
 import { getStats, getQueries, getBrands } from '../../services/api';
@@ -16,6 +20,7 @@ import type { Stats, MonitoredQuery, TestResult, Brand } from '../../types';
 import { AI_ENGINES as ENGINES } from '../../types';
 
 export function Overview() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<Stats | null>(null);
   const [queries, setQueries] = useState<MonitoredQuery[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -144,7 +149,7 @@ export function Overview() {
             allowDeselect={false}
             styles={{
               input: {
-                backgroundColor: 'var(--mantine-color-gray-1)',
+                backgroundColor: 'light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))',
               },
             }}
           />
@@ -196,6 +201,58 @@ export function Overview() {
       {/* 차트 섹션 */}
       {recentResults.length > 0 ? (
         <Grid>
+          {/* 온보딩 직후: 다음 단계 여정 카드 */}
+          {recentResults.length <= 2 && (
+            <Grid.Col span={12}>
+              <Paper p="md" radius="md" withBorder style={{ background: 'var(--mantine-color-blue-0)', border: '1px solid var(--mantine-color-blue-2)' }}>
+                <Text fw={600} size="sm" mb="md">첫 테스트를 완료했습니다! 다음 단계를 확인하세요.</Text>
+                <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+                  <Paper p="md" radius="md" withBorder>
+                    <Group gap="sm" mb="xs">
+                      <ThemeIcon size={32} radius="md" variant="light" color="blue">
+                        <IconMessageQuestion size={18} />
+                      </ThemeIcon>
+                      <Text fw={600} size="sm">쿼리 추가</Text>
+                    </Group>
+                    <Text size="xs" c="dimmed" mb="md">
+                      다양한 쿼리를 등록하면 AI가 브랜드를 어떤 맥락에서 추천하는지 인용 추세를 파악할 수 있습니다.
+                    </Text>
+                    <Button size="xs" variant="light" fullWidth onClick={() => navigate('/dashboard/query-ops')}>
+                      쿼리 더 추가하기
+                    </Button>
+                  </Paper>
+                  <Paper p="md" radius="md" withBorder>
+                    <Group gap="sm" mb="xs">
+                      <ThemeIcon size={32} radius="md" variant="light" color="teal">
+                        <IconFileDescription size={18} />
+                      </ThemeIcon>
+                      <Text fw={600} size="sm">리포트 생성</Text>
+                    </Group>
+                    <Text size="xs" c="dimmed" mb="sm">
+                      5개 이상 테스트 시 인용률, 점유율, 엔진별 성과를 종합한 리포트를 생성할 수 있습니다.
+                    </Text>
+                    <Badge variant="light" color="teal" size="sm">
+                      {filteredStats?.totalTests || 0}/5 테스트 완료
+                    </Badge>
+                  </Paper>
+                  <Paper p="md" radius="md" withBorder>
+                    <Group gap="sm" mb="xs">
+                      <ThemeIcon size={32} radius="md" variant="light" color="grape">
+                        <IconBrain size={18} />
+                      </ThemeIcon>
+                      <Text fw={600} size="sm">AI 인사이트</Text>
+                    </Group>
+                    <Text size="xs" c="dimmed" mb="md">
+                      AI가 공략 키워드와 실행 가이드를 분석하여 브랜드 가시성 향상 전략을 제안합니다.
+                    </Text>
+                    <Button size="xs" variant="light" color="grape" fullWidth onClick={() => navigate('/dashboard/insights')}>
+                      인사이트 보기
+                    </Button>
+                  </Paper>
+                </SimpleGrid>
+              </Paper>
+            </Grid.Col>
+          )}
           <Grid.Col span={{ base: 12, lg: 7 }}>
             <ChartCard
               title="최근 테스트 결과"
@@ -286,7 +343,7 @@ export function Overview() {
                 : null;
 
               return (
-                <Group key={result.id} justify="space-between" p="xs" style={{ borderRadius: 8, background: 'var(--mantine-color-gray-1)' }}>
+                <Group key={result.id} justify="space-between" p="xs" style={{ borderRadius: 8, background: 'light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))' }}>
                   <Text size="sm" lineClamp={1} style={{ flex: 1 }}>
                     {result.query}
                   </Text>

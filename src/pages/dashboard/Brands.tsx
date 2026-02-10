@@ -262,16 +262,21 @@ export function Brands() {
       {brands.length === 0 ? (
         <Paper p="xl" radius="md" withBorder>
           <Center>
-            <Stack align="center" gap="md">
-              <IconTags size={48} stroke={1.5} color="gray" />
+            <Stack align="center" gap="md" maw={400}>
+              <IconTags size={48} stroke={1.5} color="var(--mantine-color-brand-5)" />
               <div style={{ textAlign: 'center' }}>
-                <Text fw={500}>등록된 브랜드가 없습니다</Text>
-                <Text size="sm" c="dimmed">
-                  브랜드를 추가하면 쿼리 테스트 시 자동으로 인용 여부를 체크합니다
+                <Text fw={600} size="lg">왜 브랜드를 등록해야 하나요?</Text>
+                <Text size="sm" c="dimmed" mt="xs">
+                  브랜드를 등록하면 AI(ChatGPT, Gemini) 응답에서 브랜드가 언급(인용)되는지 자동으로 추적합니다.
+                  경쟁사 대비 가시성을 분석하고 인사이트를 제공합니다.
                 </Text>
               </div>
-              <Button leftSection={<IconPlus size={16} />} onClick={handleOpenAdd}>
-                첫 브랜드 추가하기
+              <Text size="xs" c="dimmed" ta="center">
+                예: "삼성전자" 브랜드를 등록하고 "최고의 TV 추천해줘"라고 테스트하면,
+                AI가 삼성전자를 추천하는지 확인할 수 있습니다.
+              </Text>
+              <Button size="md" leftSection={<IconPlus size={16} />} onClick={handleOpenAdd}>
+                첫 브랜드 추가하기 (30초)
               </Button>
             </Stack>
           </Center>

@@ -18,7 +18,7 @@ import { AuthProvider } from './contexts/AuthContext';
 
 export default function App() {
   return (
-    <MantineProvider theme={theme} defaultColorScheme="light">
+    <MantineProvider theme={theme} defaultColorScheme="auto">
       <AuthProvider>
         <BrowserRouter>
           <Routes>

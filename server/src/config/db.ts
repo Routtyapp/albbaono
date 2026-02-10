@@ -189,4 +189,11 @@ try {
   // 이미 컬럼이 존재하면 무시
 }
 
+// users 테이블에 onboarding_step 컬럼 추가 (기존 DB 호환)
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN onboarding_step INTEGER DEFAULT 0`);
+} catch {
+  // 이미 컬럼이 존재하면 무시
+}
+
 export default db;

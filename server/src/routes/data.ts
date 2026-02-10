@@ -22,8 +22,32 @@ function sendError(
   });
 }
 
+// Responses API web_search 인용 마커 제거 (브랜드 매칭용 클린 텍스트)
+function stripCitations(text: string): string {
+  return text
+    .replace(/\u3010\d+†[^\u3011]*\u3011/g, '')   // 【4†source】
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')       // [text](url) → text
+    .replace(/\[\d+\]/g, '')                        // [1] 참조 번호
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 // 모든 라우트에 인증 필요
 router.use(isAuthenticated);
+
+// === 온보딩 API ===
+
+router.patch('/onboarding', (req, res) => {
+  const userId = req.user!.id;
+  const { step } = req.body;
+
+  if (typeof step !== 'number' || step < 0 || step > 3) {
+    return sendError(res, 400, 'VALIDATION_ERROR', 'step must be a number between 0 and 3');
+  }
+
+  db.prepare('UPDATE users SET onboarding_step = ? WHERE id = ?').run(step, userId);
+  res.json({ success: true, onboardingStep: step });
+});
 
 // === 브랜드 API ===
 
@@ -268,11 +292,85 @@ router.get('/stats', (req, res) => {
     ? Math.round((citedCount.count / totalTests.count) * 100)
     : 0;
 
+  // 브랜드별 통계
+  const brands = db.prepare(
+    'SELECT id, name FROM brands WHERE user_id = ? AND is_active = 1'
+  ).all(userId) as { id: string; name: string }[];
+
+  const brandStats = brands.map((brand) => {
+    const brandTotal = db.prepare(
+      'SELECT COUNT(*) as count FROM brand_results br JOIN results r ON br.result_id = r.id WHERE r.user_id = ? AND br.brand_id = ?'
+    ).get(userId, brand.id) as { count: number };
+
+    const brandCited = db.prepare(
+      'SELECT COUNT(*) as count FROM brand_results br JOIN results r ON br.result_id = r.id WHERE r.user_id = ? AND br.brand_id = ? AND br.cited = 1'
+    ).get(userId, brand.id) as { count: number };
+
+    const avgRankRow = db.prepare(
+      'SELECT AVG(br.rank) as avg FROM brand_results br JOIN results r ON br.result_id = r.id WHERE r.user_id = ? AND br.brand_id = ? AND br.cited = 1 AND br.rank IS NOT NULL'
+    ).get(userId, brand.id) as { avg: number | null };
+
+    return {
+      brandId: brand.id,
+      brandName: brand.name,
+      citedCount: brandCited.count,
+      totalTests: brandTotal.count,
+      citationRate: brandTotal.count > 0 ? Math.round((brandCited.count / brandTotal.count) * 1000) / 10 : 0,
+      avgRank: avgRankRow.avg ? Math.round(avgRankRow.avg * 10) / 10 : null,
+    };
+  });
+
+  // 엔진별 통계
+  const engineRows = db.prepare(
+    'SELECT engine, COUNT(*) as total, SUM(cited) as cited FROM results WHERE user_id = ? GROUP BY engine'
+  ).all(userId) as { engine: string; total: number; cited: number }[];
+
+  const engineStats = engineRows.map((e) => ({
+    engine: e.engine,
+    totalTests: e.total,
+    citedCount: e.cited,
+    citationRate: e.total > 0 ? Math.round((e.cited / e.total) * 1000) / 10 : 0,
+  }));
+
+  // 최근 결과
+  const recentRows = db.prepare(
+    'SELECT id, query_id, query, category, engine, cited, response, full_response, tested_at FROM results WHERE user_id = ? ORDER BY tested_at DESC LIMIT 10'
+  ).all(userId) as any[];
+
+  const getBrandResults = db.prepare(
+    'SELECT brand_id, brand_name, cited, rank, competitor_mentions FROM brand_results WHERE result_id = ?'
+  );
+
+  const recentResults = recentRows.map((r: any) => {
+    const brs = getBrandResults.all(r.id) as any[];
+    return {
+      id: r.id,
+      queryId: r.query_id,
+      query: r.query,
+      category: r.category,
+      engine: r.engine,
+      cited: !!r.cited,
+      response: r.response,
+      fullResponse: r.full_response,
+      testedAt: r.tested_at,
+      brandResults: brs.map((br: any) => ({
+        brandId: br.brand_id,
+        brandName: br.brand_name,
+        cited: !!br.cited,
+        rank: br.rank,
+        competitorMentions: JSON.parse(br.competitor_mentions || '[]'),
+      })),
+    };
+  });
+
   res.json({
     totalTests: totalTests.count,
     citedCount: citedCount.count,
     citationRate,
     registeredBrands: brandsCount.count,
+    brandStats,
+    engineStats,
+    recentResults,
   });
 });
 
@@ -358,26 +456,15 @@ router.get('/trends', (req, res) => {
 
 router.get('/results', (req, res) => {
   const userId = req.user!.id;
-  const page = parseInt(req.query.page as string) || 1;
+  const rawPage = parseInt(req.query.page as string);
+  const page = isNaN(rawPage) ? 1 : rawPage;
   const limit = parseInt(req.query.limit as string) || 20;
-  const offset = (page - 1) * limit;
-
-  const results = db.prepare(`
-    SELECT id, query_id, query, category, engine, cited, response, full_response, tested_at
-    FROM results WHERE user_id = ?
-    ORDER BY tested_at DESC
-    LIMIT ? OFFSET ?
-  `).all(userId, limit, offset);
-
-  const total = db.prepare(
-    'SELECT COUNT(*) as count FROM results WHERE user_id = ?'
-  ).get(userId) as { count: number };
 
   const getBrandResults = db.prepare(
     'SELECT brand_id, brand_name, cited, rank, competitor_mentions FROM brand_results WHERE result_id = ?'
   );
 
-  const parsed = results.map((r: any) => {
+  const mapResult = (r: any) => {
     const brs = getBrandResults.all(r.id) as any[];
     return {
       id: r.id,
@@ -397,7 +484,40 @@ router.get('/results', (req, res) => {
         competitorMentions: JSON.parse(br.competitor_mentions || '[]'),
       })),
     };
-  });
+  };
+
+  // page=0: 전체 조회 (프론트엔드 호환)
+  if (page === 0) {
+    const results = db.prepare(`
+      SELECT id, query_id, query, category, engine, cited, response, full_response, tested_at
+      FROM results WHERE user_id = ?
+      ORDER BY tested_at DESC
+      LIMIT 500
+    `).all(userId);
+
+    const parsed = results.map(mapResult);
+    const lastResult = parsed[0];
+    res.json({
+      results: parsed,
+      lastUpdated: lastResult?.testedAt || null,
+    });
+    return;
+  }
+
+  // 일반 페이지네이션
+  const offset = (page - 1) * limit;
+  const results = db.prepare(`
+    SELECT id, query_id, query, category, engine, cited, response, full_response, tested_at
+    FROM results WHERE user_id = ?
+    ORDER BY tested_at DESC
+    LIMIT ? OFFSET ?
+  `).all(userId, limit, offset);
+
+  const total = db.prepare(
+    'SELECT COUNT(*) as count FROM results WHERE user_id = ?'
+  ).get(userId) as { count: number };
+
+  const parsed = results.map(mapResult);
 
   res.json({
     results: parsed,
@@ -449,12 +569,32 @@ router.get('/results/:id', (req, res) => {
 
 router.get('/reports', (req, res) => {
   const userId = req.user!.id;
+  const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 20, 1), 100);
+  const cursor = req.query.cursor as string | undefined;
 
-  const reports = db.prepare(`
-    SELECT id, title, type, period, start_date, end_date, generated_at, metrics, highlights, top_queries, worst_queries, ai_analysis
-    FROM reports WHERE user_id = ?
-    ORDER BY generated_at DESC
-  `).all(userId);
+  const { total } = db.prepare(`SELECT COUNT(*) as total FROM reports WHERE user_id = ?`).get(userId) as { total: number };
+
+  let reports: any[];
+  if (cursor) {
+    const cursorRow = db.prepare(`SELECT generated_at FROM reports WHERE id = ? AND user_id = ?`).get(cursor, userId) as { generated_at: string } | undefined;
+    if (cursorRow) {
+      reports = db.prepare(`
+        SELECT id, title, type, period, start_date, end_date, generated_at, metrics, highlights, top_queries, worst_queries, ai_analysis
+        FROM reports WHERE user_id = ? AND (generated_at < ? OR (generated_at = ? AND id < ?))
+        ORDER BY generated_at DESC, id DESC
+        LIMIT ?
+      `).all(userId, cursorRow.generated_at, cursorRow.generated_at, cursor, limit);
+    } else {
+      reports = [];
+    }
+  } else {
+    reports = db.prepare(`
+      SELECT id, title, type, period, start_date, end_date, generated_at, metrics, highlights, top_queries, worst_queries, ai_analysis
+      FROM reports WHERE user_id = ?
+      ORDER BY generated_at DESC, id DESC
+      LIMIT ?
+    `).all(userId, limit);
+  }
 
   const parsed = reports.map((r: any) => ({
     id: r.id,
@@ -471,7 +611,9 @@ router.get('/reports', (req, res) => {
     aiAnalysis: r.ai_analysis ? JSON.parse(r.ai_analysis) : null,
   }));
 
-  res.json({ reports: parsed });
+  const nextCursor = parsed.length === limit ? parsed[parsed.length - 1].id : null;
+
+  res.json({ reports: parsed, totalCount: total, nextCursor });
 });
 
 router.post('/reports', async (req, res) => {
@@ -813,12 +955,12 @@ ${uncitedSamples.length > 0 ? uncitedSamples.join('\n---\n') : '샘플 없음'}
 }`;
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
-        max_tokens: 3000,
+        max_completion_tokens: 3000,
         temperature: 0.7,
         response_format: { type: 'json_object' },
       });
@@ -992,7 +1134,7 @@ ${JSON.stringify(responses.slice(0, 20), null, 2)}
     const openai = new OpenAI({ apiKey: openaiKey });
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-5-mini',
       messages: [
         {
           role: 'system',
@@ -1003,7 +1145,7 @@ ${JSON.stringify(responses.slice(0, 20), null, 2)}
           content: analysisPrompt,
         },
       ],
-      max_tokens: 3000,
+      max_completion_tokens: 3000,
       temperature: 0.3,
     });
 
@@ -1059,7 +1201,7 @@ ${JSON.stringify(responses.slice(0, 20), null, 2)}
     JSON.stringify(insight.metadata)
   );
 
-  res.status(201).json(insight);
+  res.status(201).json({ ...insight, createdAt: now });
 });
 
 router.delete('/insights', (req, res) => {
@@ -1172,17 +1314,19 @@ router.post('/test-query', async (req, res) => {
         return res.status(500).json({ error: 'OpenAI API 키가 설정되지 않았습니다.' });
       }
       const openai = new OpenAI({ apiKey: openaiKey });
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: query }],
-        max_tokens: 1000,
+      const response = await openai.responses.create({
+        model: 'gpt-5-mini',
+        input: query,
+        tools: [{ type: 'web_search' }],
       });
-      fullResponse = completion.choices[0]?.message?.content || '';
+      fullResponse = response.output_text || '';
     } else {
       return res.status(400).json({ error: 'Gemini 엔진은 아직 지원되지 않습니다.' });
     }
 
-    const responseLower = fullResponse.toLowerCase();
+    // 인용 마커 제거한 클린 텍스트로 브랜드 매칭
+    const cleanResponse = stripCitations(fullResponse);
+    const cleanLower = cleanResponse.toLowerCase();
 
     // 해당 유저의 브랜드 조회
     const brands = db.prepare(
@@ -1193,11 +1337,11 @@ router.post('/test-query', async (req, res) => {
     const brandResults: { brandId: string; brandName: string; cited: boolean; rank: number | null; competitorMentions: string[] }[] = [];
 
     for (const brand of brands) {
-      const cited = responseLower.includes(brand.name.toLowerCase());
+      const cited = cleanLower.includes(brand.name.toLowerCase());
       let rank: number | null = null;
 
       if (cited) {
-        const lines = fullResponse.split('\n');
+        const lines = cleanResponse.split('\n');
         for (let i = 0; i < lines.length; i++) {
           if (lines[i].toLowerCase().includes(brand.name.toLowerCase())) {
             const match = lines[i].match(/^[\s]*(\d+)[.)\]]/);
@@ -1212,7 +1356,7 @@ router.post('/test-query', async (req, res) => {
       const competitors: string[] = JSON.parse(brand.competitors || '[]');
       const competitorMentions: string[] = [];
       for (const competitor of competitors) {
-        if (responseLower.includes(competitor.toLowerCase())) {
+        if (cleanLower.includes(competitor.toLowerCase())) {
           competitorMentions.push(competitor);
         }
       }

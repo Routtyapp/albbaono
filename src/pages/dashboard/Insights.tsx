@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Stack,
   Title,
@@ -6,6 +6,7 @@ import {
   Paper,
   Group,
   Badge,
+  Box,
   Button,
   Center,
   Loader,
@@ -16,8 +17,10 @@ import {
   List,
   Divider,
   Card,
+  Grid,
   Tooltip,
   Select,
+  ScrollArea,
 } from '@mantine/core';
 import {
   IconBulb,
@@ -37,6 +40,8 @@ import {
   IconFlame,
   IconStar,
   IconInfoCircle,
+  IconCircleFilled,
+  IconSelect,
 } from '@tabler/icons-react';
 import {
   getAIInsights,
@@ -49,30 +54,36 @@ import {
   type ActionableInsight,
 } from '../../services/api';
 import type { Brand } from '../../types';
-import { IconTrash, IconHistory, IconFileTypePdf, IconDownload } from '@tabler/icons-react';
+import { IconTrash, IconFileTypePdf, IconDownload, IconCheck, IconTags } from '@tabler/icons-react';
+import { InsightsSkeleton } from '../../components/ui';
+import { useNavigate } from 'react-router-dom';
 
-const PRIORITY_COLORS = {
+const PRIORITY_COLORS: Record<string, string> = {
   high: 'red',
   medium: 'yellow',
   low: 'blue',
 };
 
-const PRIORITY_LABELS = {
+const PRIORITY_LABELS: Record<string, string> = {
   high: '높음',
   medium: '중간',
   low: '낮음',
 };
 
-const IMPORTANCE_ICONS = {
+const IMPORTANCE_ICONS: Record<string, typeof IconFlame> = {
   high: IconFlame,
   medium: IconStar,
   low: IconInfoCircle,
 };
 
+const PRIORITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
+
 export function Insights() {
+  const navigate = useNavigate();
   const [insights, setInsights] = useState<SavedInsight | null>(null);
   const [savedInsights, setSavedInsights] = useState<SavedInsight[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isPdfLoading, setIsPdfLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -81,16 +92,17 @@ export function Insights() {
 
   // 브랜드 및 저장된 인사이트 로드
   useEffect(() => {
-    getBrands()
-      .then((data) => {
-        setBrands(data.brands);
-        if (data.brands.length > 0) {
-          setSelectedBrandId(data.brands[0].id);
-        }
-      })
-      .catch(() => setBrands([]));
-
-    loadSavedInsights();
+    Promise.all([
+      getBrands()
+        .then((data) => {
+          setBrands(data.brands);
+          if (data.brands.length > 0) {
+            setSelectedBrandId(data.brands[0].id);
+          }
+        })
+        .catch(() => setBrands([])),
+      loadSavedInsights(),
+    ]).finally(() => setIsInitialLoading(false));
   }, []);
 
   const loadSavedInsights = async () => {
@@ -112,6 +124,34 @@ export function Insights() {
     }
   }, [selectedInsightId, savedInsights]);
 
+  // 첫 인사이트 자동 선택
+  useEffect(() => {
+    if (savedInsights.length > 0 && !selectedInsightId) {
+      setSelectedInsightId(savedInsights[0].id);
+    }
+  }, [savedInsights, selectedInsightId]);
+
+  // 분석 요약 파생 데이터
+  const analysisSummary = useMemo(() => {
+    if (!insights) return null;
+    const total = insights.metadata?.totalResponses || 0;
+    const cited = insights.metadata?.citedResponses || 0;
+    const rate = total > 0 ? Math.round((cited / total) * 100) : 0;
+    const keywordCount = insights.commonKeywords?.length || 0;
+    const highPriorityCount = (insights.actionableInsights || []).filter(
+      (a) => a.priority === 'high'
+    ).length;
+    return { rate, keywordCount, highPriorityCount };
+  }, [insights]);
+
+  // 액션 큐: priority 순 정렬, 상위 5개
+  const actionQueue = useMemo(() => {
+    if (!insights?.actionableInsights) return [];
+    return [...insights.actionableInsights]
+      .sort((a, b) => (PRIORITY_ORDER[a.priority] ?? 2) - (PRIORITY_ORDER[b.priority] ?? 2))
+      .slice(0, 5);
+  }, [insights]);
+
   const handleAnalyze = async () => {
     if (!selectedBrandId) {
       setError('분석할 브랜드를 선택해주세요');
@@ -123,7 +163,6 @@ export function Insights() {
     try {
       const result = await getAIInsights(selectedBrandId);
       setInsights(result);
-      // 목록 새로고침
       await loadSavedInsights();
       setSelectedInsightId(result.id);
     } catch (err) {
@@ -153,7 +192,6 @@ export function Insights() {
     setError(null);
 
     try {
-      // 리포트 PDF처럼 데이터를 명시적으로 구성
       const pdfData = {
         id: insights.id,
         brandId: insights.brandId,
@@ -209,6 +247,12 @@ export function Insights() {
     }
   };
 
+  if (isInitialLoading) {
+    return <InsightsSkeleton />;
+  }
+
+  const showHeroEmpty = savedInsights.length === 0 && !insights && !isLoading;
+
   return (
     <Stack gap="lg">
       <Group justify="space-between">
@@ -259,42 +303,7 @@ export function Insights() {
         </Alert>
       )}
 
-      {/* 저장된 인사이트 기록 */}
-      {savedInsights.length > 0 && (
-        <Paper p="md" radius="md" withBorder>
-          <Group gap="xs" mb="sm">
-            <IconHistory size={18} />
-            <Text fw={600} size="sm">저장된 분석 기록</Text>
-            <Badge size="sm" variant="light">{savedInsights.length}개</Badge>
-          </Group>
-          <Group gap="xs" style={{ flexWrap: 'wrap' }}>
-            {savedInsights.slice(0, 10).map((item) => (
-              <Badge
-                key={item.id}
-                size="lg"
-                variant={selectedInsightId === item.id ? 'filled' : 'light'}
-                color={selectedInsightId === item.id ? 'violet' : 'gray'}
-                style={{ cursor: 'pointer' }}
-                onClick={() => setSelectedInsightId(item.id)}
-                rightSection={
-                  <IconTrash
-                    size={14}
-                    style={{ cursor: 'pointer' }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(item.id);
-                    }}
-                  />
-                }
-              >
-                {item.brandName} · {new Date(item.metadata?.analyzedAt || '').toLocaleDateString('ko-KR')}
-              </Badge>
-            ))}
-          </Group>
-        </Paper>
-      )}
-
-      {!insights && !isLoading && (
+      {showHeroEmpty ? (
         <Paper p="xl" radius="md" withBorder>
           <Center py={60}>
             <Stack align="center" gap="md">
@@ -311,309 +320,561 @@ export function Insights() {
                 <Badge variant="light" color="grape">카테고리별 인사이트</Badge>
                 <Badge variant="light" color="pink">인용 패턴 분석</Badge>
               </Group>
-              <Button
-                mt="lg"
-                size="lg"
-                leftSection={<IconRocket size={20} />}
-                onClick={handleAnalyze}
-                variant="gradient"
-                gradient={{ from: 'violet', to: 'grape' }}
-              >
-                분석 시작하기
-              </Button>
+
+              {/* 전제조건 체크리스트 */}
+              <Paper p="md" radius="md" withBorder w="100%" maw={400} mt="md">
+                <Text size="sm" fw={600} mb="sm">시작 전 체크리스트</Text>
+                <Stack gap="xs">
+                  <Group gap="sm">
+                    <ThemeIcon
+                      size={20}
+                      radius="xl"
+                      variant="light"
+                      color={brands.length > 0 ? 'teal' : 'gray'}
+                    >
+                      {brands.length > 0 ? <IconCheck size={12} /> : <Box w={12} h={12} style={{ borderRadius: '50%', border: '2px solid var(--mantine-color-gray-4)' }} />}
+                    </ThemeIcon>
+                    <Text size="sm" c={brands.length > 0 ? undefined : 'dimmed'}>
+                      브랜드 등록 {brands.length > 0 ? `(${brands.length}개 등록됨)` : '(필수)'}
+                    </Text>
+                  </Group>
+                  <Group gap="sm">
+                    <ThemeIcon size={20} radius="xl" variant="light" color="blue">
+                      <IconInfoCircle size={12} />
+                    </ThemeIcon>
+                    <Text size="xs" c="dimmed">
+                      테스트 데이터가 많을수록 정확한 인사이트를 제공합니다
+                    </Text>
+                  </Group>
+                </Stack>
+              </Paper>
+
+              {brands.length === 0 ? (
+                <Stack align="center" gap="xs" mt="sm">
+                  <Button
+                    size="lg"
+                    leftSection={<IconTags size={20} />}
+                    onClick={() => navigate('/dashboard/brands')}
+                    variant="light"
+                    color="violet"
+                  >
+                    먼저 브랜드 등록하기
+                  </Button>
+                  <Tooltip label="먼저 브랜드를 등록해주세요" withArrow>
+                    <Button
+                      size="lg"
+                      leftSection={<IconRocket size={20} />}
+                      variant="gradient"
+                      gradient={{ from: 'violet', to: 'grape' }}
+                      disabled
+                      data-disabled
+                      style={{ pointerEvents: 'all' }}
+                    >
+                      분석 시작하기
+                    </Button>
+                  </Tooltip>
+                </Stack>
+              ) : (
+                <Button
+                  mt="lg"
+                  size="lg"
+                  leftSection={<IconRocket size={20} />}
+                  onClick={handleAnalyze}
+                  variant="gradient"
+                  gradient={{ from: 'violet', to: 'grape' }}
+                >
+                  분석 시작하기
+                </Button>
+              )}
             </Stack>
           </Center>
         </Paper>
-      )}
-
-      {insights && (
-        <Stack gap="lg">
-          {/* 메타데이터 요약 */}
-          <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
-            <Paper p="lg" radius="md" withBorder>
-              <Group justify="space-between" mb="xs">
-                <Text size="sm" c="dimmed">분석 응답 수</Text>
-                <ThemeIcon color="blue" variant="light" size="sm">
-                  <IconChartBar size={14} />
-                </ThemeIcon>
-              </Group>
-              <Text size="xl" fw={700}>{insights.metadata?.totalResponses ?? 0}</Text>
-              <Text size="xs" c="dimmed">개 응답 분석</Text>
-            </Paper>
-
-            <Paper p="lg" radius="md" withBorder>
-              <Group justify="space-between" mb="xs">
-                <Text size="sm" c="dimmed">인용 성공</Text>
-                <ThemeIcon color="green" variant="light" size="sm">
-                  <IconCircleCheck size={14} />
-                </ThemeIcon>
-              </Group>
-              <Text size="xl" fw={700}>{insights.metadata?.citedResponses ?? 0}</Text>
-              <Text size="xs" c="dimmed">
-                ({insights.metadata?.totalResponses ? Math.round((insights.metadata.citedResponses / insights.metadata.totalResponses) * 100) : 0}%)
-              </Text>
-            </Paper>
-
-            <Paper p="lg" radius="md" withBorder>
-              <Group justify="space-between" mb="xs">
-                <Text size="sm" c="dimmed">공략 키워드</Text>
-                <ThemeIcon color="violet" variant="light" size="sm">
-                  <IconTarget size={14} />
-                </ThemeIcon>
-              </Group>
-              <Text size="xl" fw={700}>{insights.commonKeywords?.length || 0}</Text>
-              <Text size="xs" c="dimmed">개 발견</Text>
-            </Paper>
-
-            <Paper p="lg" radius="md" withBorder>
-              <Group justify="space-between" mb="xs">
-                <Text size="sm" c="dimmed">액션 아이템</Text>
-                <ThemeIcon color="orange" variant="light" size="sm">
-                  <IconChecklist size={14} />
-                </ThemeIcon>
-              </Group>
-              <Text size="xl" fw={700}>{insights.actionableInsights?.length || 0}</Text>
-              <Text size="xs" c="dimmed">개 제안</Text>
-            </Paper>
-          </SimpleGrid>
-
-          {/* 탭 구성 */}
-          <Tabs defaultValue="keywords">
-            <Tabs.List>
-              <Tabs.Tab value="keywords" leftSection={<IconTarget size={16} />}>
-                공략 키워드
-              </Tabs.Tab>
-              <Tabs.Tab value="categories" leftSection={<IconChartBar size={16} />}>
-                카테고리별
-              </Tabs.Tab>
-              <Tabs.Tab value="patterns" leftSection={<IconTrendingUp size={16} />}>
-                인용 패턴
-              </Tabs.Tab>
-              <Tabs.Tab value="actions" leftSection={<IconBulb size={16} />}>
-                실행 가이드
-              </Tabs.Tab>
-            </Tabs.List>
-
-            {/* 공략 키워드 탭 */}
-            <Tabs.Panel value="keywords" pt="md">
+      ) : (
+        <Grid>
+          {/* 좌측: 분석 요약 + 액션 큐 + 저장된 분석 목록 */}
+          <Grid.Col span={{ base: 12, md: 4 }}>
+            <Paper p="md" radius="md" withBorder h="100%">
               <Stack gap="md">
-                <Paper p="lg" radius="md" withBorder>
-                  <Title order={4} mb="md">
-                    AI가 자주 언급하는 핵심 키워드
-                  </Title>
-                  <Text size="sm" c="dimmed" mb="lg">
-                    다양한 쿼리에서 AI가 공통적으로 중요하게 다루는 요소들입니다.
-                    이 키워드들을 콘텐츠에 포함하면 AI 인용 확률이 높아집니다.
-                  </Text>
-
-                  {insights.commonKeywords && insights.commonKeywords.length > 0 ? (
-                    <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
-                      {insights.commonKeywords.map((kw, idx) => (
-                        <KeywordCard key={idx} keyword={kw} rank={idx + 1} />
-                      ))}
-                    </SimpleGrid>
-                  ) : (
-                    <Center py="xl">
-                      <Text c="dimmed">키워드 데이터가 없습니다</Text>
-                    </Center>
-                  )}
-                </Paper>
-              </Stack>
-            </Tabs.Panel>
-
-            {/* 카테고리별 인사이트 탭 */}
-            <Tabs.Panel value="categories" pt="md">
-              <Stack gap="md">
-                {insights.categoryInsights && insights.categoryInsights.length > 0 ? (
-                  insights.categoryInsights.map((cat, idx) => (
-                    <Paper key={idx} p="lg" radius="md" withBorder>
-                      <Group justify="space-between" mb="md">
-                        <Group gap="xs">
-                          <Badge size="lg" variant="light" color="grape">
-                            {cat.category}
+                {/* 분석 요약 */}
+                {analysisSummary && (
+                  <>
+                    <div>
+                      <Text fw={500} size="xs" c="dimmed" mb="xs">분석 요약</Text>
+                      <Stack gap={6}>
+                        <Group gap="xs" wrap="nowrap">
+                          <ThemeIcon
+                            size={20}
+                            variant="light"
+                            radius="xl"
+                            color={analysisSummary.rate >= 70 ? 'teal' : analysisSummary.rate >= 40 ? 'yellow' : 'red'}
+                          >
+                            <IconCircleCheck size={12} />
+                          </ThemeIcon>
+                          <Text size="xs" style={{ flex: 1 }}>인용 성공률</Text>
+                          <Badge
+                            size="sm"
+                            variant="light"
+                            color={analysisSummary.rate >= 70 ? 'teal' : analysisSummary.rate >= 40 ? 'yellow' : 'red'}
+                          >
+                            {analysisSummary.rate}%
                           </Badge>
                         </Group>
-                      </Group>
-
-                      <Text size="sm" fw={500} mb="sm">중요 요소:</Text>
-                      <Group gap="xs" mb="md">
-                        {cat.keyFactors?.map((factor, i) => (
-                          <Badge key={i} variant="outline" color="violet">
-                            {factor}
+                        <Group gap="xs" wrap="nowrap">
+                          <ThemeIcon size={20} variant="light" radius="xl" color="violet">
+                            <IconTarget size={12} />
+                          </ThemeIcon>
+                          <Text size="xs" style={{ flex: 1 }}>공략 키워드</Text>
+                          <Badge size="sm" variant="light" color="violet">
+                            {analysisSummary.keywordCount}개
                           </Badge>
+                        </Group>
+                        <Group gap="xs" wrap="nowrap">
+                          <ThemeIcon size={20} variant="light" radius="xl" color="red">
+                            <IconFlame size={12} />
+                          </ThemeIcon>
+                          <Text size="xs" style={{ flex: 1 }}>우선 액션</Text>
+                          <Badge size="sm" variant="light" color="red">
+                            {analysisSummary.highPriorityCount}개
+                          </Badge>
+                        </Group>
+                      </Stack>
+                    </div>
+                    <Divider />
+                  </>
+                )}
+
+                {/* 액션 큐 */}
+                {actionQueue.length > 0 && (
+                  <>
+                    <div>
+                      <Text fw={500} size="xs" c="dimmed" mb="xs">액션 큐</Text>
+                      <Stack gap={6}>
+                        {actionQueue.map((action, idx) => (
+                          <Group key={idx} gap="xs" wrap="nowrap">
+                            <IconCircleFilled
+                              size={8}
+                              color={`var(--mantine-color-${PRIORITY_COLORS[action.priority]}-filled)`}
+                              style={{ flexShrink: 0 }}
+                            />
+                            <Text size="xs" truncate style={{ flex: 1 }}>
+                              {action.title}
+                            </Text>
+                            <Badge size="xs" variant="light" color={PRIORITY_COLORS[action.priority]}>
+                              {PRIORITY_LABELS[action.priority]}
+                            </Badge>
+                          </Group>
                         ))}
-                      </Group>
-
-                      <Divider my="sm" />
-
-                      <Group gap="xs">
-                        <ThemeIcon color="green" variant="light" size="sm">
-                          <IconBulb size={14} />
-                        </ThemeIcon>
-                        <Text size="sm" c="dimmed" style={{ flex: 1 }}>
-                          {cat.recommendation}
-                        </Text>
-                      </Group>
-                    </Paper>
-                  ))
-                ) : (
-                  <Paper p="xl" radius="md" withBorder>
-                    <Center py="xl">
-                      <Text c="dimmed">카테고리별 인사이트가 없습니다</Text>
-                    </Center>
-                  </Paper>
+                      </Stack>
+                    </div>
+                    <Divider />
+                  </>
                 )}
-              </Stack>
-            </Tabs.Panel>
 
-            {/* 인용 패턴 탭 */}
-            <Tabs.Panel value="patterns" pt="md">
-              <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md">
-                {/* 인용 성공 패턴 */}
-                <Paper p="lg" radius="md" withBorder>
-                  <Group gap="xs" mb="md">
-                    <ThemeIcon color="green" variant="light">
-                      <IconCircleCheck size={18} />
-                    </ThemeIcon>
-                    <Title order={4}>인용 성공 패턴</Title>
-                  </Group>
-                  <Text size="sm" c="dimmed" mb="md">
-                    브랜드가 인용된 응답에서 발견되는 공통 특징
+                {/* 저장된 분석 목록 */}
+                <div>
+                  <Text fw={500} mb="sm" size="sm" c="dimmed">
+                    저장된 분석 ({savedInsights.length})
                   </Text>
-
-                  {Array.isArray(insights.citationPatterns?.citedPatterns) && insights.citationPatterns.citedPatterns.length > 0 ? (
-                    <List
-                      spacing="sm"
-                      icon={
-                        <ThemeIcon color="green" size={20} radius="xl" variant="light">
-                          <IconCircleCheck size={12} />
-                        </ThemeIcon>
-                      }
-                    >
-                      {insights.citationPatterns.citedPatterns.map((pattern, idx) => (
-                        <List.Item key={idx}>
-                          <Text size="sm">{typeof pattern === 'string' ? pattern : JSON.stringify(pattern)}</Text>
-                        </List.Item>
-                      ))}
-                    </List>
-                  ) : (
-                    <Text size="sm" c="dimmed">패턴 데이터가 없습니다</Text>
-                  )}
-                </Paper>
-
-                {/* 인용 실패 패턴 */}
-                <Paper p="lg" radius="md" withBorder>
-                  <Group gap="xs" mb="md">
-                    <ThemeIcon color="red" variant="light">
-                      <IconCircleX size={18} />
-                    </ThemeIcon>
-                    <Title order={4}>인용 실패 패턴</Title>
-                  </Group>
-                  <Text size="sm" c="dimmed" mb="md">
-                    브랜드가 인용되지 않은 응답에서 발견되는 특징
-                  </Text>
-
-                  {insights.citationPatterns?.uncitedPatterns?.length > 0 ? (
-                    <List
-                      spacing="sm"
-                      icon={
-                        <ThemeIcon color="red" size={20} radius="xl" variant="light">
-                          <IconAlertTriangle size={12} />
-                        </ThemeIcon>
-                      }
-                    >
-                      {insights.citationPatterns.uncitedPatterns.map((pattern, idx) => (
-                        <List.Item key={idx}>
-                          <Text size="sm">{pattern}</Text>
-                        </List.Item>
-                      ))}
-                    </List>
-                  ) : (
-                    <Text size="sm" c="dimmed">패턴 데이터가 없습니다</Text>
-                  )}
-                </Paper>
-              </SimpleGrid>
-
-              {/* 콘텐츠 갭 */}
-              {insights.contentGaps && insights.contentGaps.length > 0 && (
-                <Paper p="lg" radius="md" withBorder mt="md">
-                  <Group gap="xs" mb="md">
-                    <ThemeIcon color="orange" variant="light">
-                      <IconAlertTriangle size={18} />
-                    </ThemeIcon>
-                    <Title order={4}>콘텐츠 보강 영역</Title>
-                  </Group>
-
-                  <Stack gap="sm">
-                    {insights.contentGaps.map((gap, idx) => (
-                      <Paper key={idx} p="md" bg="gray.1" radius="sm">
-                        <Group justify="space-between" mb="xs">
-                          <Text size="sm" fw={600}>{gap.area}</Text>
-                        </Group>
-                        <Text size="xs" c="dimmed" mb="xs">
-                          현재: {gap.currentState}
+                  <ScrollArea.Autosize mah={analysisSummary || actionQueue.length > 0 ? 300 : 500}>
+                    <Stack gap="xs">
+                      {savedInsights.length > 0 ? (
+                        savedInsights.map((item) => (
+                          <InsightListItem
+                            key={item.id}
+                            insight={item}
+                            isSelected={selectedInsightId === item.id}
+                            onClick={() => setSelectedInsightId(item.id)}
+                            onDelete={() => handleDelete(item.id)}
+                          />
+                        ))
+                      ) : (
+                        <Text size="xs" c="dimmed" ta="center" py="md">
+                          저장된 분석이 없습니다
                         </Text>
-                        <Group gap="xs">
-                          <IconArrowRight size={14} color="var(--mantine-color-green-6)" />
-                          <Text size="xs" c="green">{gap.recommendation}</Text>
-                        </Group>
+                      )}
+                    </Stack>
+                  </ScrollArea.Autosize>
+                </div>
+              </Stack>
+            </Paper>
+          </Grid.Col>
+
+          {/* 우측: 상세 패널 */}
+          <Grid.Col span={{ base: 12, md: 8 }}>
+            {insights ? (
+              <Stack gap="lg">
+                {/* 메타데이터 요약 */}
+                <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
+                  <Paper p="lg" radius="md" withBorder>
+                    <Group justify="space-between" mb="xs">
+                      <Text size="sm" c="dimmed">분석 응답 수</Text>
+                      <ThemeIcon color="blue" variant="light" size="sm">
+                        <IconChartBar size={14} />
+                      </ThemeIcon>
+                    </Group>
+                    <Text size="xl" fw={700}>{insights.metadata?.totalResponses ?? 0}</Text>
+                    <Text size="xs" c="dimmed">개 응답 분석</Text>
+                  </Paper>
+
+                  <Paper p="lg" radius="md" withBorder>
+                    <Group justify="space-between" mb="xs">
+                      <Text size="sm" c="dimmed">인용 성공</Text>
+                      <ThemeIcon color="green" variant="light" size="sm">
+                        <IconCircleCheck size={14} />
+                      </ThemeIcon>
+                    </Group>
+                    <Text size="xl" fw={700}>{insights.metadata?.citedResponses ?? 0}</Text>
+                    <Text size="xs" c="dimmed">
+                      ({insights.metadata?.totalResponses ? Math.round((insights.metadata.citedResponses / insights.metadata.totalResponses) * 100) : 0}%)
+                    </Text>
+                  </Paper>
+
+                  <Paper p="lg" radius="md" withBorder>
+                    <Group justify="space-between" mb="xs">
+                      <Text size="sm" c="dimmed">공략 키워드</Text>
+                      <ThemeIcon color="violet" variant="light" size="sm">
+                        <IconTarget size={14} />
+                      </ThemeIcon>
+                    </Group>
+                    <Text size="xl" fw={700}>{insights.commonKeywords?.length || 0}</Text>
+                    <Text size="xs" c="dimmed">개 발견</Text>
+                  </Paper>
+
+                  <Paper p="lg" radius="md" withBorder>
+                    <Group justify="space-between" mb="xs">
+                      <Text size="sm" c="dimmed">액션 아이템</Text>
+                      <ThemeIcon color="orange" variant="light" size="sm">
+                        <IconChecklist size={14} />
+                      </ThemeIcon>
+                    </Group>
+                    <Text size="xl" fw={700}>{insights.actionableInsights?.length || 0}</Text>
+                    <Text size="xs" c="dimmed">개 제안</Text>
+                  </Paper>
+                </SimpleGrid>
+
+                {/* 탭 구성 */}
+                <Tabs defaultValue="keywords">
+                  <Tabs.List>
+                    <Tabs.Tab value="keywords" leftSection={<IconTarget size={16} />}>
+                      공략 키워드
+                    </Tabs.Tab>
+                    <Tabs.Tab value="categories" leftSection={<IconChartBar size={16} />}>
+                      카테고리별
+                    </Tabs.Tab>
+                    <Tabs.Tab value="patterns" leftSection={<IconTrendingUp size={16} />}>
+                      인용 패턴
+                    </Tabs.Tab>
+                    <Tabs.Tab value="actions" leftSection={<IconBulb size={16} />}>
+                      실행 가이드
+                    </Tabs.Tab>
+                  </Tabs.List>
+
+                  {/* 공략 키워드 탭 */}
+                  <Tabs.Panel value="keywords" pt="md">
+                    <Stack gap="md">
+                      <Paper p="lg" radius="md" withBorder>
+                        <Title order={4} mb="md">
+                          AI가 자주 언급하는 핵심 키워드
+                        </Title>
+                        <Text size="sm" c="dimmed" mb="lg">
+                          다양한 쿼리에서 AI가 공통적으로 중요하게 다루는 요소들입니다.
+                          이 키워드들을 콘텐츠에 포함하면 AI 인용 확률이 높아집니다.
+                        </Text>
+
+                        {insights.commonKeywords && insights.commonKeywords.length > 0 ? (
+                          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+                            {insights.commonKeywords.map((kw, idx) => (
+                              <KeywordCard key={idx} keyword={kw} rank={idx + 1} />
+                            ))}
+                          </SimpleGrid>
+                        ) : (
+                          <Center py="xl">
+                            <Text c="dimmed">키워드 데이터가 없습니다</Text>
+                          </Center>
+                        )}
                       </Paper>
-                    ))}
-                  </Stack>
+                    </Stack>
+                  </Tabs.Panel>
+
+                  {/* 카테고리별 인사이트 탭 */}
+                  <Tabs.Panel value="categories" pt="md">
+                    <Stack gap="md">
+                      {insights.categoryInsights && insights.categoryInsights.length > 0 ? (
+                        insights.categoryInsights.map((cat, idx) => (
+                          <Paper key={idx} p="lg" radius="md" withBorder>
+                            <Group justify="space-between" mb="md">
+                              <Group gap="xs">
+                                <Badge size="lg" variant="light" color="grape">
+                                  {cat.category}
+                                </Badge>
+                              </Group>
+                            </Group>
+
+                            <Text size="sm" fw={500} mb="sm">중요 요소:</Text>
+                            <Group gap="xs" mb="md">
+                              {cat.keyFactors?.map((factor, i) => (
+                                <Badge key={i} variant="outline" color="violet">
+                                  {factor}
+                                </Badge>
+                              ))}
+                            </Group>
+
+                            <Divider my="sm" />
+
+                            <Group gap="xs">
+                              <ThemeIcon color="green" variant="light" size="sm">
+                                <IconBulb size={14} />
+                              </ThemeIcon>
+                              <Text size="sm" c="dimmed" style={{ flex: 1 }}>
+                                {cat.recommendation}
+                              </Text>
+                            </Group>
+                          </Paper>
+                        ))
+                      ) : (
+                        <Paper p="xl" radius="md" withBorder>
+                          <Center py="xl">
+                            <Text c="dimmed">카테고리별 인사이트가 없습니다</Text>
+                          </Center>
+                        </Paper>
+                      )}
+                    </Stack>
+                  </Tabs.Panel>
+
+                  {/* 인용 패턴 탭 */}
+                  <Tabs.Panel value="patterns" pt="md">
+                    <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md">
+                      <Paper p="lg" radius="md" withBorder>
+                        <Group gap="xs" mb="md">
+                          <ThemeIcon color="green" variant="light">
+                            <IconCircleCheck size={18} />
+                          </ThemeIcon>
+                          <Title order={4}>인용 성공 패턴</Title>
+                        </Group>
+                        <Text size="sm" c="dimmed" mb="md">
+                          브랜드가 인용된 응답에서 발견되는 공통 특징
+                        </Text>
+
+                        {Array.isArray(insights.citationPatterns?.citedPatterns) && insights.citationPatterns.citedPatterns.length > 0 ? (
+                          <List
+                            spacing="sm"
+                            icon={
+                              <ThemeIcon color="green" size={20} radius="xl" variant="light">
+                                <IconCircleCheck size={12} />
+                              </ThemeIcon>
+                            }
+                          >
+                            {insights.citationPatterns.citedPatterns.map((pattern, idx) => (
+                              <List.Item key={idx}>
+                                <Text size="sm">{typeof pattern === 'string' ? pattern : JSON.stringify(pattern)}</Text>
+                              </List.Item>
+                            ))}
+                          </List>
+                        ) : (
+                          <Text size="sm" c="dimmed">패턴 데이터가 없습니다</Text>
+                        )}
+                      </Paper>
+
+                      <Paper p="lg" radius="md" withBorder>
+                        <Group gap="xs" mb="md">
+                          <ThemeIcon color="red" variant="light">
+                            <IconCircleX size={18} />
+                          </ThemeIcon>
+                          <Title order={4}>인용 실패 패턴</Title>
+                        </Group>
+                        <Text size="sm" c="dimmed" mb="md">
+                          브랜드가 인용되지 않은 응답에서 발견되는 특징
+                        </Text>
+
+                        {insights.citationPatterns?.uncitedPatterns?.length > 0 ? (
+                          <List
+                            spacing="sm"
+                            icon={
+                              <ThemeIcon color="red" size={20} radius="xl" variant="light">
+                                <IconAlertTriangle size={12} />
+                              </ThemeIcon>
+                            }
+                          >
+                            {insights.citationPatterns.uncitedPatterns.map((pattern, idx) => (
+                              <List.Item key={idx}>
+                                <Text size="sm">{pattern}</Text>
+                              </List.Item>
+                            ))}
+                          </List>
+                        ) : (
+                          <Text size="sm" c="dimmed">패턴 데이터가 없습니다</Text>
+                        )}
+                      </Paper>
+                    </SimpleGrid>
+
+                    {insights.contentGaps && insights.contentGaps.length > 0 && (
+                      <Paper p="lg" radius="md" withBorder mt="md">
+                        <Group gap="xs" mb="md">
+                          <ThemeIcon color="orange" variant="light">
+                            <IconAlertTriangle size={18} />
+                          </ThemeIcon>
+                          <Title order={4}>콘텐츠 보강 영역</Title>
+                        </Group>
+
+                        <Stack gap="sm">
+                          {insights.contentGaps.map((gap, idx) => (
+                            <Paper key={idx} p="md" bg="gray.1" radius="sm">
+                              <Group justify="space-between" mb="xs">
+                                <Text size="sm" fw={600}>{gap.area}</Text>
+                              </Group>
+                              <Text size="xs" c="dimmed" mb="xs">
+                                현재: {gap.currentState}
+                              </Text>
+                              <Group gap="xs">
+                                <IconArrowRight size={14} color="var(--mantine-color-green-6)" />
+                                <Text size="xs" c="green">{gap.recommendation}</Text>
+                              </Group>
+                            </Paper>
+                          ))}
+                        </Stack>
+                      </Paper>
+                    )}
+                  </Tabs.Panel>
+
+                  {/* 실행 가이드 탭 */}
+                  <Tabs.Panel value="actions" pt="md">
+                    <Stack gap="md">
+                      {insights.actionableInsights && insights.actionableInsights.length > 0 ? (
+                        insights.actionableInsights.map((insight, idx) => (
+                          <ActionCard key={idx} insight={insight} index={idx + 1} />
+                        ))
+                      ) : (
+                        <Paper p="xl" radius="md" withBorder>
+                          <Center py="xl">
+                            <Text c="dimmed">실행 가이드가 없습니다</Text>
+                          </Center>
+                        </Paper>
+                      )}
+                    </Stack>
+                  </Tabs.Panel>
+                </Tabs>
+
+                {/* 분석 시간 및 다운로드 */}
+                <Paper p="sm" radius="md" bg="gray.0">
+                  <Group justify="space-between">
+                    <Text size="xs" c="dimmed">
+                      분석 시간: {new Date(insights.metadata.analyzedAt).toLocaleString('ko-KR')}
+                    </Text>
+                    <Group gap="xs">
+                      <Button
+                        variant="light"
+                        size="xs"
+                        color="grape"
+                        leftSection={<IconDownload size={14} />}
+                        onClick={handleDownloadPdf}
+                        loading={isPdfLoading}
+                      >
+                        PDF 보고서
+                      </Button>
+                      <Button
+                        variant="subtle"
+                        size="xs"
+                        leftSection={<IconRefresh size={14} />}
+                        onClick={handleAnalyze}
+                        loading={isLoading}
+                      >
+                        다시 분석
+                      </Button>
+                    </Group>
+                  </Group>
                 </Paper>
-              )}
-            </Tabs.Panel>
-
-            {/* 실행 가이드 탭 */}
-            <Tabs.Panel value="actions" pt="md">
-              <Stack gap="md">
-                {insights.actionableInsights && insights.actionableInsights.length > 0 ? (
-                  insights.actionableInsights.map((insight, idx) => (
-                    <ActionCard key={idx} insight={insight} index={idx + 1} />
-                  ))
-                ) : (
-                  <Paper p="xl" radius="md" withBorder>
-                    <Center py="xl">
-                      <Text c="dimmed">실행 가이드가 없습니다</Text>
-                    </Center>
-                  </Paper>
-                )}
               </Stack>
-            </Tabs.Panel>
-          </Tabs>
-
-          {/* 분석 시간 및 다운로드 */}
-          <Paper p="sm" radius="md" bg="gray.0">
-            <Group justify="space-between">
-              <Text size="xs" c="dimmed">
-                분석 시간: {new Date(insights.metadata.analyzedAt).toLocaleString('ko-KR')}
-              </Text>
-              <Group gap="xs">
-                <Button
-                  variant="light"
-                  size="xs"
-                  color="grape"
-                  leftSection={<IconDownload size={14} />}
-                  onClick={handleDownloadPdf}
-                  loading={isPdfLoading}
-                >
-                  PDF 보고서
-                </Button>
-                <Button
-                  variant="subtle"
-                  size="xs"
-                  leftSection={<IconRefresh size={14} />}
-                  onClick={handleAnalyze}
-                  loading={isLoading}
-                >
-                  다시 분석
-                </Button>
-              </Group>
-            </Group>
-          </Paper>
-        </Stack>
+            ) : (
+              <Paper p="xl" radius="md" withBorder h="100%">
+                <Center h={400}>
+                  <Stack align="center" gap="md">
+                    <IconSelect size={48} stroke={1.5} color="gray" />
+                    <Text c="dimmed">좌측 목록에서 인사이트를 선택하세요</Text>
+                  </Stack>
+                </Center>
+              </Paper>
+            )}
+          </Grid.Col>
+        </Grid>
       )}
     </Stack>
+  );
+}
+
+// InsightListItem 인라인 컴포넌트
+function InsightListItem({
+  insight,
+  isSelected,
+  onClick,
+  onDelete,
+}: {
+  insight: SavedInsight;
+  isSelected: boolean;
+  onClick: () => void;
+  onDelete: () => void;
+}) {
+  const citationRate = insight.metadata?.totalResponses
+    ? Math.round((insight.metadata.citedResponses / insight.metadata.totalResponses) * 100)
+    : 0;
+
+  return (
+    <Paper
+      p="sm"
+      radius="md"
+      withBorder
+      onClick={onClick}
+      style={{
+        cursor: 'pointer',
+        backgroundColor: isSelected ? 'var(--mantine-color-violet-light)' : undefined,
+        borderColor: isSelected ? 'var(--mantine-color-violet-filled)' : undefined,
+        transition: 'all 0.15s ease',
+      }}
+    >
+      <Group justify="space-between" wrap="nowrap">
+        <Group gap="sm" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
+          <Box
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 'var(--mantine-radius-sm)',
+              backgroundColor: 'var(--mantine-color-violet-light)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <IconBrain size={18} stroke={1.5} color="var(--mantine-color-violet-filled)" />
+          </Box>
+          <Stack gap={2} style={{ minWidth: 0 }}>
+            <Text fw={500} size="sm" truncate>
+              {insight.brandName}
+            </Text>
+            <Text size="xs" c="dimmed">
+              {new Date(insight.metadata?.analyzedAt || '').toLocaleDateString('ko-KR')}
+            </Text>
+          </Stack>
+        </Group>
+        <Group gap={4} wrap="nowrap">
+          <Badge
+            variant="light"
+            color={citationRate >= 70 ? 'green' : citationRate >= 40 ? 'yellow' : 'red'}
+            size="sm"
+          >
+            {citationRate}%
+          </Badge>
+          <IconTrash
+            size={14}
+            color="var(--mantine-color-gray-5)"
+            style={{ cursor: 'pointer', flexShrink: 0 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+          />
+        </Group>
+      </Group>
+    </Paper>
   );
 }
 

@@ -472,7 +472,7 @@ export function GuideModal({ opened, onClose }: GuideModalProps) {
           miw={200}
           py="md"
           style={{
-            borderRight: '1px solid var(--mantine-color-gray-2)',
+            borderRight: '1px solid var(--mantine-color-default-border)',
             flexShrink: 0,
             overflowY: 'auto',
           }}

@@ -320,7 +320,7 @@ export function ReportsSkeleton() {
   );
 }
 
-// Insights 페이지 스켈레톤
+// Insights 페이지 스켈레톤 (2컬럼 레이아웃)
 export function InsightsSkeleton() {
   return (
     <Stack gap="md">
@@ -330,26 +330,74 @@ export function InsightsSkeleton() {
           <Skeleton height={32} width={180} />
           <Skeleton height={16} width={320} />
         </Stack>
-        <Skeleton height={36} width={160} />
+        <Group gap="sm">
+          <Skeleton height={36} width={180} />
+          <Skeleton height={36} width={140} />
+        </Group>
       </Group>
 
-      {/* 인사이트 카드 */}
       <Grid>
-        {Array.from({ length: 3 }).map((_, i) => (
-          <Grid.Col key={i} span={{ base: 12, md: 4 }}>
-            <Paper p="md" radius="md" withBorder h={200}>
-              <Stack gap="md">
-                <Group justify="space-between">
-                  <Skeleton height={24} width={24} circle />
-                  <Skeleton height={20} width={60} radius="xl" />
-                </Group>
-                <Skeleton height={20} width="80%" />
-                <Skeleton height={14} width="100%" />
-                <Skeleton height={14} width="70%" />
+        {/* 좌측: 요약 + 리스트 */}
+        <Grid.Col span={{ base: 12, md: 4 }}>
+          <Paper p="md" radius="md" withBorder>
+            <Stack gap="md">
+              {/* 요약 카드 스켈레톤 */}
+              <Stack gap="xs">
+                <Skeleton height={12} width={80} />
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Group key={i} gap="xs" wrap="nowrap">
+                    <Skeleton height={20} width={20} circle />
+                    <Skeleton height={12} width="50%" />
+                    <Skeleton height={18} width={40} radius="xl" />
+                  </Group>
+                ))}
               </Stack>
+              <Skeleton height={1} />
+              {/* 리스트 아이템 스켈레톤 */}
+              <Stack gap="xs">
+                <Skeleton height={12} width={100} />
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Paper key={i} p="sm" radius="md" withBorder>
+                    <Group justify="space-between" wrap="nowrap">
+                      <Group gap="sm" wrap="nowrap">
+                        <Skeleton height={32} width={32} radius="sm" />
+                        <Stack gap={4}>
+                          <Skeleton height={14} width={80} />
+                          <Skeleton height={12} width={60} />
+                        </Stack>
+                      </Group>
+                      <Skeleton height={20} width={40} radius="xl" />
+                    </Group>
+                  </Paper>
+                ))}
+              </Stack>
+            </Stack>
+          </Paper>
+        </Grid.Col>
+
+        {/* 우측: 메트릭 + 차트 */}
+        <Grid.Col span={{ base: 12, md: 8 }}>
+          <Stack gap="md">
+            {/* 메트릭 카드 4개 */}
+            <Grid>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Grid.Col key={i} span={{ base: 6, sm: 3 }}>
+                  <MetricCardSkeleton />
+                </Grid.Col>
+              ))}
+            </Grid>
+            {/* 탭 + 차트 스켈레톤 */}
+            <Paper p="md" radius="md" withBorder>
+              <Group gap="md" mb="md">
+                <Skeleton height={32} width={100} />
+                <Skeleton height={32} width={100} />
+                <Skeleton height={32} width={100} />
+                <Skeleton height={32} width={100} />
+              </Group>
+              <Skeleton height={300} radius="md" />
             </Paper>
-          </Grid.Col>
-        ))}
+          </Stack>
+        </Grid.Col>
       </Grid>
     </Stack>
   );

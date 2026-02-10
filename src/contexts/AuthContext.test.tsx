@@ -37,6 +37,7 @@ describe('AuthContext', () => {
         created_at: '',
         updated_at: '',
         last_login: null,
+        onboarding_step: 3,
       },
     });
 
@@ -64,6 +65,7 @@ describe('AuthContext', () => {
         created_at: '',
         updated_at: '',
         last_login: null,
+        onboarding_step: 3,
       },
     });
 
@@ -116,6 +118,7 @@ describe('AuthContext', () => {
         created_at: '',
         updated_at: '',
         last_login: null,
+        onboarding_step: 3,
       },
     });
     vi.mocked(logoutUser).mockResolvedValue({

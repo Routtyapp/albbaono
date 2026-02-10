@@ -3,8 +3,15 @@ import { apiBlob, apiGet, apiMutate } from './client';
 import type { GeoScoreResult } from './geoScore';
 import type { InsightsPdfData } from './insights';
 
-export async function getReports(): Promise<{ reports: Report[] }> {
-  return apiGet('/api/reports');
+export async function getReports(params?: {
+  limit?: number;
+  cursor?: string;
+}): Promise<{ reports: Report[]; totalCount: number; nextCursor: string | null }> {
+  const searchParams = new URLSearchParams();
+  if (params?.limit) searchParams.set('limit', String(params.limit));
+  if (params?.cursor) searchParams.set('cursor', params.cursor);
+  const qs = searchParams.toString();
+  return apiGet(`/api/reports${qs ? `?${qs}` : ''}`);
 }
 
 export async function generateReport(type: 'weekly' | 'monthly'): Promise<Report> {

@@ -1,39 +1,23 @@
-import { useState, useEffect } from 'react';
 import { AppShell } from '@mantine/core';
 import { useDisclosure, useLocalStorage } from '@mantine/hooks';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { DashboardHeader } from './DashboardHeader';
-import { WelcomeModal } from './WelcomeModal';
+import { ProfileModal, type SidebarPosition } from './ProfileModal';
+import { OnboardingWizard } from '../../pages/dashboard/OnboardingWizard';
 import { useAuth } from '../../contexts/AuthContext';
-
-type SidebarPosition = 'left' | 'right';
 
 export function DashboardLayout() {
   const { user } = useAuth();
   const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
   const [desktopCollapsed, { toggle: toggleDesktop }] = useDisclosure();
+  const [settingsOpened, { open: openSettings, close: closeSettings }] = useDisclosure();
   const [sidebarPosition, setSidebarPosition] = useLocalStorage<SidebarPosition>({
     key: 'sidebar-position',
     defaultValue: 'right',
   });
 
-  const [welcomeDismissed, setWelcomeDismissed] = useLocalStorage<boolean>({
-    key: 'welcome-dismissed',
-    defaultValue: false,
-  });
-  const [welcomeOpen, setWelcomeOpen] = useState(false);
-
-  useEffect(() => {
-    if (!welcomeDismissed) {
-      setWelcomeOpen(true);
-    }
-  }, [welcomeDismissed]);
-
-  const handleCloseWelcome = () => {
-    setWelcomeOpen(false);
-    setWelcomeDismissed(true);
-  };
+  const isOnboarding = (user?.onboarding_step ?? 0) < 3;
 
   const sidebarWidth = desktopCollapsed ? 64 : 320;
 
@@ -42,26 +26,20 @@ export function DashboardLayout() {
       collapsed={desktopCollapsed}
       onToggle={toggleDesktop}
       position={sidebarPosition}
-      onPositionChange={setSidebarPosition}
+      onSettingsOpen={openSettings}
     />
   );
 
   return (
-    <>
-    <WelcomeModal
-      opened={welcomeOpen}
-      onClose={handleCloseWelcome}
-      userName={user?.name}
-    />
     <AppShell
       layout="alt"
       header={{ height: 52 }}
-      navbar={sidebarPosition === 'left' ? {
+      navbar={!isOnboarding && sidebarPosition === 'left' ? {
         width: sidebarWidth,
         breakpoint: 'sm',
         collapsed: { mobile: !mobileOpened, desktop: false },
       } : undefined}
-      aside={sidebarPosition === 'right' ? {
+      aside={!isOnboarding && sidebarPosition === 'right' ? {
         width: sidebarWidth,
         breakpoint: 'sm',
         collapsed: { mobile: !mobileOpened, desktop: false },
@@ -71,27 +49,29 @@ export function DashboardLayout() {
     >
       <AppShell.Header
         style={{
-          backgroundColor: 'white',
-          borderBottom: '1px solid var(--mantine-color-gray-3)',
+          backgroundColor: 'var(--mantine-color-body)',
+          borderBottom: '1px solid var(--mantine-color-default-border)',
         }}
       >
-        <DashboardHeader opened={mobileOpened} toggle={toggleMobile} />
+        <DashboardHeader opened={mobileOpened} toggle={toggleMobile} onSettingsOpen={openSettings} />
       </AppShell.Header>
 
-      {sidebarPosition === 'left' ? (
+      {!isOnboarding && sidebarPosition === 'left' && (
         <AppShell.Navbar
           style={{
-            backgroundColor: 'white',
-            borderRight: '1px solid var(--mantine-color-gray-3)',
+            backgroundColor: 'var(--mantine-color-body)',
+            borderRight: '1px solid var(--mantine-color-default-border)',
           }}
         >
           {sidebarContent}
         </AppShell.Navbar>
-      ) : (
+      )}
+
+      {!isOnboarding && sidebarPosition === 'right' && (
         <AppShell.Aside
           style={{
-            backgroundColor: 'white',
-            borderLeft: '1px solid var(--mantine-color-gray-3)',
+            backgroundColor: 'var(--mantine-color-body)',
+            borderLeft: '1px solid var(--mantine-color-default-border)',
           }}
         >
           {sidebarContent}
@@ -100,15 +80,24 @@ export function DashboardLayout() {
 
       <AppShell.Main
         style={{
-          backgroundColor: 'var(--mantine-color-gray-0)',
+          backgroundColor: 'light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8))',
           minHeight: '100vh',
         }}
       >
-        <div style={{ paddingLeft: 24, paddingRight: 24 }}>
-          <Outlet />
-        </div>
+        {isOnboarding ? (
+          <OnboardingWizard />
+        ) : (
+          <div style={{ paddingLeft: 24, paddingRight: 24 }}>
+            <Outlet />
+          </div>
+        )}
       </AppShell.Main>
+      <ProfileModal
+        opened={settingsOpened}
+        onClose={closeSettings}
+        sidebarPosition={sidebarPosition}
+        onSidebarPositionChange={setSidebarPosition}
+      />
     </AppShell>
-    </>
   );
 }

@@ -68,6 +68,36 @@ export async function changePassword(
 }
 
 /**
+ * 프로필 수정 (이름 변경)
+ */
+export function updateProfile(userId: string, name: string): SafeUser {
+  db.prepare("UPDATE users SET name = ?, updated_at = datetime('now') WHERE id = ?")
+    .run(name, userId);
+
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId) as User;
+  const { password: _, ...safeUser } = user;
+  return safeUser as SafeUser;
+}
+
+/**
+ * 계정 삭제 (비밀번호 확인 후)
+ */
+export async function deleteAccount(userId: string, password: string): Promise<void> {
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId) as User | undefined;
+
+  if (!user) {
+    throw new Error('사용자를 찾을 수 없습니다.');
+  }
+
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    throw new Error('비밀번호가 올바르지 않습니다.');
+  }
+
+  db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+}
+
+/**
  * 사용자 ID로 조회 (비밀번호 제외)
  */
 export function getUserById(userId: string): SafeUser | null {

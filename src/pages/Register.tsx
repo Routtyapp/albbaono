@@ -50,10 +50,9 @@ export default function Register() {
     const result = await register(email, password, name || undefined);
 
     if (result.success) {
-      setSuccess('회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.');
-      setTimeout(() => {
-        navigate('/login');
-      }, 1500);
+      // 서버에서 자동 로그인 완료 — 바로 대시보드로 이동
+      navigate('/dashboard');
+      return;
     } else {
       setError(result.message);
     }

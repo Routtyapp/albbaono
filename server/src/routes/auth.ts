@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import passport from '../config/passport.js';
 import { isAuthenticated } from '../middleware/auth.js';
-import { registerUser, changePassword } from '../services/authService.js';
+import { registerUser, changePassword, updateProfile, deleteAccount } from '../services/authService.js';
 import type { RegisterRequest, ChangePasswordRequest, AuthResponse } from '../types/auth.js';
 
 const router = Router();
@@ -40,6 +40,14 @@ router.post('/register', async (req, res) => {
     }
 
     const user = await registerUser({ email, password, name });
+
+    // 가입 후 자동 로그인 — 세션 생성
+    await new Promise<void>((resolve, reject) => {
+      req.logIn(user as any, (err) => {
+        if (err) return reject(err);
+        resolve();
+      });
+    });
 
     res.status(201).json({
       success: true,
@@ -143,6 +151,37 @@ router.get('/me', (req, res) => {
 });
 
 /**
+ * PATCH /api/auth/profile
+ * 프로필 수정 (이름 변경)
+ */
+router.patch('/profile', isAuthenticated, (req, res) => {
+  try {
+    const { name } = req.body as { name: string };
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: '이름을 입력해주세요.',
+      } as AuthResponse);
+    }
+
+    const user = updateProfile(req.user!.id, name.trim());
+
+    res.json({
+      success: true,
+      message: '프로필이 수정되었습니다.',
+      user,
+    } as AuthResponse);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '프로필 수정에 실패했습니다.';
+    res.status(400).json({
+      success: false,
+      message,
+    } as AuthResponse);
+  }
+});
+
+/**
  * POST /api/auth/change-password
  * 비밀번호 변경
  */
@@ -172,6 +211,50 @@ router.post('/change-password', isAuthenticated, async (req, res) => {
     } as AuthResponse);
   } catch (error) {
     const message = error instanceof Error ? error.message : '비밀번호 변경에 실패했습니다.';
+    res.status(400).json({
+      success: false,
+      message,
+    } as AuthResponse);
+  }
+});
+
+/**
+ * DELETE /api/auth/account
+ * 계정 삭제 (회원 탈퇴)
+ */
+router.delete('/account', isAuthenticated, async (req, res) => {
+  try {
+    const { password } = req.body as { password: string };
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: '비밀번호를 입력해주세요.',
+      } as AuthResponse);
+    }
+
+    const userId = req.user!.id;
+
+    await deleteAccount(userId, password);
+
+    req.logout((err) => {
+      if (err) {
+        return res.status(500).json({
+          success: false,
+          message: '계정은 삭제되었으나 세션 정리에 실패했습니다.',
+        } as AuthResponse);
+      }
+
+      req.session.destroy(() => {
+        res.clearCookie('connect.sid');
+        res.json({
+          success: true,
+          message: '계정이 삭제되었습니다.',
+        } as AuthResponse);
+      });
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '계정 삭제에 실패했습니다.';
     res.status(400).json({
       success: false,
       message,
