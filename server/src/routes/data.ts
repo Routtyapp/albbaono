@@ -898,7 +898,7 @@ router.get('/insights', (req, res) => {
   res.json({ insights: parsed });
 });
 
-router.post('/insights', (req, res) => {
+router.post('/insights', async (req, res) => {
   const userId = req.user!.id;
   const { brandId } = req.body;
 
@@ -908,27 +908,141 @@ router.post('/insights', (req, res) => {
 
   // 브랜드 정보 조회
   const brand = db.prepare(
-    'SELECT id, name FROM brands WHERE id = ? AND user_id = ?'
-  ).get(brandId, userId) as { id: string; name: string } | undefined;
+    'SELECT id, name, competitors FROM brands WHERE id = ? AND user_id = ?'
+  ).get(brandId, userId) as { id: string; name: string; competitors: string } | undefined;
 
   if (!brand) {
     return res.status(404).json({ error: '브랜드를 찾을 수 없습니다.' });
   }
 
-  // 간단한 인사이트 생성 (실제로는 AI 분석 필요)
+  const competitors: string[] = JSON.parse(brand.competitors || '[]');
+
+  // 해당 브랜드가 포함된 결과 조회
+  const brandResultRows = db.prepare(`
+    SELECT r.id, r.query, r.category, r.full_response, r.cited, r.tested_at,
+           br.cited as brand_cited
+    FROM results r
+    JOIN brand_results br ON r.id = br.result_id AND br.brand_id = ?
+    WHERE r.user_id = ?
+    ORDER BY r.tested_at DESC
+    LIMIT 100
+  `).all(brandId, userId) as any[];
+
+  if (brandResultRows.length < 3) {
+    return res.status(400).json({
+      error: `'${brand.name}' 브랜드의 테스트 결과가 3개 이상 필요합니다 (현재 ${brandResultRows.length}개)`
+    });
+  }
+
+  // 최근 50개 응답 분석
+  const responses = brandResultRows.slice(0, 50)
+    .filter((r: any) => r.full_response)
+    .map((r: any) => ({
+      query: r.query,
+      category: r.category,
+      response: (r.full_response as string).slice(0, 2000),
+      cited: !!r.brand_cited,
+    }));
+
+  if (responses.length === 0) {
+    return res.status(400).json({ error: '분석할 응답 데이터가 없습니다' });
+  }
+
+  // LLM 분석
+  const analysisPrompt = `당신은 AI 마케팅 전문가입니다.
+
+분석 대상 브랜드: "${brand.name}"
+${competitors.length > 0 ? `경쟁사: ${competitors.join(', ')}` : ''}
+
+아래는 "${brand.name}" 브랜드 관련 쿼리에 대한 AI(ChatGPT, Gemini 등)의 응답들입니다.
+각 응답의 cited 필드는 해당 응답에서 "${brand.name}"이 언급되었는지를 나타냅니다.
+
+이 응답들을 분석하여 "${brand.name}" 브랜드의 AI 가시성을 높이기 위한 인사이트를 JSON 형식으로 추출해주세요:
+
+1. **commonKeywords**: AI가 이 분야에서 추천/답변할 때 공통적으로 자주 언급하는 핵심 키워드 또는 속성 (최대 15개)
+   - 각 키워드에 대해: keyword, count(등장 빈도 추정), importance(high/medium/low), description("${brand.name}"이 왜 이 키워드를 활용해야 하는지)
+
+2. **categoryInsights**: 쿼리 카테고리별 AI가 중요시하는 요소
+   - 각 카테고리에 대해: category, keyFactors(중요 요소 3-5개), recommendation("${brand.name}"을 위한 마케팅 제안)
+
+3. **citationPatterns**: "${brand.name}"이 인용될 때 vs 안 될 때의 패턴 차이
+   - citedPatterns: 인용된 응답들의 공통 특징 (문자열 배열)
+   - uncitedPatterns: 인용되지 않은 응답들의 공통 특징 (문자열 배열)
+
+4. **actionableInsights**: "${brand.name}"이 실행할 수 있는 인사이트 (최대 5개)
+   - 각 인사이트에 대해: title, description, priority(high/medium/low), actionItems(구체적 행동 2-3개, 문자열 배열)
+
+5. **contentGaps**: "${brand.name}"이 보강해야 할 콘텐츠 영역 (최대 5개)
+   - 각 갭에 대해: area, currentState, recommendation
+
+분석할 응답 데이터:
+${JSON.stringify(responses.slice(0, 20), null, 2)}
+
+반드시 유효한 JSON 형식으로만 응답하세요. 마크다운이나 추가 설명 없이 JSON만 출력하세요.`;
+
+  let analysisResult: any;
+
+  try {
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (!openaiKey) {
+      return res.status(500).json({ error: 'OpenAI API 키가 설정되지 않았습니다.' });
+    }
+
+    const { default: OpenAI } = await import('openai');
+    const openai = new OpenAI({ apiKey: openaiKey });
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an AI marketing analyst. Always respond with valid JSON only, no markdown.',
+        },
+        {
+          role: 'user',
+          content: analysisPrompt,
+        },
+      ],
+      max_tokens: 3000,
+      temperature: 0.3,
+    });
+
+    const content = completion.choices[0]?.message?.content || '{}';
+    const jsonContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    analysisResult = JSON.parse(jsonContent);
+  } catch (llmError) {
+    console.error('LLM analysis error:', llmError);
+    analysisResult = {
+      commonKeywords: [],
+      categoryInsights: [],
+      citationPatterns: { citedPatterns: [], uncitedPatterns: [] },
+      actionableInsights: [],
+      contentGaps: [],
+      error: 'LLM 분석 중 오류가 발생했습니다.',
+    };
+  }
+
+  // 인사이트 저장
   const id = randomUUID();
   const now = new Date().toISOString();
+
+  const metadata = {
+    analyzedAt: now,
+    totalResponses: responses.length,
+    citedResponses: responses.filter((r) => r.cited).length,
+    categories: [...new Set(responses.map((r) => r.category))],
+  };
 
   const insight = {
     id,
     brandId: brand.id,
     brandName: brand.name,
-    commonKeywords: [],
-    categoryInsights: [],
-    citationPatterns: { citedPatterns: [], uncitedPatterns: [] },
-    actionableInsights: [],
-    contentGaps: [],
-    metadata: { analyzedAt: now, totalResponses: 0, citedResponses: 0, categories: [] },
+    commonKeywords: analysisResult.commonKeywords || [],
+    categoryInsights: analysisResult.categoryInsights || [],
+    citationPatterns: analysisResult.citationPatterns || { citedPatterns: [], uncitedPatterns: [] },
+    actionableInsights: analysisResult.actionableInsights || [],
+    contentGaps: analysisResult.contentGaps || [],
+    metadata,
   };
 
   db.prepare(`

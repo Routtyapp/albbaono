@@ -45,8 +45,8 @@ export function Hero() {
             className="reveal"
             style={{ animationDelay: '0.18s', textShadow: '0 1px 3px rgba(255,255,255,0.8)' }}
           >
-            ChatGPT, Gemini, Perplexity에서 브랜드가 어떻게 언급되는지
-            추적하고, 경쟁사 대비 성과를 즉시 파악합니다.
+            ChatGPT, Gemini 등 AI 검색에서 브랜드가 어떻게 언급되는지
+            추적하고, GEO 점수 분석으로 경쟁사 대비 성과를 즉시 파악합니다.
           </Text>
 
           <Group gap={14} className="reveal" style={{ animationDelay: '0.24s' }} wrap="wrap" justify="center">

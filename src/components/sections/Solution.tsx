@@ -14,33 +14,33 @@ import { SectionTitle } from '../ui/SectionTitle';
 const features = [
   {
     title: 'AI 언급 모니터링',
-    text: 'ChatGPT, Gemini, Perplexity에 쿼리를 실행하고 브랜드가 언급되는 맥락을 실시간으로 추적합니다.',
-    link: '/dashboard/queries',
-    linkLabel: '쿼리 관리 바로가기',
+    text: 'ChatGPT, Gemini에 쿼리를 실행하고 브랜드 언급 여부, 인용 순위, 경쟁사 노출까지 실시간으로 추적합니다.',
+    link: '/dashboard/query-ops',
+    linkLabel: '쿼리 운영 바로가기',
+  },
+  {
+    title: '성과 대시보드',
+    text: '인용률, 점유율, 엔진별 성과를 한눈에 파악합니다. 트렌드 분석으로 기간별 변화 추이를 시각적으로 확인하세요.',
+    link: '/dashboard/performance',
+    linkLabel: '성과 분석 바로가기',
+  },
+  {
+    title: 'GEO 점수 분석',
+    text: '웹사이트의 AI 검색 최적화 점수를 콘텐츠, 구조, 스키마, 메타태그, URL 5개 카테고리로 측정하고 경쟁사와 비교합니다.',
+    link: '/dashboard/score',
+    linkLabel: 'GEO 점수 바로가기',
   },
   {
     title: 'AI 인사이트',
     text: 'AI가 응답 패턴을 분석해 핵심 키워드, 인용 성공·실패 패턴, 콘텐츠 갭을 자동으로 도출합니다.',
-    link: '/dashboard/insights',
+    link: '/dashboard/reports',
     linkLabel: '인사이트 바로가기',
-  },
-  {
-    title: 'GEO 점수 분석',
-    text: '웹사이트의 AI 검색 최적화 점수를 구조, 스키마, URL, 메타태그, 콘텐츠 5개 카테고리로 측정합니다.',
-    link: '/dashboard/geo-score',
-    linkLabel: 'GEO 점수 바로가기',
-  },
-  {
-    title: '경쟁사 벤치마크',
-    text: '같은 질의에서 경쟁사가 어떻게 노출되는지 비교하고 GEO 점수 격차를 시각적으로 확인합니다.',
-    link: '/dashboard/geo-score/competitors',
-    linkLabel: '경쟁사 분석 바로가기',
   },
 ];
 
 const wideFeature = {
   title: '자동 리포트 & 스케줄러',
-  text: '주간·월간 리포트를 자동 생성하고, 스케줄러로 테스트를 자동 반복 실행합니다. 인용률 추이, 점유율, 엔진별 성과를 한 눈에 공유하세요.',
+  text: '주간·월간 리포트를 자동 생성하고, 스케줄러로 테스트를 자동 반복 실행합니다. 인용률 추이, 점유율, 엔진별 성과를 PDF로 다운로드하세요.',
   link: '/dashboard/reports',
   linkLabel: '리포트 바로가기',
 };
