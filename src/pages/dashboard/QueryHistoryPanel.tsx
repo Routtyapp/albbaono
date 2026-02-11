@@ -182,7 +182,7 @@ export function QueryHistoryPanel() {
             <Group justify="space-between">
               <div>
                 <Text size="sm" c="dimmed">쿼리</Text>
-                <Text fw={500}>{selectedResult.query}</Text>
+                <Text>{selectedResult.query}</Text>
               </div>
               <Badge color={selectedResult.engine === 'gemini' ? 'blue' : 'teal'} variant="filled" size="lg">
                 {AI_ENGINES.find((e) => e.value === selectedResult.engine)?.label || selectedResult.engine}
@@ -194,7 +194,7 @@ export function QueryHistoryPanel() {
               <Stack gap="xs">
                 {selectedResult.brandResults?.map((br) => (
                   <Group key={br.brandId} justify="space-between" p="xs" style={{ background: 'light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))', borderRadius: 8 }}>
-                    <Text fw={500}>{br.brandName}</Text>
+                    <Text>{br.brandName}</Text>
                     <Group gap="xs">
                       {br.cited ? (
                         <>

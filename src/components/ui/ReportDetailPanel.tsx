@@ -52,7 +52,7 @@ function StatBox({
           {label}
         </Text>
         <Group gap="xs" align="baseline">
-          <Text fw={700} size="xl" c={color}>
+          <Text size="xl" c={color}>
             {value}{suffix}
           </Text>
           {change !== undefined && change !== 0 && (
@@ -102,7 +102,7 @@ export function ReportDetailPanel({
         <Group justify="space-between" wrap="nowrap">
           <Stack gap={4}>
             <Group gap="sm">
-              <Text fw={600} size="xl">
+              <Text size="xl">
                 {report.title}
               </Text>
               <Badge color={isWeekly ? 'blue' : 'teal'} variant="light">
@@ -181,7 +181,7 @@ export function ReportDetailPanel({
             <ThemeIcon size="sm" variant="light" color="yellow">
               <IconStar size={14} />
             </ThemeIcon>
-            <Text fw={500}>주요 하이라이트</Text>
+            <Text>주요 하이라이트</Text>
           </Group>
           <List size="sm" spacing="xs">
             {report.highlights.map((highlight, i) => (
@@ -200,7 +200,7 @@ export function ReportDetailPanel({
               <ThemeIcon size="sm" variant="light" color="violet">
                 <IconBrain size={14} />
               </ThemeIcon>
-              <Text fw={500}>AI 종합 분석</Text>
+              <Text>AI 종합 분석</Text>
             </Group>
             <Text size="sm" style={{ lineHeight: 1.7 }}>
               {report.aiAnalysis.summary}
@@ -214,14 +214,14 @@ export function ReportDetailPanel({
                 <ThemeIcon size="sm" variant="light" color="blue">
                   <IconCategory size={14} />
                 </ThemeIcon>
-                <Text fw={500}>카테고리별 분석</Text>
+                <Text>카테고리별 분석</Text>
               </Group>
               <Grid>
                 {report.aiAnalysis.categoryAnalysis.map((ca, i) => (
                   <Grid.Col key={i} span={{ base: 12, sm: 6 }}>
                     <Paper p="sm" radius="sm" withBorder>
                       <Group justify="space-between" mb="xs">
-                        <Text size="sm" fw={500}>{ca.category}</Text>
+                        <Text size="sm">{ca.category}</Text>
                         <Badge
                           color={ca.citationRate >= 70 ? 'green' : ca.citationRate >= 40 ? 'yellow' : 'red'}
                           variant="light"
@@ -245,7 +245,7 @@ export function ReportDetailPanel({
                 <ThemeIcon size="sm" variant="light" color="orange">
                   <IconUsers size={14} />
                 </ThemeIcon>
-                <Text fw={500}>경쟁사 분석</Text>
+                <Text>경쟁사 분석</Text>
               </Group>
               <Text size="sm" style={{ lineHeight: 1.7 }}>
                 {report.aiAnalysis.competitorAnalysis}
@@ -260,7 +260,7 @@ export function ReportDetailPanel({
                 <ThemeIcon size="sm" variant="light" color="green">
                   <IconBulb size={14} />
                 </ThemeIcon>
-                <Text fw={500}>개선 제안</Text>
+                <Text>개선 제안</Text>
               </Group>
               <List size="sm" spacing="xs" type="ordered">
                 {report.aiAnalysis.actionItems.map((item, i) => (
@@ -275,7 +275,7 @@ export function ReportDetailPanel({
       {/* AI 엔진별 성능 */}
       {engineChartData.length > 0 && (
         <Paper p="md" radius="md" withBorder>
-          <Text fw={500} mb="md">
+          <Text mb="md">
             AI 엔진별 성능
           </Text>
           <BarChart
@@ -297,7 +297,7 @@ export function ReportDetailPanel({
       {/* 브랜드별 성능 */}
       {brandChartData.length > 0 && (
         <Paper p="md" radius="md" withBorder>
-          <Text fw={500} mb="md">
+          <Text mb="md">
             브랜드별 인용 성과
           </Text>
           <BarChart
@@ -323,7 +323,7 @@ export function ReportDetailPanel({
             <ThemeIcon size="sm" variant="light" color="teal">
               <IconTrendingUp size={14} />
             </ThemeIcon>
-            <Text fw={500}>인용률 높은 쿼리</Text>
+            <Text>인용률 높은 쿼리</Text>
           </Group>
           <Stack gap="sm">
             {report.topQueries.map((q, i) => (
@@ -347,7 +347,7 @@ export function ReportDetailPanel({
             <ThemeIcon size="sm" variant="light" color="red">
               <IconAlertTriangle size={14} />
             </ThemeIcon>
-            <Text fw={500}>개선 필요 쿼리</Text>
+            <Text>개선 필요 쿼리</Text>
           </Group>
           <Stack gap="sm">
             {report.worstQueries.map((q, i) => (

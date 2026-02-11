@@ -26,8 +26,8 @@ export function ReportListItem({
         onClick={onClick}
         style={{
           cursor: 'pointer',
-          backgroundColor: isSelected ? 'var(--mantine-color-brand-0)' : undefined,
-          borderColor: isSelected ? 'var(--mantine-color-brand-3)' : '1px solid transparent',
+          backgroundColor: isSelected ? 'light-dark(var(--mantine-color-brand-0), var(--mantine-color-dark-5))' : undefined,
+          borderColor: isSelected ? 'var(--mantine-color-brand-3)' : undefined,
           transition: 'all 0.15s ease',
         }}
       >
@@ -92,7 +92,7 @@ export function ReportListItem({
             )}
           </Box>
           <Stack gap={2} style={{ minWidth: 0 }}>
-            <Text fw={500} size="sm" truncate>
+            <Text size="sm" truncate>
               {report.title}
             </Text>
             <Group gap="xs">

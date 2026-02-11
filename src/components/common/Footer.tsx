@@ -18,7 +18,7 @@ const footerLinks = {
 
 export function Footer() {
   return (
-    <Box component="footer" py={60} bg="#f0efed" style={{ borderTop: '1px solid var(--mantine-color-gray-2)' }}>
+    <Box component="footer" py={60} bg="light-dark(#f0efed, var(--mantine-color-dark-7))" style={{ borderTop: '1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4))' }}>
       <Container size={1440} px={{ base: 20, md: 40 }}>
         <Grid gutter={{ base: 32, md: 48 }}>
           <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
@@ -35,7 +35,7 @@ export function Footer() {
 
           {Object.entries(footerLinks).map(([title, links]) => (
             <Grid.Col key={title} span={{ base: 6, sm: 3, md: 'auto' }}>
-              <Text fz="sm" fw={600} tt="uppercase" lts="0.1em" mb={16}>
+              <Text fz="sm" tt="uppercase" lts="0.1em" mb={16}>
                 {title}
               </Text>
               <Stack gap={4}>

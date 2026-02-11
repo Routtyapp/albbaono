@@ -3,7 +3,6 @@ import {
   Hero,
   Problem,
   Solution,
-  Framework,
   CaseStudy,
   Pricing,
   CTA,
@@ -18,7 +17,6 @@ export function Landing() {
       </Container>
       <Problem />
       <Solution />
-      <Framework />
       <CaseStudy />
       <Pricing />
       <CTA />

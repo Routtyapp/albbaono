@@ -31,13 +31,13 @@ export function StatCard({ icon, value, label, description, color = 'brand' }: S
         <div>
           <Text
             size="2rem"
-            fw={800}
+           
             variant="gradient"
             gradient={{ from: `${color}.4`, to: `${color}.6` }}
           >
             {value}
           </Text>
-          <Text size="sm" fw={600} c="white" mt={4}>
+          <Text size="sm" c="white" mt={4}>
             {label}
           </Text>
           {description && (

@@ -44,7 +44,7 @@ export function DashboardLayout() {
         breakpoint: 'sm',
         collapsed: { mobile: !mobileOpened, desktop: false },
       } : undefined}
-      padding="md"
+      padding={48}
       transitionDuration={300}
     >
       <AppShell.Header
@@ -87,7 +87,7 @@ export function DashboardLayout() {
         {isOnboarding ? (
           <OnboardingWizard />
         ) : (
-          <div style={{ paddingLeft: 24, paddingRight: 24 }}>
+          <div style={{ paddingLeft: 80, paddingRight: 80 }}>
             <Outlet />
           </div>
         )}

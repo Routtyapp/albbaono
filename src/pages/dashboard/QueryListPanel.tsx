@@ -58,7 +58,7 @@ import {
 } from '../../services/queries';
 import { getResults } from '../../services/results';
 import { getBrands } from '../../services/brands';
-import { MetricCard, QueriesSkeleton, SetupGuide } from '../../components/ui';
+import { QueriesSkeleton, SetupGuide } from '../../components/ui';
 import { QUERY_TEMPLATES, applyTemplate } from '../../utils/queryTemplates';
 
 type SortField = 'createdAt' | 'lastTested' | 'query';
@@ -335,21 +335,21 @@ export function QueryListPanel() {
         <Button leftSection={<IconPlus size={16} />} onClick={open}>쿼리 추가</Button>
       </Group>
 
-      {/* Metric cards */}
-      <Grid>
-        <Grid.Col span={{ base: 6, sm: 3 }}>
-          <MetricCard title="전체 쿼리" value={queries.length} icon={<IconDatabase size={20} />} color="brand" />
-        </Grid.Col>
-        <Grid.Col span={{ base: 6, sm: 3 }}>
-          <MetricCard title="활성 쿼리" value={queries.filter((q) => q.isActive).length} icon={<IconActivity size={20} />} color="teal" />
-        </Grid.Col>
-        <Grid.Col span={{ base: 6, sm: 3 }}>
-          <MetricCard title="오늘 테스트" value={todayTestCount} icon={<IconCalendarStats size={20} />} color="blue" />
-        </Grid.Col>
-        <Grid.Col span={{ base: 6, sm: 3 }}>
-          <MetricCard title="연결 브랜드" value={linkedBrandCount} icon={<IconTags size={20} />} color="violet" />
-        </Grid.Col>
-      </Grid>
+      {/* Metric summary */}
+      <Group gap="sm">
+        <Badge variant="light" color="brand" size="lg" leftSection={<IconDatabase size={14} />}>
+          전체 쿼리 {queries.length}
+        </Badge>
+        <Badge variant="light" color="teal" size="lg" leftSection={<IconActivity size={14} />}>
+          활성 {queries.filter((q) => q.isActive).length}
+        </Badge>
+        <Badge variant="light" color="blue" size="lg" leftSection={<IconCalendarStats size={14} />}>
+          오늘 테스트 {todayTestCount}
+        </Badge>
+        <Badge variant="light" color="violet" size="lg" leftSection={<IconTags size={14} />}>
+          연결 브랜드 {linkedBrandCount}
+        </Badge>
+      </Group>
 
       {brands.length === 0 && queries.length > 0 && (
         <Alert
@@ -445,8 +445,8 @@ export function QueryListPanel() {
 
         {/* Bulk actions bar */}
         {selectedIds.size > 0 && (
-          <Group mb="md" p="xs" style={{ background: 'var(--mantine-color-blue-0)', borderRadius: 8 }}>
-            <Text size="sm" fw={500}>{selectedIds.size}개 선택됨</Text>
+          <Group mb="md" p="xs" style={{ background: 'light-dark(var(--mantine-color-blue-0), var(--mantine-color-dark-6))', borderRadius: 8 }}>
+            <Text size="sm">{selectedIds.size}개 선택됨</Text>
             <Button size="xs" variant="light" color="teal" onClick={() => handleBulkToggleActive(true)}>일괄 활성화</Button>
             <Button size="xs" variant="light" color="gray" onClick={() => handleBulkToggleActive(false)}>일괄 비활성화</Button>
             <Button size="xs" variant="light" color="red" onClick={handleBulkDelete}>일괄 삭제</Button>
@@ -459,13 +459,13 @@ export function QueryListPanel() {
             <Paper p="xl" radius="md" withBorder>
               <Stack align="center" gap="md">
                 <IconPlus size={40} stroke={1.5} color="var(--mantine-color-brand-5)" />
-                <Text fw={600}>등록된 쿼리가 없습니다</Text>
+                <Text>등록된 쿼리가 없습니다</Text>
                 <Text size="sm" c="dimmed" ta="center">
                   AI에게 테스트할 질문을 추가하면 브랜드 인용 여부를 자동으로 분석합니다.
                 </Text>
                 {/* 추천 템플릿 칩 */}
                 <Stack gap="xs" align="center">
-                  <Text size="xs" fw={500} c="dimmed">추천 쿼리 템플릿으로 빠르게 시작하세요</Text>
+                  <Text size="xs" c="dimmed">추천 쿼리 템플릿으로 빠르게 시작하세요</Text>
                   <Group gap="xs" justify="center">
                     {QUERY_TEMPLATES.slice(0, 4).map((t) => {
                       const firstBrand = brands[0]?.name || '브랜드';
@@ -541,7 +541,7 @@ export function QueryListPanel() {
                   </Table.Td>
                   <Table.Td>
                     <Stack gap={4}>
-                      <Text size="sm" fw={500}>{query.query}</Text>
+                      <Text size="sm">{query.query}</Text>
                       {query.brandIds && query.brandIds.length > 0 && (
                         <Group gap={4}>
                           {query.brandIds.map((bid) => {
@@ -628,7 +628,7 @@ export function QueryListPanel() {
                       {frequencyLabels[query.frequency]}
                     </Badge>
                   </Group>
-                  <Text size="sm" fw={500} lineClamp={2} mb="xs">{query.query}</Text>
+                  <Text size="sm" lineClamp={2} mb="xs">{query.query}</Text>
                   {query.brandIds && query.brandIds.length > 0 && (
                     <Group gap={4} mb="xs">
                       {query.brandIds.map((bid) => {
@@ -712,7 +712,7 @@ export function QueryListPanel() {
           />
           {brands.length > 0 && (
             <>
-              <Text size="sm" fw={500}>브랜드 연결 (선택)</Text>
+              <Text size="sm">브랜드 연결 (선택)</Text>
               <Stack gap="xs">
                 {brands.map((brand) => (
                   <Checkbox
@@ -743,7 +743,7 @@ export function QueryListPanel() {
             <Group justify="space-between">
               <div>
                 <Text size="sm" c="dimmed">쿼리</Text>
-                <Text fw={500}>{latestResult.query}</Text>
+                <Text>{latestResult.query}</Text>
               </div>
               <Badge color={latestResult.engine === 'gemini' ? 'blue' : 'teal'} variant="filled" size="lg">
                 {AI_ENGINES.find((e) => e.value === latestResult.engine)?.label || latestResult.engine}
@@ -754,7 +754,7 @@ export function QueryListPanel() {
               <Stack gap="xs">
                 {latestResult.brandResults?.map((br) => (
                   <Group key={br.brandId} justify="space-between" p="xs" style={{ background: 'light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))', borderRadius: 8 }}>
-                    <Text fw={500}>{br.brandName}</Text>
+                    <Text>{br.brandName}</Text>
                     <Group gap="xs">
                       {br.cited ? (
                         <>
@@ -818,7 +818,7 @@ export function QueryListPanel() {
         <Stack gap="md">
           <Group>
             <IconSparkles size={24} color="var(--mantine-color-blue-5)" />
-            <Text fw={500}>추후 지원 예정입니다</Text>
+            <Text>추후 지원 예정입니다</Text>
           </Group>
           <Text size="sm" c="dimmed">Gemini API 연동 기능은 현재 개발 중이며, 곧 지원될 예정입니다.</Text>
           <Group justify="flex-end">

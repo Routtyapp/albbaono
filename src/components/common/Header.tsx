@@ -15,7 +15,6 @@ import { useNavigate } from 'react-router-dom';
 const navLinks = [
   { label: '문제', href: '#problem' },
   { label: '솔루션', href: '#solution' },
-  { label: '프로세스', href: '#framework' },
   { label: '사례', href: '#case-study' },
   { label: '요금', href: '#pricing' },
 ];
@@ -30,7 +29,7 @@ export function Header() {
       href={link.href}
       c="gray.6"
       fz="sm"
-      fw={500}
+     
       underline="never"
       style={{ letterSpacing: '-0.01em' }}
       onClick={close}
@@ -53,22 +52,31 @@ export function Header() {
         WebkitBackdropFilter: 'blur(16px)',
       }}
     >
-      <Container size={1440} px={{ base: 20, md: 40 }} h={72}>
+      <Container size={1440} px={{ base: 20, md: 40 }} h={56}>
         <Group h="100%" justify="space-between">
+          <Group gap={32} visibleFrom="sm">
+            <Image
+              src="/YeogiJeogiFontLogo (1).png"
+              alt="여기저기"
+              h={26}
+              w="auto"
+            />
+            {links}
+          </Group>
           <Image
             src="/YeogiJeogiFontLogo (1).png"
             alt="여기저기"
             h={26}
             w="auto"
+            hiddenFrom="sm"
           />
 
           <Group gap={36} visibleFrom="sm">
-            {links}
             <Button
               radius="xl"
               color="accent.4"
               c="dark"
-              fw={600}
+             
               size="sm"
               onClick={() => navigate('/dashboard')}
             >
@@ -108,7 +116,7 @@ export function Header() {
             radius="xl"
             color="accent.4"
             c="dark"
-            fw={600}
+           
             fullWidth
             mt="md"
             onClick={() => {

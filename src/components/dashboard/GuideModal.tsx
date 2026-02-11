@@ -47,7 +47,7 @@ const menuItems = [
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <Stack gap="sm">
-      <Title order={4} fz="md" fw={700}>{title}</Title>
+      <Title order={4} fz="md">{title}</Title>
       {children}
     </Stack>
   );
@@ -419,9 +419,9 @@ function GuideContent({ active }: { active: string }) {
             분석 결과에 우선순위별 개선 권장 사항이 포함됩니다.
           </Text>
           <List spacing="xs" fz="sm" c="dimmed">
-            <List.Item><Text span c="red" fw={600}>높음</Text> — 즉시 조치가 필요한 항목</List.Item>
-            <List.Item><Text span c="yellow.7" fw={600}>중간</Text> — 개선하면 좋은 항목</List.Item>
-            <List.Item><Text span c="blue" fw={600}>낮음</Text> — 추가 고려 사항</List.Item>
+            <List.Item><Text span c="red">높음</Text> — 즉시 조치가 필요한 항목</List.Item>
+            <List.Item><Text span c="yellow.7">중간</Text> — 개선하면 좋은 항목</List.Item>
+            <List.Item><Text span c="blue">낮음</Text> — 추가 고려 사항</List.Item>
           </List>
         </Section>
         <Section title="경쟁사 비교">
@@ -454,7 +454,7 @@ export function GuideModal({ opened, onClose }: GuideModalProps) {
       onClose={onClose}
       title={
         <Group gap="xs">
-          <Title order={3} fz="lg" fw={700}>사용 가이드</Title>
+          <Title order={3} fz="lg">사용 가이드</Title>
           <Badge size="sm" variant="light" color="brand">v1.0</Badge>
         </Group>
       }

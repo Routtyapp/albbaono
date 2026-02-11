@@ -57,9 +57,9 @@ function PanelSkeleton() {
 function StatRow({ label, value, extra }: { label: string; value: string; extra?: string }) {
   return (
     <Group justify="space-between">
-      <Text size="sm" fw={500}>{label}</Text>
+      <Text size="sm">{label}</Text>
       <Group gap={4}>
-        <Text size="sm" fw={600}>{value}</Text>
+        <Text size="sm">{value}</Text>
         {extra ? <Text size="sm" c="dimmed">{extra}</Text> : null}
       </Group>
     </Group>
@@ -139,7 +139,7 @@ function SchedulerSidebarPanel() {
   return (
     <Stack gap="xs">
       <Group justify="space-between">
-        <Text size="sm" fw={600}>자동 스케줄링</Text>
+        <Text size="sm">자동 스케줄링</Text>
         <Switch
           checked={isEnabled}
           onChange={handleToggle}
@@ -158,7 +158,7 @@ function SchedulerSidebarPanel() {
           <Stack key={type} gap="xs">
             <Group justify="space-between">
               <Group gap={8}>
-                <Text size="sm" fw={500}>{SCHEDULE_LABELS[type]}</Text>
+                <Text size="sm">{SCHEDULE_LABELS[type]}</Text>
                 <Text size="sm" c="dimmed">{count}개</Text>
               </Group>
               <UnstyledButton
@@ -172,7 +172,7 @@ function SchedulerSidebarPanel() {
                 }}
               >
                 {isRunning ? <Loader size={14} /> : <IconPlayerPlay size={14} color="var(--mantine-color-dimmed)" />}
-                <Text size="sm" c="dimmed" fw={500}>실행</Text>
+                <Text size="sm" c="dimmed">실행</Text>
               </UnstyledButton>
             </Group>
             <Divider />
@@ -244,7 +244,7 @@ function getExpandedPanel(
                         width: '100%',
                         borderRadius: 8,
                         padding: '6px 8px',
-                        backgroundColor: isSelected ? 'var(--mantine-color-brand-0)' : 'transparent',
+                        backgroundColor: isSelected ? 'light-dark(var(--mantine-color-brand-0), var(--mantine-color-dark-5))' : 'transparent',
                         border: isSelected ? '1px solid var(--mantine-color-brand-3)' : '1px solid transparent',
                       }}
                     >
@@ -291,7 +291,7 @@ function getExpandedPanel(
           {!setupComplete && (
             <>
               <Group justify="space-between">
-                <Text size="sm" fw={500}>시작하기</Text>
+                <Text size="sm">시작하기</Text>
                 <Text size="sm" c="dimmed">{setupDone}/3</Text>
               </Group>
               <Stack gap="xs">
@@ -373,7 +373,7 @@ function getExpandedPanel(
           {(stats?.totalTests ?? 0) < 5 && (
             <>
               <Group justify="space-between">
-                <Text size="sm" fw={500}>리포트 생성 조건</Text>
+                <Text size="sm">리포트 생성 조건</Text>
                 <Text size="sm" c="dimmed">{stats?.totalTests ?? 0}/5</Text>
               </Group>
               <Progress value={((stats?.totalTests ?? 0) / 5) * 100} size="sm" radius="xl" />
@@ -385,7 +385,7 @@ function getExpandedPanel(
           )}
           {reports.length > 0 && (
             <>
-              <Text size="sm" fw={500}>목록 ({reportsTotalCount})</Text>
+              <Text size="sm">목록 ({reportsTotalCount})</Text>
               <Stack gap={4}>
                 {reports.map((report) => (
                   <ReportListItem
@@ -502,11 +502,11 @@ function IconMenu({
                 width: 32,
                 height: 32,
                 borderRadius: 8,
-                backgroundColor: isActive ? 'var(--mantine-color-brand-1)' : 'transparent',
+                backgroundColor: isActive ? 'light-dark(var(--mantine-color-brand-1), var(--mantine-color-dark-5))' : 'transparent',
                 position: 'relative',
               }}
             >
-              <item.icon size={20} stroke={1.5} color={isActive ? 'var(--mantine-color-brand-6)' : 'var(--mantine-color-gray-7)'} />
+              <item.icon size={20} stroke={1.5} color={isActive ? 'var(--mantine-color-brand-6)' : 'var(--mantine-color-text)'} />
               {showDot && (
                 <Box
                   style={{
@@ -522,7 +522,7 @@ function IconMenu({
                 />
               )}
             </Box>
-            <Text size="12px" mt={4} c={isActive ? 'brand.6' : 'gray.7'} fw={isActive ? 600 : 400}>
+            <Text size="12px" mt={4} c={isActive ? 'brand.6' : undefined} fw={isActive ? 600 : 400}>
               {item.shortLabel}
             </Text>
           </UnstyledButton>
@@ -547,12 +547,12 @@ function IconMenu({
                 width: 32,
                 height: 32,
                 borderRadius: 8,
-                backgroundColor: isActive ? 'var(--mantine-color-brand-1)' : 'transparent',
+                backgroundColor: isActive ? 'light-dark(var(--mantine-color-brand-1), var(--mantine-color-dark-5))' : 'transparent',
               }}
             >
-              <item.icon size={20} stroke={1.5} color={isActive ? 'var(--mantine-color-brand-6)' : 'var(--mantine-color-gray-7)'} />
+              <item.icon size={20} stroke={1.5} color={isActive ? 'var(--mantine-color-brand-6)' : 'var(--mantine-color-text)'} />
             </Box>
-            <Text size="12px" mt={4} c={isActive ? 'brand.6' : 'gray.7'} fw={isActive ? 600 : 400}>
+            <Text size="12px" mt={4} c={isActive ? 'brand.6' : undefined} fw={isActive ? 600 : 400}>
               {item.shortLabel}
             </Text>
           </UnstyledButton>
@@ -569,9 +569,9 @@ function IconMenu({
         style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 48, height: 64 }}
       >
         <Box style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 8, backgroundColor: 'light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5))' }}>
-          <IconSettings size={20} stroke={1.5} color="var(--mantine-color-gray-7)" />
+          <IconSettings size={20} stroke={1.5} color="var(--mantine-color-text)" />
         </Box>
-        <Text size="12px" mt={4} c="gray.7">설정</Text>
+        <Text size="12px" mt={4}>설정</Text>
       </UnstyledButton>
     </Stack>
   );
@@ -658,7 +658,7 @@ export function Sidebar({ collapsed, onToggle, position, onSettingsOpen }: Sideb
   const detailPanel = (
     <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', ...panelBorderStyle }}>
       <Box p="md" pb={48}>
-        <Text size="lg" fw={700}>{title}</Text>
+        <Text size="lg">{title}</Text>
       </Box>
       <ScrollArea flex={1} px="md" pb="md">
         {content}

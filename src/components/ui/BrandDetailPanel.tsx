@@ -18,9 +18,7 @@ import {
   IconFileReport,
   IconSearch,
   IconBulb,
-  IconFileDescription,
 } from '@tabler/icons-react';
-import { Link } from 'react-router-dom';
 import type { BrandDetail } from '../../types';
 
 interface BrandDetailPanelProps {
@@ -44,7 +42,7 @@ function StatBox({
         <Text size="xs" c="dimmed" ta="center">
           {label}
         </Text>
-        <Text fw={700} size="xl" c={color}>
+        <Text size="xl" c={color}>
           {value}
         </Text>
       </Stack>
@@ -119,7 +117,7 @@ export function BrandDetailPanel({ brand, onEdit, onDelete }: BrandDetailPanelPr
         <Group justify="space-between" wrap="nowrap">
           <Stack gap={4}>
             <Group gap="sm">
-              <Text fw={600} size="xl">
+              <Text size="xl">
                 {brand.name}
               </Text>
               <Badge color={isActive ? 'green' : 'gray'} variant="light">
@@ -168,7 +166,7 @@ export function BrandDetailPanel({ brand, onEdit, onDelete }: BrandDetailPanelPr
       {/* 경쟁사 비교 차트 */}
       {chartData.length > 1 && (
         <Paper p="md" radius="md" withBorder>
-          <Text fw={500} mb="md">
+          <Text mb="md">
             경쟁사 인용 비교
           </Text>
           <BarChart
@@ -188,7 +186,7 @@ export function BrandDetailPanel({ brand, onEdit, onDelete }: BrandDetailPanelPr
       {/* 경쟁사 태그 */}
       {competitors.length > 0 && (
         <Paper p="md" radius="md" withBorder>
-          <Text fw={500} mb="sm">
+          <Text mb="sm">
             등록된 경쟁사
           </Text>
           <Group gap="xs">
@@ -204,7 +202,7 @@ export function BrandDetailPanel({ brand, onEdit, onDelete }: BrandDetailPanelPr
       {/* 최근 활동 타임라인 */}
       {recentActivity.length > 0 && (
         <Paper p="md" radius="md" withBorder>
-          <Text fw={500} mb="md">
+          <Text mb="md">
             최근 활동
           </Text>
           <Timeline bulletSize={24} lineWidth={2}>
@@ -229,38 +227,6 @@ export function BrandDetailPanel({ brand, onEdit, onDelete }: BrandDetailPanelPr
         </Paper>
       )}
 
-      {/* 빠른 액션 링크 */}
-      <Paper p="md" radius="md" withBorder>
-        <Group gap="sm" wrap="wrap">
-          <Button
-            component={Link}
-            to="/dashboard/queries"
-            variant="light"
-            leftSection={<IconSearch size={16} />}
-            size="sm"
-          >
-            쿼리 관리
-          </Button>
-          <Button
-            component={Link}
-            to="/dashboard/insights"
-            variant="light"
-            leftSection={<IconBulb size={16} />}
-            size="sm"
-          >
-            인사이트 보기
-          </Button>
-          <Button
-            component={Link}
-            to="/dashboard/reports"
-            variant="light"
-            leftSection={<IconFileDescription size={16} />}
-            size="sm"
-          >
-            리포트 확인
-          </Button>
-        </Group>
-      </Paper>
     </Stack>
   );
 }

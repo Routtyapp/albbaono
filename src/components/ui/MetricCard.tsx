@@ -24,7 +24,7 @@ export function MetricCard({
   return (
     <Paper p="md" radius="md" withBorder>
       <Group justify="space-between" mb="xs">
-        <Text size="sm" c="dimmed" fw={500}>
+        <Text size="sm" c="dimmed">
           {title}
         </Text>
         <ThemeIcon variant="light" color={color} size="lg" radius="md">
@@ -34,7 +34,7 @@ export function MetricCard({
 
       <Stack gap={4}>
         <Group gap="xs" align="baseline">
-          <Text size="xl" fw={700}>
+          <Text size="xl">
             {value}
           </Text>
           {suffix && (

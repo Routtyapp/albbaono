@@ -71,7 +71,7 @@ export function Pricing() {
                 }),
               }}
             >
-              <Text fz="lg" fw={700} style={{ letterSpacing: '-0.02em' }}>
+              <Text fz="lg" style={{ letterSpacing: '-0.02em' }}>
                 {plan.title}
               </Text>
               <Text fz="sm" c="gray.5" mt={4}>
@@ -103,7 +103,7 @@ export function Pricing() {
                 color={plan.featured ? 'dark' : 'gray'}
                 variant={plan.featured ? 'filled' : 'outline'}
                 size="md"
-                fw={600}
+               
                 fullWidth
                 rightSection={<IconArrowRight size={15} />}
                 onClick={() => navigate('/register')}

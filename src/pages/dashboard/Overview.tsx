@@ -204,15 +204,15 @@ export function Overview() {
           {/* 온보딩 직후: 다음 단계 여정 카드 */}
           {recentResults.length <= 2 && (
             <Grid.Col span={12}>
-              <Paper p="md" radius="md" withBorder style={{ background: 'var(--mantine-color-blue-0)', border: '1px solid var(--mantine-color-blue-2)' }}>
-                <Text fw={600} size="sm" mb="md">첫 테스트를 완료했습니다! 다음 단계를 확인하세요.</Text>
+              <Paper p="md" radius="md" withBorder style={{ background: 'light-dark(var(--mantine-color-blue-0), var(--mantine-color-dark-6))', border: '1px solid light-dark(var(--mantine-color-blue-2), var(--mantine-color-dark-4))' }}>
+                <Text size="sm" mb="md">첫 테스트를 완료했습니다! 다음 단계를 확인하세요.</Text>
                 <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
                   <Paper p="md" radius="md" withBorder>
                     <Group gap="sm" mb="xs">
                       <ThemeIcon size={32} radius="md" variant="light" color="blue">
                         <IconMessageQuestion size={18} />
                       </ThemeIcon>
-                      <Text fw={600} size="sm">쿼리 추가</Text>
+                      <Text size="sm">쿼리 추가</Text>
                     </Group>
                     <Text size="xs" c="dimmed" mb="md">
                       다양한 쿼리를 등록하면 AI가 브랜드를 어떤 맥락에서 추천하는지 인용 추세를 파악할 수 있습니다.
@@ -226,7 +226,7 @@ export function Overview() {
                       <ThemeIcon size={32} radius="md" variant="light" color="teal">
                         <IconFileDescription size={18} />
                       </ThemeIcon>
-                      <Text fw={600} size="sm">리포트 생성</Text>
+                      <Text size="sm">리포트 생성</Text>
                     </Group>
                     <Text size="xs" c="dimmed" mb="sm">
                       5개 이상 테스트 시 인용률, 점유율, 엔진별 성과를 종합한 리포트를 생성할 수 있습니다.
@@ -240,7 +240,7 @@ export function Overview() {
                       <ThemeIcon size={32} radius="md" variant="light" color="grape">
                         <IconBrain size={18} />
                       </ThemeIcon>
-                      <Text fw={600} size="sm">AI 인사이트</Text>
+                      <Text size="sm">AI 인사이트</Text>
                     </Group>
                     <Text size="xs" c="dimmed" mb="md">
                       AI가 공략 키워드와 실행 가이드를 분석하여 브랜드 가시성 향상 전략을 제안합니다.
@@ -275,24 +275,24 @@ export function Overview() {
               <Stack gap="md" p="md">
                 <Group justify="space-between">
                   <Text>등록된 쿼리</Text>
-                  <Text fw={700} size="xl">{queries.length}개</Text>
+                  <Text size="xl">{queries.length}개</Text>
                 </Group>
                 <Group justify="space-between">
                   <Text>활성 쿼리</Text>
-                  <Text fw={700} size="xl">{queries.filter(q => q.isActive).length}개</Text>
+                  <Text size="xl">{queries.filter(q => q.isActive).length}개</Text>
                 </Group>
                 <Group justify="space-between">
                   <Text>총 테스트</Text>
-                  <Text fw={700} size="xl">{filteredStats?.totalTests || 0}회</Text>
+                  <Text size="xl">{filteredStats?.totalTests || 0}회</Text>
                 </Group>
                 <Group justify="space-between">
                   <Text>인용 성공</Text>
-                  <Text fw={700} size="xl" c="teal">{filteredStats?.citedCount || 0}회</Text>
+                  <Text size="xl" c="teal">{filteredStats?.citedCount || 0}회</Text>
                 </Group>
                 {selectedBrand && (
                   <Group justify="space-between">
                     <Text>평균 순위</Text>
-                    <Text fw={700} size="xl" c="blue">
+                    <Text size="xl" c="blue">
                       {stats?.brandStats?.find(bs => bs.brandId === selectedBrandId)?.avgRank
                         ? `${stats?.brandStats?.find(bs => bs.brandId === selectedBrandId)?.avgRank}위`
                         : '-'}
@@ -371,7 +371,7 @@ export function Overview() {
                         </Badge>
                       ))
                     ) : (
-                      <Text size="sm" c={result.cited ? 'teal' : 'gray'} fw={500}>
+                      <Text size="sm" c={result.cited ? 'teal' : 'gray'}>
                         {result.cited ? '인용됨' : '미인용'}
                       </Text>
                     )}

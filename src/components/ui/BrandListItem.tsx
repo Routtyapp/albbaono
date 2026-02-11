@@ -49,7 +49,7 @@ export function BrandListItem({
             <IconBuilding size={18} stroke={1.5} />
           </Box>
           <Stack gap={2} style={{ minWidth: 0 }}>
-            <Text fw={500} size="sm" truncate>
+            <Text size="sm" truncate>
               {brand.name}
             </Text>
             <Group gap="xs">

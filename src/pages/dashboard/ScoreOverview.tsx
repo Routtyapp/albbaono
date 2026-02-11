@@ -346,7 +346,7 @@ export function ScoreOverview() {
                   >
                     <Group justify="space-between" wrap="nowrap">
                       <Box style={{ overflow: 'hidden', flex: 1 }}>
-                        <Text size="sm" fw={500} truncate>
+                        <Text size="sm" truncate>
                           {(() => {
                             try {
                               return new URL(item.url).hostname;
@@ -396,7 +396,7 @@ export function ScoreOverview() {
                   ]}
                   label={
                     <Stack align="center" gap={0}>
-                      <Text size="xl" fw={700}>
+                      <Text size="xl">
                         {result.totalScore}
                       </Text>
                       <Text size="xs" c="dimmed">
@@ -497,7 +497,7 @@ export function ScoreOverview() {
                           }
                         >
                           <Group gap="xs" wrap="nowrap">
-                            <Text size="sm" fw={500}>
+                            <Text size="sm">
                               {item.name}
                             </Text>
                             <Badge size="xs" variant="outline">
@@ -544,7 +544,7 @@ export function ScoreOverview() {
                   <Paper key={idx} p="sm" withBorder radius="sm">
                     <Group justify="space-between" wrap="nowrap">
                       <Box style={{ overflow: 'hidden', flex: 1 }}>
-                        <Text size="sm" fw={500} truncate>
+                        <Text size="sm" truncate>
                           {page.title || '제목 없음'}
                         </Text>
                         <Text size="xs" c="dimmed" truncate>
@@ -627,7 +627,7 @@ function RecommendationCard({ recommendation }: { recommendation: Recommendation
             {recommendation.impact}
           </Text>
         </Group>
-        <Text size="sm" fw={500}>
+        <Text size="sm">
           {recommendation.issue}
         </Text>
         <Divider />

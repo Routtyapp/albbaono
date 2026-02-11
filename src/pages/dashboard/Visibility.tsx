@@ -182,7 +182,7 @@ export function Visibility() {
                       <ThemeIcon size="sm" variant="light" color="blue">
                         <IconSearch size={14} />
                       </ThemeIcon>
-                      <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
+                      <Text size="xs" c="dimmed" tt="uppercase">
                         테스트 쿼리
                       </Text>
                     </Group>
@@ -225,7 +225,7 @@ export function Visibility() {
                     <ThemeIcon size="sm" variant="light" color="violet">
                       <IconQuote size={14} />
                     </ThemeIcon>
-                    <Text fw={600}>브랜드별 인용 결과</Text>
+                    <Text>브랜드별 인용 결과</Text>
                   </Group>
                   <Group gap="sm">
                     {selectedResult.brandResults.map((br) => (
@@ -236,7 +236,7 @@ export function Visibility() {
                         withBorder
                         style={{
                           borderColor: br.cited ? 'var(--mantine-color-teal-4)' : undefined,
-                          backgroundColor: br.cited ? 'var(--mantine-color-teal-0)' : undefined,
+                          backgroundColor: br.cited ? 'light-dark(var(--mantine-color-teal-0), var(--mantine-color-teal-9))' : undefined,
                         }}
                       >
                         <Group gap="xs">
@@ -249,7 +249,7 @@ export function Visibility() {
                               <IconX size={10} />
                             </ThemeIcon>
                           )}
-                          <Text size="sm" fw={500}>{br.brandName}</Text>
+                          <Text size="sm">{br.brandName}</Text>
                           {br.rank && (
                             <Badge size="xs" variant="filled" color="blue">
                               #{br.rank}위
@@ -275,7 +275,7 @@ export function Visibility() {
                   <ThemeIcon size="sm" variant="light" color="orange">
                     <IconTag size={14} />
                   </ThemeIcon>
-                  <Text fw={600}>주요 키워드</Text>
+                  <Text>주요 키워드</Text>
                 </Group>
                 {brandKeywords.length > 0 && (
                   <div>
@@ -314,7 +314,7 @@ export function Visibility() {
                     <ThemeIcon size="sm" variant="light" color="cyan">
                       <IconRobot size={14} />
                     </ThemeIcon>
-                    <Text fw={600}>AI 응답 내용</Text>
+                    <Text>AI 응답 내용</Text>
                   </Group>
                   <Tooltip label={isResponseExpanded ? '접기' : '전체 보기'}>
                     <ActionIcon
@@ -327,14 +327,14 @@ export function Visibility() {
                 </Group>
 
                 <Collapse in={!isResponseExpanded}>
-                  <Paper p="md" radius="sm" bg="gray.0">
+                  <Paper p="md" radius="sm" bg="light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))">
                     <Highlight
                       highlight={brandKeywords}
                       highlightStyles={{
-                        backgroundColor: 'var(--mantine-color-teal-1)',
+                        backgroundColor: 'light-dark(var(--mantine-color-teal-1), var(--mantine-color-teal-9))',
                         padding: '2px 4px',
                         borderRadius: '4px',
-                        fontWeight: 600,
+                        fontWeight: 400,
                       }}
                     >
                       {selectedResult.response || '응답 요약이 없습니다.'}
@@ -343,14 +343,14 @@ export function Visibility() {
                 </Collapse>
 
                 <Collapse in={isResponseExpanded}>
-                  <Paper p="md" radius="sm" bg="gray.0">
+                  <Paper p="md" radius="sm" bg="light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))">
                     <Highlight
                       highlight={brandKeywords}
                       highlightStyles={{
-                        backgroundColor: 'var(--mantine-color-teal-1)',
+                        backgroundColor: 'light-dark(var(--mantine-color-teal-1), var(--mantine-color-teal-9))',
                         padding: '2px 4px',
                         borderRadius: '4px',
-                        fontWeight: 600,
+                        fontWeight: 400,
                       }}
                       style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}
                     >
@@ -371,14 +371,14 @@ export function Visibility() {
               </ThemeIcon>
               {!selectedResultId ? (
                 <>
-                  <Text fw={500}>쿼리를 선택하세요</Text>
+                  <Text>쿼리를 선택하세요</Text>
                   <Text size="sm" c="dimmed">
                     사이드바에서 쿼리를 클릭하면 상세 정보를 볼 수 있습니다
                   </Text>
                 </>
               ) : (
                 <>
-                  <Text fw={500}>결과를 찾을 수 없습니다</Text>
+                  <Text>결과를 찾을 수 없습니다</Text>
                   <Text size="sm" c="dimmed">
                     다른 쿼리를 선택해주세요
                   </Text>

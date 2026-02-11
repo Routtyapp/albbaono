@@ -254,7 +254,7 @@ export function Reports() {
             {/* 트렌드 스냅샷 */}
             {sparklineData.length >= 2 && (
               <div>
-                <Text fw={500} size="xs" c="dimmed" mb={4}>인용률 추이</Text>
+                <Text size="xs" c="dimmed" mb={4}>인용률 추이</Text>
                 <Sparkline
                   w="100%"
                   h={48}
@@ -265,7 +265,7 @@ export function Reports() {
                   strokeWidth={2}
                 />
                 <Group gap={6} mt={6}>
-                  <Text size="lg" fw={700}>
+                  <Text size="lg">
                     {sparklineData[sparklineData.length - 1]}%
                   </Text>
                   {(() => {
@@ -284,7 +284,7 @@ export function Reports() {
             {/* 주요 시그널 */}
             {latestReport && (
               <div>
-                <Text fw={500} size="xs" c="dimmed" mb="xs">주요 시그널</Text>
+                <Text size="xs" c="dimmed" mb="xs">주요 시그널</Text>
                 <Stack gap={6}>
                   {(() => {
                     const m = latestReport.metrics;
@@ -343,8 +343,8 @@ export function Reports() {
               <Stack align="center" gap="sm" w="100%" maw={400}>
                 <Paper p="md" radius="md" withBorder w="100%">
                   <Group justify="space-between" mb={6}>
-                    <Text size="sm" fw={500}>테스트 진행률</Text>
-                    <Text size="sm" fw={700} c="brand">{stats?.totalTests || 0} / 5</Text>
+                    <Text size="sm">테스트 진행률</Text>
+                    <Text size="sm" c="brand">{stats?.totalTests || 0} / 5</Text>
                   </Group>
                   <Progress
                     value={((stats?.totalTests || 0) / 5) * 100}

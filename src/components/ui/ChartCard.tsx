@@ -19,7 +19,7 @@ export function ChartCard({
     <Paper p="md" radius="md" withBorder h="100%">
       <Group justify="space-between" mb="md">
         <div>
-          <Text fw={600}>{title}</Text>
+          <Text>{title}</Text>
           {subtitle && (
             <Text size="xs" c="dimmed">
               {subtitle}

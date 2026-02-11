@@ -28,9 +28,9 @@ const accent: MantineColorsTuple = [
 ];
 
 const dark: MantineColorsTuple = [
-  '#C1C2C5',
-  '#A6A7AB',
-  '#909296',
+  '#d5d7da',
+  '#b8babe',
+  '#9a9da3',
   '#5c5f66',
   '#373A40',
   '#2C2E33',
@@ -47,16 +47,26 @@ export const theme = createTheme({
     dark,
     accent,
   },
-  fontFamily: '"Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+  fontFamily: '"Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
   headings: {
-    fontFamily: '"Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-    fontWeight: '700',
+    fontFamily: '"Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
+    fontWeight: '500',
   },
   defaultRadius: 'md',
   components: {
     Button: {
       defaultProps: {
-        fw: 600,
+        fw: 500,
+      },
+    },
+    Title: {
+      defaultProps: {
+        fw: 500,
+      },
+    },
+    Table: {
+      styles: {
+        th: { fontWeight: 500 },
       },
     },
   },

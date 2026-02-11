@@ -314,7 +314,7 @@ export function SchedulerPage() {
               <Group justify="space-between">
                 <Group gap="xs">
                   <Box w={8} h={8} style={{ borderRadius: '50%', backgroundColor: `var(--mantine-color-${SCHEDULE_COLORS[freq]}-5)` }} />
-                  <Text size="sm" fw={600}>{SCHEDULE_LABELS[freq]}</Text>
+                  <Text size="sm">{SCHEDULE_LABELS[freq]}</Text>
                 </Group>
                 <Badge size="sm" variant="light" color={SCHEDULE_COLORS[freq]}>
                   {frequencyCounts[`${freq}Active` as keyof typeof frequencyCounts]} / {frequencyCounts[freq]}
@@ -367,9 +367,9 @@ export function SchedulerPage() {
 
             {/* Bulk actions */}
             {selectedIds.size > 0 && (
-              <Paper p="xs" mb="md" radius="md" style={{ background: 'var(--mantine-color-blue-0)' }}>
+              <Paper p="xs" mb="md" radius="md" style={{ background: 'light-dark(var(--mantine-color-blue-0), var(--mantine-color-dark-6))' }}>
                 <Group justify="space-between">
-                  <Text size="sm" fw={500}>{selectedIds.size}개 선택됨</Text>
+                  <Text size="sm">{selectedIds.size}개 선택됨</Text>
                   <Group gap="xs">
                     <Select
                       placeholder="주기 변경"
@@ -400,7 +400,7 @@ export function SchedulerPage() {
                   <ThemeIcon size={60} variant="light" color="gray" radius="xl">
                     <IconCalendarEvent size={30} />
                   </ThemeIcon>
-                  <Text fw={500} c="dimmed">등록된 쿼리가 없습니다</Text>
+                  <Text c="dimmed">등록된 쿼리가 없습니다</Text>
                   <Text size="sm" c="dimmed" ta="center" maw={360}>
                     쿼리 운영 페이지에서 쿼리를 추가하면 여기서 스케줄을 관리할 수 있습니다.
                   </Text>
@@ -448,7 +448,7 @@ export function SchedulerPage() {
                           />
                         </Table.Td>
                         <Table.Td>
-                          <Text size="sm" fw={500} lineClamp={1}>{query.query}</Text>
+                          <Text size="sm" lineClamp={1}>{query.query}</Text>
                         </Table.Td>
                         <Table.Td>
                           {query.brandIds && query.brandIds.length > 0 ? (
@@ -473,7 +473,7 @@ export function SchedulerPage() {
                             variant="unstyled"
                             styles={{
                               input: {
-                                fontWeight: 600,
+                                fontWeight: 400,
                                 fontSize: 'var(--mantine-font-size-xs)',
                                 color: `var(--mantine-color-${SCHEDULE_COLORS[query.frequency]}-6)`,
                               },
@@ -576,7 +576,7 @@ export function SchedulerPage() {
             {/* Selected date history */}
             {selectedDate && (
               <Paper p="md" radius="md" withBorder>
-                <Text size="sm" fw={600} mb="sm">
+                <Text size="sm" mb="sm">
                   {dayjs(selectedDate).format('M월 D일')} 실행 기록
                 </Text>
                 {selectedDateHistory.length === 0 ? (
@@ -669,7 +669,7 @@ export function SchedulerPage() {
               <ThemeIcon size={60} variant="light" color="gray" radius="xl">
                 <IconHistory size={30} />
               </ThemeIcon>
-              <Text fw={500} c="dimmed">아직 실행 이력이 없습니다</Text>
+              <Text c="dimmed">아직 실행 이력이 없습니다</Text>
               <Text size="sm" c="dimmed" ta="center" maw={360}>
                 사이드바에서 스케줄러를 활성화하고 "지금 실행" 버튼을 눌러 테스트를 실행해보세요.
               </Text>

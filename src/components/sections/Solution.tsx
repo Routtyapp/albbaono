@@ -17,24 +17,28 @@ const features = [
     text: 'ChatGPT, Gemini에 쿼리를 실행하고 브랜드 언급 여부, 인용 순위, 경쟁사 노출까지 실시간으로 추적합니다.',
     link: '/dashboard/query-ops',
     linkLabel: '쿼리 운영 바로가기',
+    image: '/images/ai_monitoring.png',
   },
   {
     title: '성과 대시보드',
     text: '인용률, 점유율, 엔진별 성과를 한눈에 파악합니다. 트렌드 분석으로 기간별 변화 추이를 시각적으로 확인하세요.',
     link: '/dashboard/performance',
     linkLabel: '성과 분석 바로가기',
+    image: '/images/landing_achievment.png',
   },
   {
     title: 'GEO 점수 분석',
     text: '웹사이트의 AI 검색 최적화 점수를 콘텐츠, 구조, 스키마, 메타태그, URL 5개 카테고리로 측정하고 경쟁사와 비교합니다.',
     link: '/dashboard/score',
     linkLabel: 'GEO 점수 바로가기',
+    image: '/images/geo_score.png',
   },
   {
     title: 'AI 인사이트',
     text: 'AI가 응답 패턴을 분석해 핵심 키워드, 인용 성공·실패 패턴, 콘텐츠 갭을 자동으로 도출합니다.',
     link: '/dashboard/reports',
     linkLabel: '인사이트 바로가기',
+    image: '/images/insight_result.png',
   },
 ];
 
@@ -43,6 +47,7 @@ const wideFeature = {
   text: '주간·월간 리포트를 자동 생성하고, 스케줄러로 테스트를 자동 반복 실행합니다. 인용률 추이, 점유율, 엔진별 성과를 PDF로 다운로드하세요.',
   link: '/dashboard/reports',
   linkLabel: '리포트 바로가기',
+  image: '/images/schedule.png',
 };
 
 function FeatureCard({
@@ -50,24 +55,49 @@ function FeatureCard({
   text,
   link,
   linkLabel,
+  image,
   imageH = 280,
 }: {
   title: string;
   text: string;
   link: string;
   linkLabel: string;
+  image?: string;
   imageH?: number;
 }) {
   const navigate = useNavigate();
   return (
     <Stack gap={0}>
-      <Box
-        h={imageH}
-        bg="#e2e0de"
-        style={{ borderRadius: 'var(--mantine-radius-md)' }}
-      />
+      {image ? (
+        <Box
+          h={320}
+          style={{
+            borderRadius: 'var(--mantine-radius-md)',
+            overflow: 'hidden',
+            border: '1px solid var(--mantine-color-gray-2)',
+          }}
+        >
+          <img
+            src={image}
+            alt={title}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'top left',
+              display: 'block',
+            }}
+          />
+        </Box>
+      ) : (
+        <Box
+          h={320}
+          bg="#e2e0de"
+          style={{ borderRadius: 'var(--mantine-radius-md)' }}
+        />
+      )}
       <Stack gap={10} pt={24}>
-        <Title order={3} fz="lg" fw={700} style={{ letterSpacing: '-0.02em' }}>
+        <Title order={3} fz="lg" style={{ letterSpacing: '-0.02em' }}>
           {title}
         </Title>
         <Text fz="md" c="dimmed" lh={1.7}>
@@ -77,7 +107,7 @@ function FeatureCard({
           radius="xl"
           color="dark"
           size="sm"
-          fw={600}
+         
           w="fit-content"
           mt={6}
           rightSection={<IconArrowRight size={14} />}
@@ -123,12 +153,25 @@ export function Solution() {
           }}
         >
           <Box
-            h={{ base: 200, md: 260 }}
-            bg="#e2e0de"
-            style={{ borderRadius: 'var(--mantine-radius-md)', minHeight: 260 }}
-          />
+            style={{
+              borderRadius: 'var(--mantine-radius-md)',
+              overflow: 'hidden',
+              border: '1px solid var(--mantine-color-gray-2)',
+              maxHeight: 360,
+            }}
+          >
+            <img
+              src={wideFeature.image}
+              alt={wideFeature.title}
+              style={{
+                width: '100%',
+                height: 'auto',
+                display: 'block',
+              }}
+            />
+          </Box>
           <Stack gap={10}>
-            <Title order={3} fz="lg" fw={700} style={{ letterSpacing: '-0.02em' }}>
+            <Title order={3} fz="lg" style={{ letterSpacing: '-0.02em' }}>
               {wideFeature.title}
             </Title>
             <Text fz="md" c="dimmed" lh={1.7}>
@@ -149,7 +192,7 @@ function WideFeatureLink({ link, label }: { link: string; label: string }) {
       radius="xl"
       color="dark"
       size="sm"
-      fw={600}
+     
       w="fit-content"
       mt={6}
       rightSection={<IconArrowRight size={14} />}

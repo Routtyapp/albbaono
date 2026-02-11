@@ -70,7 +70,7 @@ export function SetupGuide({ brandsCount, queriesCount, resultsCount }: SetupGui
       <Stack gap="lg">
         <Group justify="space-between">
           <Group gap="xs">
-            <Text fw={700} size="lg">시작하기</Text>
+            <Text size="lg">시작하기</Text>
             <Badge variant="light" size="sm">단계 {activeStep + 1}/3</Badge>
           </Group>
         </Group>
@@ -86,7 +86,7 @@ export function SetupGuide({ brandsCount, queriesCount, resultsCount }: SetupGui
               icon={<step.icon size={14} />}
               label={
                 <Group gap={4}>
-                  <Text size="xs" fw={500}>{step.label}</Text>
+                  <Text size="xs">{step.label}</Text>
                   {i < activeStep && (
                     <Badge size="xs" variant="filled" color="teal">완료</Badge>
                   )}
@@ -105,14 +105,14 @@ export function SetupGuide({ brandsCount, queriesCount, resultsCount }: SetupGui
         </Stepper>
 
         {/* Current step details */}
-        <Paper p="md" radius="md" style={{ background: `var(--mantine-color-${current.color}-0)`, border: `1px solid var(--mantine-color-${current.color}-2)` }}>
+        <Paper p="md" radius="md" style={{ background: `light-dark(var(--mantine-color-${current.color}-0), var(--mantine-color-dark-6))`, border: `1px solid light-dark(var(--mantine-color-${current.color}-2), var(--mantine-color-dark-4))` }}>
           <Group justify="space-between" align="flex-start">
             <Stack gap="xs" style={{ flex: 1 }}>
               <Group gap="xs">
                 <ThemeIcon size={28} radius="md" color={current.color} variant="light">
                   <current.icon size={16} />
                 </ThemeIcon>
-                <Text fw={600}>{current.desc}</Text>
+                <Text>{current.desc}</Text>
               </Group>
               <Text size="sm" c="dimmed">{current.example}</Text>
               <Group gap="xs">

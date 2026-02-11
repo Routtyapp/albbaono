@@ -45,7 +45,7 @@ export function CTA() {
               <Title
                 order={2}
                 fz={{ base: 'calc(1.5rem + 0.5vw)', md: '2.2rem' }}
-                fw={700}
+               
                 lh={1.15}
                 style={{ letterSpacing: '-0.035em' }}
               >
@@ -74,7 +74,7 @@ export function CTA() {
               {faqs.map((faq, i) => (
                 <Accordion.Item key={i} value={`faq-${i}`}>
                   <Accordion.Control>
-                    <Text fw={600} fz="md">{faq.q}</Text>
+                    <Text fz="md">{faq.q}</Text>
                   </Accordion.Control>
                   <Accordion.Panel>
                     <Text fz="md" c="dimmed" lh={1.7}>

@@ -93,7 +93,7 @@ export function Trend() {
       <Group justify="space-between" align="center">
         <Group gap="xs">
           <IconTrendingUp size={24} />
-          <Text fw={700} size="xl">트렌드 분석</Text>
+          <Text size="xl">트렌드 분석</Text>
         </Group>
         <SegmentedControl
           value={range}
@@ -106,7 +106,7 @@ export function Trend() {
         <Paper p="xl" radius="md" withBorder>
           <Stack align="center" gap="md">
             <IconTrendingUp size={48} stroke={1.5} color="gray" />
-            <Text fw={500}>선택한 기간에 데이터가 없습니다</Text>
+            <Text>선택한 기간에 데이터가 없습니다</Text>
             <Text size="sm" c="dimmed" ta="center" maw={400}>
               트렌드 차트를 보려면 테스트 결과가 필요합니다.
               쿼리 운영에서 테스트를 실행하면 시간에 따른 인용률 변화를 분석할 수 있습니다.

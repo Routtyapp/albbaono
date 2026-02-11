@@ -93,7 +93,7 @@ function ComparisonBar({ label, icon: Icon, myScore, myMax, competitorScore, com
           <ThemeIcon size="sm" variant="light" color="gray">
             <Icon size={14} />
           </ThemeIcon>
-          <Text fw={500} size="sm">{label}</Text>
+          <Text size="sm">{label}</Text>
         </Group>
         <Group gap="xs">
           {isHigher && (
@@ -122,7 +122,7 @@ function ComparisonBar({ label, icon: Icon, myScore, myMax, competitorScore, com
           <Box style={{ flex: 1 }}>
             <Progress value={myPercent} color="blue" size="lg" radius="sm" />
           </Box>
-          <Text size="xs" fw={500} w={50} ta="right">{myScore}/{myMax}</Text>
+          <Text size="xs" w={50} ta="right">{myScore}/{myMax}</Text>
         </Group>
 
         {/* 경쟁사 바 */}
@@ -131,7 +131,7 @@ function ComparisonBar({ label, icon: Icon, myScore, myMax, competitorScore, com
           <Box style={{ flex: 1 }}>
             <Progress value={competitorPercent} color="orange" size="lg" radius="sm" />
           </Box>
-          <Text size="xs" fw={500} w={50} ta="right">{competitorScore}/{competitorMax}</Text>
+          <Text size="xs" w={50} ta="right">{competitorScore}/{competitorMax}</Text>
         </Group>
       </Stack>
     </Paper>
@@ -237,7 +237,7 @@ export function ScoreCompetitors() {
             <Badge size="lg" color={GRADE_COLORS[history[0].grade]}>
               {history[0].grade}
             </Badge>
-            <Text fw={500}>{getDomainFromUrl(history[0].url)}</Text>
+            <Text>{getDomainFromUrl(history[0].url)}</Text>
             <Text c="dimmed">({history[0].totalScore}점)</Text>
           </Group>
         </Paper>
@@ -276,7 +276,7 @@ export function ScoreCompetitors() {
             <ThemeIcon size="sm" color="blue">
               <IconTrophy size={14} />
             </ThemeIcon>
-            <Text fw={600} size="sm" c="blue">자사 브랜드</Text>
+            <Text size="sm" c="blue">자사 브랜드</Text>
           </Group>
           <Select
             placeholder="자사 사이트 선택"
@@ -292,7 +292,7 @@ export function ScoreCompetitors() {
             <ThemeIcon size="sm" color="orange">
               <IconScale size={14} />
             </ThemeIcon>
-            <Text fw={600} size="sm" c="orange">비교 경쟁사</Text>
+            <Text size="sm" c="orange">비교 경쟁사</Text>
           </Group>
           <Select
             placeholder="경쟁사 사이트 선택"
@@ -320,7 +320,7 @@ export function ScoreCompetitors() {
                   label={
                     <Center>
                       <Stack gap={0} align="center">
-                        <Text fw={700} size="xl">{myData.totalScore}</Text>
+                        <Text size="xl">{myData.totalScore}</Text>
                         <Badge size="sm" color={GRADE_COLORS[myData.grade]}>{myData.grade}</Badge>
                       </Stack>
                     </Center>
@@ -336,7 +336,7 @@ export function ScoreCompetitors() {
                 <ThemeIcon size={50} radius="xl" variant="light" color={totalDiff > 0 ? 'teal' : totalDiff < 0 ? 'red' : 'gray'}>
                   {totalDiff > 0 ? <IconArrowUp size={24} /> : totalDiff < 0 ? <IconArrowDown size={24} /> : <IconMinus size={24} />}
                 </ThemeIcon>
-                <Text fw={700} size="lg" c={totalDiff > 0 ? 'teal' : totalDiff < 0 ? 'red' : 'dimmed'}>
+                <Text size="lg" c={totalDiff > 0 ? 'teal' : totalDiff < 0 ? 'red' : 'dimmed'}>
                   {totalDiff > 0 ? '+' : ''}{totalDiff}점
                 </Text>
               </Stack>
@@ -352,7 +352,7 @@ export function ScoreCompetitors() {
                   label={
                     <Center>
                       <Stack gap={0} align="center">
-                        <Text fw={700} size="xl">{competitorData.totalScore}</Text>
+                        <Text size="xl">{competitorData.totalScore}</Text>
                         <Badge size="sm" color={GRADE_COLORS[competitorData.grade]}>{competitorData.grade}</Badge>
                       </Stack>
                     </Center>
@@ -392,7 +392,7 @@ export function ScoreCompetitors() {
             <Paper p="md" radius="md" withBorder bg="teal.9" style={{ opacity: 0.9 }}>
               <Group gap="xs" mb="sm">
                 <IconArrowUp size={18} />
-                <Text fw={600}>자사 우위 항목</Text>
+                <Text>자사 우위 항목</Text>
               </Group>
               <Stack gap="xs">
                 {Object.entries(CATEGORY_LABELS).map(([key, label]) => {
@@ -425,7 +425,7 @@ export function ScoreCompetitors() {
             <Paper p="md" radius="md" withBorder bg="red.9" style={{ opacity: 0.9 }}>
               <Group gap="xs" mb="sm">
                 <IconArrowDown size={18} />
-                <Text fw={600}>개선 필요 항목</Text>
+                <Text>개선 필요 항목</Text>
               </Group>
               <Stack gap="xs">
                 {Object.entries(CATEGORY_LABELS).map(([key, label]) => {

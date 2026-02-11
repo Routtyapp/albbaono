@@ -51,7 +51,7 @@ export function FeatureCard({
             </Badge>
           )}
         </Group>
-        <Text size="lg" fw={700} c="white">
+        <Text size="lg" c="white">
           {title}
         </Text>
         <Text size="sm" c="dimmed" lh={1.6}>

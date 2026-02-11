@@ -28,7 +28,7 @@ export function SectionTitle({
           size="lg"
           radius="xl"
           tt="uppercase"
-          fw={600}
+         
         >
           {badge}
         </Badge>
@@ -42,7 +42,7 @@ export function SectionTitle({
           />
           <Text
             size="sm"
-            fw={600}
+           
             tt="uppercase"
             lts="0.15em"
             c="dimmed"
@@ -54,7 +54,7 @@ export function SectionTitle({
       <Title
         order={2}
         fz={{ base: 'calc(1.5rem + 0.5vw)', md: '2.2rem' }}
-        fw={700}
+       
         ta={align}
         lh={1.15}
         style={{ maxWidth: 720, letterSpacing: '-0.035em' }}

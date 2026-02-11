@@ -323,7 +323,7 @@ export function Insights() {
 
               {/* 전제조건 체크리스트 */}
               <Paper p="md" radius="md" withBorder w="100%" maw={400} mt="md">
-                <Text size="sm" fw={600} mb="sm">시작 전 체크리스트</Text>
+                <Text size="sm" mb="sm">시작 전 체크리스트</Text>
                 <Stack gap="xs">
                   <Group gap="sm">
                     <ThemeIcon
@@ -399,7 +399,7 @@ export function Insights() {
                 {analysisSummary && (
                   <>
                     <div>
-                      <Text fw={500} size="xs" c="dimmed" mb="xs">분석 요약</Text>
+                      <Text size="xs" c="dimmed" mb="xs">분석 요약</Text>
                       <Stack gap={6}>
                         <Group gap="xs" wrap="nowrap">
                           <ThemeIcon
@@ -447,7 +447,7 @@ export function Insights() {
                 {actionQueue.length > 0 && (
                   <>
                     <div>
-                      <Text fw={500} size="xs" c="dimmed" mb="xs">액션 큐</Text>
+                      <Text size="xs" c="dimmed" mb="xs">액션 큐</Text>
                       <Stack gap={6}>
                         {actionQueue.map((action, idx) => (
                           <Group key={idx} gap="xs" wrap="nowrap">
@@ -472,7 +472,7 @@ export function Insights() {
 
                 {/* 저장된 분석 목록 */}
                 <div>
-                  <Text fw={500} mb="sm" size="sm" c="dimmed">
+                  <Text mb="sm" size="sm" c="dimmed">
                     저장된 분석 ({savedInsights.length})
                   </Text>
                   <ScrollArea.Autosize mah={analysisSummary || actionQueue.length > 0 ? 300 : 500}>
@@ -512,7 +512,7 @@ export function Insights() {
                         <IconChartBar size={14} />
                       </ThemeIcon>
                     </Group>
-                    <Text size="xl" fw={700}>{insights.metadata?.totalResponses ?? 0}</Text>
+                    <Text size="xl">{insights.metadata?.totalResponses ?? 0}</Text>
                     <Text size="xs" c="dimmed">개 응답 분석</Text>
                   </Paper>
 
@@ -523,7 +523,7 @@ export function Insights() {
                         <IconCircleCheck size={14} />
                       </ThemeIcon>
                     </Group>
-                    <Text size="xl" fw={700}>{insights.metadata?.citedResponses ?? 0}</Text>
+                    <Text size="xl">{insights.metadata?.citedResponses ?? 0}</Text>
                     <Text size="xs" c="dimmed">
                       ({insights.metadata?.totalResponses ? Math.round((insights.metadata.citedResponses / insights.metadata.totalResponses) * 100) : 0}%)
                     </Text>
@@ -536,7 +536,7 @@ export function Insights() {
                         <IconTarget size={14} />
                       </ThemeIcon>
                     </Group>
-                    <Text size="xl" fw={700}>{insights.commonKeywords?.length || 0}</Text>
+                    <Text size="xl">{insights.commonKeywords?.length || 0}</Text>
                     <Text size="xs" c="dimmed">개 발견</Text>
                   </Paper>
 
@@ -547,7 +547,7 @@ export function Insights() {
                         <IconChecklist size={14} />
                       </ThemeIcon>
                     </Group>
-                    <Text size="xl" fw={700}>{insights.actionableInsights?.length || 0}</Text>
+                    <Text size="xl">{insights.actionableInsights?.length || 0}</Text>
                     <Text size="xs" c="dimmed">개 제안</Text>
                   </Paper>
                 </SimpleGrid>
@@ -610,7 +610,7 @@ export function Insights() {
                               </Group>
                             </Group>
 
-                            <Text size="sm" fw={500} mb="sm">중요 요소:</Text>
+                            <Text size="sm" mb="sm">중요 요소:</Text>
                             <Group gap="xs" mb="md">
                               {cat.keyFactors?.map((factor, i) => (
                                 <Badge key={i} variant="outline" color="violet">
@@ -720,7 +720,7 @@ export function Insights() {
                           {insights.contentGaps.map((gap, idx) => (
                             <Paper key={idx} p="md" bg="gray.1" radius="sm">
                               <Group justify="space-between" mb="xs">
-                                <Text size="sm" fw={600}>{gap.area}</Text>
+                                <Text size="sm">{gap.area}</Text>
                               </Group>
                               <Text size="xs" c="dimmed" mb="xs">
                                 현재: {gap.currentState}
@@ -847,7 +847,7 @@ function InsightListItem({
             <IconBrain size={18} stroke={1.5} color="var(--mantine-color-violet-filled)" />
           </Box>
           <Stack gap={2} style={{ minWidth: 0 }}>
-            <Text fw={500} size="sm" truncate>
+            <Text size="sm" truncate>
               {insight.brandName}
             </Text>
             <Text size="xs" c="dimmed">
@@ -906,7 +906,7 @@ function KeywordCard({ keyword, rank }: { keyword: KeywordInsight; rank: number 
         </Tooltip>
       </Group>
 
-      <Text size="lg" fw={700} mb="xs">
+      <Text size="lg" mb="xs">
         {keyword.keyword}
       </Text>
 
@@ -941,7 +941,7 @@ function ActionCard({ insight, index }: { insight: ActionableInsight; index: num
             {index}
           </ThemeIcon>
           <div>
-            <Text size="lg" fw={600}>{insight.title}</Text>
+            <Text size="lg">{insight.title}</Text>
             <Badge size="xs" color={PRIORITY_COLORS[insight.priority]} variant="light">
               우선순위: {PRIORITY_LABELS[insight.priority]}
             </Badge>

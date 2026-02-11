@@ -1,35 +1,80 @@
-import { IconCheck } from '@tabler/icons-react';
 import {
   Box,
   Container,
   SimpleGrid,
   Paper,
-  Badge,
-  Group,
   Stack,
-  ThemeIcon,
   Text,
+  Group,
 } from '@mantine/core';
 import { SectionTitle } from '../ui/SectionTitle';
 
-const results = [
-  { label: 'AI 추천 언급률', before: '12%', after: '67%' },
-  { label: '경쟁사 대비 점유율', before: '9%', after: '41%' },
-  { label: '보고서 생성 시간', before: '5시간', after: '30분' },
+const metrics = [
+  { label: 'AI 추천 언급률', before: 12, after: 67, unit: '%' },
+  { label: '경쟁사 대비 점유율', before: 9, after: 41, unit: '%' },
+  { label: '보고서 생성 시간', before: 300, after: 30, unit: '분', invert: true },
 ];
 
-const auditProcess = [
-  { title: 'AI 가시성 진단', desc: '주요 LLM 질의 50~100개를 실행해 브랜드 언급 현황을 점검합니다.' },
-  { title: '쿼리별 점수 산출', desc: '쿼리군별로 GEO 점수를 계산하고 개선 난이도를 분류합니다.' },
-  { title: '콘텐츠 개선 우선순위', desc: 'FAQ, 스키마, 제품 페이지 중 영향도가 큰 항목을 먼저 제안합니다.' },
-  { title: '경쟁사 비교 리포트', desc: '동일한 질의에서 경쟁사가 어떻게 노출되는지 비교합니다.' },
+const steps = [
+  { num: '01', title: 'AI 가시성 진단' },
+  { num: '02', title: '쿼리별 점수 산출' },
+  { num: '03', title: '콘텐츠 개선' },
+  { num: '04', title: '성과 추적' },
 ];
 
-const reverseEng = [
-  { title: '질의 의도 리버스 엔지니어링', desc: 'AI가 어떤 문맥에서 브랜드를 추천하는지 질문 구조를 분석합니다.' },
-  { title: '근거 콘텐츠 매핑', desc: 'AI가 인용하는 근거 콘텐츠를 추적하고 누락 영역을 보완합니다.' },
-  { title: '성과 추적 자동화', desc: '변경 사항이 GEO 점수에 미친 영향을 자동으로 기록합니다.' },
-];
+function MetricBar({ label, before, after, unit, invert }: {
+  label: string;
+  before: number;
+  after: number;
+  unit: string;
+  invert?: boolean;
+}) {
+  const maxVal = invert ? before : Math.max(before, after);
+  const beforeWidth = (before / maxVal) * 100;
+  const afterWidth = (after / maxVal) * 100;
+  const improved = invert ? after < before : after > before;
+  const beforeLabel = invert ? `${Math.floor(before / 60)}시간` : `${before}${unit}`;
+
+  return (
+    <Paper radius="sm" bg="gray.0" p={20}>
+      <Group justify="space-between" mb={12}>
+        <Text fz="sm">{label}</Text>
+        <Group gap={6}>
+          <Text fz="xs" c="dimmed" td="line-through">{beforeLabel}</Text>
+          <Text fz="md" c={improved ? 'teal.6' : 'red.6'}>
+            {after}{unit}
+          </Text>
+        </Group>
+      </Group>
+      <Box h={6} bg="gray.2" style={{ borderRadius: 3, overflow: 'hidden', position: 'relative' }}>
+        <Box
+          h="100%"
+          bg="gray.3"
+          style={{
+            width: `${beforeWidth}%`,
+            borderRadius: 3,
+            position: 'absolute',
+            top: 0,
+            left: 0,
+          }}
+        />
+        <Box
+          h="100%"
+          style={{
+            width: `${afterWidth}%`,
+            borderRadius: 3,
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            background: improved
+              ? 'linear-gradient(90deg, #20c997, #12b886)'
+              : 'linear-gradient(90deg, #ff6b6b, #fa5252)',
+          }}
+        />
+      </Box>
+    </Paper>
+  );
+}
 
 export function CaseStudy() {
   return (
@@ -37,94 +82,63 @@ export function CaseStudy() {
       <Container size={1440} px={{ base: 20, md: 40 }}>
         <SectionTitle
           title={<>실제 고객사 성과로<br />증명합니다</>}
-          description="AI 검색 유입이 감소하던 B2B SaaS 브랜드가 GEO 점수를 개선한 사례입니다."
+          description="AI 검색 유입이 감소하던 B2B SaaS 브랜드가 GEO 최적화 후 달라진 수치입니다."
         />
 
-        {/* Metrics */}
-        <Paper radius="md" withBorder p={{ base: 24, md: 48 }} mb={24}>
-          <Group gap={12} mb={32}>
-            <Text fz="lg" fw={700}>B2B SaaS 브랜드 A</Text>
-            <Badge
-              size="sm"
-              radius="xl"
-              variant="outline"
-              color="gray"
-              fw={600}
-            >
-              AI 검색 유입 감소
-            </Badge>
-          </Group>
+        <Group gap={12} mb={20}>
+          <Text fz="md">B2B SaaS 브랜드 A</Text>
+          <Box
+            px={10}
+            py={3}
+            style={{
+              borderRadius: 20,
+              background: 'linear-gradient(90deg, #20c997, #12b886)',
+            }}
+          >
+            <Text fz={11} c="white">3개월 후</Text>
+          </Box>
+        </Group>
 
-          <SimpleGrid cols={{ base: 1, sm: 3 }} spacing={16}>
-            {results.map((r) => (
-              <Paper
-                key={r.label}
-                radius="sm"
-                withBorder
-                p={28}
-                ta="center"
-                bg="#f0efed"
-              >
-                <Text fz="sm" c="gray.5" mb={8}>{r.label}</Text>
-                <Text fz="md" c="gray.5" td="line-through" mb={4}>{r.before}</Text>
-                <Text fz={32} fw={700} lh={1} style={{ letterSpacing: '-0.03em' }}>{r.after}</Text>
-              </Paper>
-            ))}
-          </SimpleGrid>
-        </Paper>
-
-        {/* Process cards */}
-        <SimpleGrid cols={{ base: 1, md: 2 }} spacing={20}>
-          <Paper radius="md" withBorder p={32}>
-            <Text fz="lg" fw={700} mb={20} style={{ letterSpacing: '-0.01em' }}>
-              GEO Audit 프로세스
-            </Text>
-            {auditProcess.map((item, i) => (
-              <Group
-                key={item.title}
-                gap={14}
-                align="flex-start"
-                py={16}
-                style={{
-                  borderBottom: i < auditProcess.length - 1 ? '1px solid var(--mantine-color-gray-2)' : 'none',
-                }}
-              >
-                <ThemeIcon size={28} radius="xl" variant="light" color="gray">
-                  <Text fz={11} fw={700}>{i + 1}</Text>
-                </ThemeIcon>
-                <Stack gap={2} style={{ flex: 1 }}>
-                  <Text fz="md" fw={600}>{item.title}</Text>
-                  <Text fz="md" c="dimmed" lh={1.5}>{item.desc}</Text>
-                </Stack>
-              </Group>
-            ))}
-          </Paper>
-
-          <Paper radius="md" withBorder p={32}>
-            <Text fz="lg" fw={700} mb={20} style={{ letterSpacing: '-0.01em' }}>
-              리버스 엔지니어링
-            </Text>
-            {reverseEng.map((item, i) => (
-              <Group
-                key={item.title}
-                gap={14}
-                align="flex-start"
-                py={16}
-                style={{
-                  borderBottom: i < reverseEng.length - 1 ? '1px solid var(--mantine-color-gray-2)' : 'none',
-                }}
-              >
-                <ThemeIcon size={28} radius="xl" variant="light" color="accent.4" c="dark">
-                  <IconCheck size={12} stroke={2.5} />
-                </ThemeIcon>
-                <Stack gap={2} style={{ flex: 1 }}>
-                  <Text fz="md" fw={600}>{item.title}</Text>
-                  <Text fz="md" c="dimmed" lh={1.5}>{item.desc}</Text>
-                </Stack>
-              </Group>
-            ))}
-          </Paper>
+        <SimpleGrid cols={{ base: 1, md: 3 }} spacing={12} mb={20}>
+          {metrics.map((m) => (
+            <MetricBar key={m.label} {...m} />
+          ))}
         </SimpleGrid>
+
+        {/* Process — inline steps */}
+        <Group gap={0} justify="center" mt={8}>
+          {steps.map((s, i) => (
+            <Group key={s.num} gap={0} align="center">
+              <Group gap={8}>
+                <Box
+                  w={28}
+                  h={28}
+                  style={{
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #20c997, #12b886)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Text fz={10} c="white">{s.num}</Text>
+                </Box>
+                <Text fz="sm">{s.title}</Text>
+              </Group>
+              {i < steps.length - 1 && (
+                <Box
+                  w={40}
+                  h={2}
+                  bg="teal.2"
+                  mx={12}
+                  style={{ borderRadius: 1, flexShrink: 0 }}
+                  visibleFrom="md"
+                />
+              )}
+            </Group>
+          ))}
+        </Group>
       </Container>
     </Box>
   );

@@ -80,7 +80,7 @@ export function ProfileEditModal({ opened, onClose }: ProfileEditModalProps) {
       <Stack gap="xl" align="center" py="md" px="md">
         <Group justify="space-between" w="100%">
           <CloseButton onClick={onClose} />
-          <Text fw={700} fz="lg">프로필 편집</Text>
+          <Text fz="lg">프로필 편집</Text>
           <Box w={28} />
         </Group>
         {/* Avatar */}

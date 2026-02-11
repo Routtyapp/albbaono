@@ -3,6 +3,7 @@
 import '@mantine/core/styles.css';
 import '@mantine/charts/styles.css';
 import '@mantine/dates/styles.css';
+import '@mantine/carousel/styles.css';
 
 import { MantineProvider } from '@mantine/core';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -22,19 +23,21 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            {/* Landing page with original layout */}
+            {/* Landing page — always light mode */}
             <Route
               path="/"
               element={
-                <Layout>
-                  <Landing />
-                </Layout>
+                <MantineProvider theme={theme} forceColorScheme="light">
+                  <Layout>
+                    <Landing />
+                  </Layout>
+                </MantineProvider>
               }
             />
 
-            {/* Auth routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            {/* Auth routes — always light mode */}
+            <Route path="/login" element={<MantineProvider theme={theme} forceColorScheme="light"><Login /></MantineProvider>} />
+            <Route path="/register" element={<MantineProvider theme={theme} forceColorScheme="light"><Register /></MantineProvider>} />
 
             {/* Dashboard routes with dashboard layout (protected) */}
             <Route

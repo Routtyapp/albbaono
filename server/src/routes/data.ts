@@ -1133,35 +1133,20 @@ ${JSON.stringify(responses.slice(0, 20), null, 2)}
     const { default: OpenAI } = await import('openai');
     const openai = new OpenAI({ apiKey: openaiKey });
 
-    const completion = await openai.chat.completions.create({
+    const systemPrompt = 'You are an AI marketing analyst. Always respond with valid JSON only, no markdown.';
+    const fullPrompt = `${systemPrompt}\n\n${analysisPrompt}`;
+
+    const response = await openai.responses.create({
       model: 'gpt-5-mini',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an AI marketing analyst. Always respond with valid JSON only, no markdown.',
-        },
-        {
-          role: 'user',
-          content: analysisPrompt,
-        },
-      ],
-      max_completion_tokens: 3000,
-      temperature: 0.3,
+      input: fullPrompt,
     });
 
-    const content = completion.choices[0]?.message?.content || '{}';
+    const content = response.output_text || '{}';
     const jsonContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     analysisResult = JSON.parse(jsonContent);
   } catch (llmError) {
     console.error('LLM analysis error:', llmError);
-    analysisResult = {
-      commonKeywords: [],
-      categoryInsights: [],
-      citationPatterns: { citedPatterns: [], uncitedPatterns: [] },
-      actionableInsights: [],
-      contentGaps: [],
-      error: 'LLM 분석 중 오류가 발생했습니다.',
-    };
+    return res.status(500).json({ error: 'AI 분석 중 오류가 발생했습니다. 다시 시도해주세요.' });
   }
 
   // 인사이트 저장

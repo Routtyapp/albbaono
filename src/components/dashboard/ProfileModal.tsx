@@ -87,7 +87,7 @@ function DeleteAccountModal({ opened, onClose, onDeleted }: { opened: boolean; o
     <Modal
       opened={opened}
       onClose={handleClose}
-      title={<Text fw={700} fz="lg" c="red">계정 삭제</Text>}
+      title={<Text fz="lg" c="red">계정 삭제</Text>}
       size={420}
       centered
       lockScroll={false}
@@ -174,7 +174,7 @@ function ChangePasswordModal({ opened, onClose }: { opened: boolean; onClose: ()
     <Modal
       opened={opened}
       onClose={handleClose}
-      title={<Text fw={700} fz="lg">비밀번호 변경</Text>}
+      title={<Text fz="lg">비밀번호 변경</Text>}
       size={420}
       centered
       lockScroll={false}
@@ -301,10 +301,10 @@ export function ProfileModal({ opened, onClose, sidebarPosition, onSidebarPositi
           <Box p="xl">
             {active === 'general' && (
               <Stack gap="lg">
-                <Title order={4} fz="md" fw={700}>일반</Title>
+                <Title order={4} fz="md">일반</Title>
 
                 <Box>
-                  <Text fz="sm" fw={500} mb="xs">보기</Text>
+                  <Text fz="sm" mb="xs">보기</Text>
                   <SegmentedControl
                     value={colorScheme}
                     onChange={(value) => setColorScheme(value as 'auto' | 'dark')}
@@ -337,7 +337,7 @@ export function ProfileModal({ opened, onClose, sidebarPosition, onSidebarPositi
                 </Box>
 
                 <Box>
-                  <Text fz="sm" fw={500} mb="xs">사이드바 위치</Text>
+                  <Text fz="sm" mb="xs">사이드바 위치</Text>
                   <SegmentedControl
                     value={sidebarPosition}
                     onChange={(value) => onSidebarPositionChange(value as SidebarPosition)}
@@ -373,10 +373,10 @@ export function ProfileModal({ opened, onClose, sidebarPosition, onSidebarPositi
 
             {active === 'security' && (
               <Stack gap="lg">
-                <Title order={4} fz="md" fw={700}>보안</Title>
+                <Title order={4} fz="md">보안</Title>
 
                 <Group justify="space-between">
-                  <Text fz="sm" fw={500}>비밀번호</Text>
+                  <Text fz="sm">비밀번호</Text>
                   <Button
                     variant="light"
                     size="xs"
@@ -391,7 +391,7 @@ export function ProfileModal({ opened, onClose, sidebarPosition, onSidebarPositi
 
             {active === 'account' && (
               <Stack gap="lg">
-                <Title order={4} fz="md" fw={700}>계정</Title>
+                <Title order={4} fz="md">계정</Title>
 
                 <Box
                   p="md"
@@ -406,27 +406,27 @@ export function ProfileModal({ opened, onClose, sidebarPosition, onSidebarPositi
                         <IconCalendar size={14} color="var(--mantine-color-dimmed)" />
                         <Text fz="sm" c="dimmed">가입일</Text>
                       </Group>
-                      <Text fz="sm" fw={500}>{formatDate(user?.created_at)}</Text>
+                      <Text fz="sm">{formatDate(user?.created_at)}</Text>
                     </Group>
                     <Group justify="space-between">
                       <Group gap={6}>
                         <IconClock size={14} color="var(--mantine-color-dimmed)" />
                         <Text fz="sm" c="dimmed">마지막 로그인</Text>
                       </Group>
-                      <Text fz="sm" fw={500}>{formatDate(user?.last_login)}</Text>
+                      <Text fz="sm">{formatDate(user?.last_login)}</Text>
                     </Group>
                     <Group justify="space-between">
                       <Group gap={6}>
                         <IconUser size={14} color="var(--mantine-color-dimmed)" />
                         <Text fz="sm" c="dimmed">역할</Text>
                       </Group>
-                      <Text fz="sm" fw={500} tt="capitalize">{user?.role || '-'}</Text>
+                      <Text fz="sm" tt="capitalize">{user?.role || '-'}</Text>
                     </Group>
                   </Stack>
                 </Box>
 
                 <Group justify="space-between" mt="md">
-                  <Text fz="sm" fw={500} c="red">계정 삭제</Text>
+                  <Text fz="sm" c="red">계정 삭제</Text>
                   <Button
                     variant="light"
                     color="red"

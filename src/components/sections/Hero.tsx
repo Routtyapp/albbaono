@@ -8,7 +8,6 @@ import {
   Text,
   Group,
   Button,
-  Divider,
   Image,
 } from '@mantine/core';
 
@@ -17,77 +16,72 @@ export function Hero() {
 
   return (
     <Box component="section" className="hero">
-      <Container size={720} px={{ base: 20, md: 40 }} py={{ base: 40, md: 60 }} pos="relative" style={{ zIndex: 1 }}>
-        <Stack align="center" ta="center" gap="lg">
+      <Container size={1440} px={{ base: 20, md: 80 }} py={{ base: 60, md: 100 }} pos="relative" style={{ zIndex: 1 }}>
+        <Group align="center" wrap="wrap" gap={40} style={{ minHeight: 400 }}>
+        {/* 왼쪽: 텍스트 */}
+        <Stack align="flex-start" gap="lg" style={{ flex: 1, minWidth: 320 }}>
           <Title
             order={1}
-            fz={{ base: 'calc(1.3rem + 1vw)', md: '1.8rem' }}
-            fw={700}
-            lh={1}
+            fz={{ base: 'calc(1.8rem + 1vw)', md: '2.8rem' }}
+           
+            lh={1.2}
             className="reveal"
-            style={{ animationDelay: '0.1s', letterSpacing: '-0.03em', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
+            style={{ animationDelay: '0.1s', letterSpacing: '-0.03em', whiteSpace: 'nowrap' }}
           >
-            <span style={{ textShadow: '0 1px 3px rgba(255,255,255,0.8)' }}>내 브랜드</span>
+            내 브랜드를 더 눈에 띄게
             <Image
               src="/YeogiJeogiFontLogo (1).png"
               alt="여기저기"
-              h="2.2em"
+              h="1.6em"
               w="auto"
+              my={4}
             />
-            <span style={{ textShadow: '0 1px 3px rgba(255,255,255,0.8)' }}>뜨고 있을까?</span>
           </Title>
 
           <Text
             size="md"
             c="dimmed"
             lh={1.75}
-            maw={480}
             className="reveal"
-            style={{ animationDelay: '0.18s', textShadow: '0 1px 3px rgba(255,255,255,0.8)' }}
+            style={{ animationDelay: '0.18s' }}
           >
-            ChatGPT, Gemini 등 AI 검색에서 브랜드가 어떻게 언급되는지
-            추적하고, GEO 점수 분석으로 경쟁사 대비 성과를 즉시 파악합니다.
+            에이전시에 맡기지 않고 전 과정을 쉽게.
+            <br />
+            등록부터 설정까지 한눈에!
           </Text>
 
-          <Group gap={14} className="reveal" style={{ animationDelay: '0.24s' }} wrap="wrap" justify="center">
+          <Group gap={14} className="reveal" style={{ animationDelay: '0.24s' }} wrap="wrap">
             <Button
               radius="xl"
               color="dark"
               size="md"
-              fw={600}
+             
               rightSection={<IconArrowRight size={16} />}
               onClick={() => navigate('/dashboard')}
             >
-              GEO 분석 시작하기
+              지금 시작하기
             </Button>
             <Button
               radius="xl"
               variant="outline"
               color="gray"
               size="md"
-              fw={600}
+             
+              onClick={() => {
+                document.getElementById('solution')?.scrollIntoView({ behavior: 'smooth' });
+              }}
             >
-              작동 방식 보기
+              사용 안내
             </Button>
           </Group>
-
-          <Group gap={32} className="reveal" style={{ animationDelay: '0.3s' }} wrap="nowrap">
-            <Stack gap={2} align="center">
-              <Text fw={700} fz="lg" lh={1} style={{ letterSpacing: '-0.03em', textShadow: '0 1px 3px rgba(255,255,255,0.8)' }}>150+</Text>
-              <Text fz="sm" c="gray.5" style={{ textShadow: '0 1px 3px rgba(255,255,255,0.8)' }}>추적 브랜드</Text>
-            </Stack>
-            <Divider orientation="vertical" h={36} color="gray.3" />
-            <Stack gap={2} align="center">
-              <Text fw={700} fz="lg" lh={1} style={{ letterSpacing: '-0.03em', textShadow: '0 1px 3px rgba(255,255,255,0.8)' }}>2.4M</Text>
-              <Text fz="sm" c="gray.5" style={{ textShadow: '0 1px 3px rgba(255,255,255,0.8)' }}>분석 쿼리</Text>
-            </Stack>
-            <Divider orientation="vertical" h={36} color="gray.3" />
-            <Stack gap={2} align="center">
-              <Text fw={700} fz="lg" lh={1} style={{ letterSpacing: '-0.03em', textShadow: '0 1px 3px rgba(255,255,255,0.8)' }}>98%</Text>
-              <Text fz="sm" c="gray.5" style={{ textShadow: '0 1px 3px rgba(255,255,255,0.8)' }}>고객 유지율</Text>
-            </Stack>
-          </Group>
         </Stack>
+
+        {/* 오른쪽: 데모 영상 영역 (추후 추가) */}
+        <Box
+          style={{ flex: 1, minWidth: 320, borderRadius: 'var(--mantine-radius-md)' }}
+          visibleFrom="md"
+        />
+        </Group>
       </Container>
     </Box>
   );

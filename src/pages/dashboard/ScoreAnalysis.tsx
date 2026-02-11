@@ -271,25 +271,25 @@ export function ScoreAnalysis() {
                   {selectedResult.grade}
                 </Badge>
               </Group>
-              <Text size="xl" fw={700}>{selectedResult.totalScore}</Text>
+              <Text size="xl">{selectedResult.totalScore}</Text>
               <Text size="xs" c="dimmed">/ 100점</Text>
             </Paper>
 
             <Paper p="lg" radius="md" withBorder>
               <Text size="sm" c="dimmed" mb="xs">분석 페이지</Text>
-              <Text size="xl" fw={700}>{selectedResult.pages.length}</Text>
+              <Text size="xl">{selectedResult.pages.length}</Text>
               <Text size="xs" c="dimmed">개 페이지</Text>
             </Paper>
 
             <Paper p="lg" radius="md" withBorder>
               <Text size="sm" c="dimmed" mb="xs">개선 필요 항목</Text>
-              <Text size="xl" fw={700} c="red">{selectedResult.recommendations.length}</Text>
+              <Text size="xl" c="red">{selectedResult.recommendations.length}</Text>
               <Text size="xs" c="dimmed">개 항목</Text>
             </Paper>
 
             <Paper p="lg" radius="md" withBorder>
               <Text size="sm" c="dimmed" mb="xs">분석 일시</Text>
-              <Text size="md" fw={500}>
+              <Text size="md">
                 {new Date(selectedResult.analyzedAt).toLocaleDateString('ko-KR')}
               </Text>
               <Text size="xs" c="dimmed">
@@ -302,7 +302,7 @@ export function ScoreAnalysis() {
           <Paper p="md" radius="md" withBorder bg="gray.0">
             <Group gap="xs">
               <IconExternalLink size={16} />
-              <Text size="sm" fw={500}>{selectedResult.url}</Text>
+              <Text size="sm">{selectedResult.url}</Text>
             </Group>
           </Paper>
 
@@ -341,12 +341,12 @@ export function ScoreAnalysis() {
                               },
                             ]}
                             label={
-                              <Text size="sm" fw={700} ta="center">
+                              <Text size="sm" ta="center">
                                 {cat.percentage}%
                               </Text>
                             }
                           />
-                          <Text size="sm" fw={600}>{cat.label}</Text>
+                          <Text size="sm">{cat.label}</Text>
                           <Text size="xs" c="dimmed">
                             {cat.score}/{cat.maxScore}점
                           </Text>
@@ -461,7 +461,7 @@ export function ScoreAnalysis() {
                       <Table.Tbody>
                         {category.items.map((item, idx) => (
                           <Table.Tr key={idx}>
-                            <Table.Td fw={500}>{item.name}</Table.Td>
+                            <Table.Td>{item.name}</Table.Td>
                             <Table.Td ta="center">
                               {item.score}/{item.maxScore}
                             </Table.Td>
@@ -505,7 +505,7 @@ export function ScoreAnalysis() {
                             </Badge>
                             <Text size="xs" c="green">{rec.impact}</Text>
                           </Group>
-                          <Text size="sm" fw={500} mb="xs">{rec.issue}</Text>
+                          <Text size="sm" mb="xs">{rec.issue}</Text>
                           <Divider my="xs" />
                           <Text size="xs" c="dimmed">{rec.suggestion}</Text>
                         </Paper>
@@ -529,7 +529,7 @@ export function ScoreAnalysis() {
                             </Badge>
                             <Text size="xs" c="green">{rec.impact}</Text>
                           </Group>
-                          <Text size="sm" fw={500} mb="xs">{rec.issue}</Text>
+                          <Text size="sm" mb="xs">{rec.issue}</Text>
                           <Divider my="xs" />
                           <Text size="xs" c="dimmed">{rec.suggestion}</Text>
                         </Paper>
@@ -553,7 +553,7 @@ export function ScoreAnalysis() {
                             </Badge>
                             <Text size="xs" c="green">{rec.impact}</Text>
                           </Group>
-                          <Text size="sm" fw={500} mb="xs">{rec.issue}</Text>
+                          <Text size="sm" mb="xs">{rec.issue}</Text>
                           <Divider my="xs" />
                           <Text size="xs" c="dimmed">{rec.suggestion}</Text>
                         </Paper>

@@ -3,7 +3,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import {
   Container,
   Paper,
-  Title,
   Text,
   TextInput,
   PasswordInput,
@@ -13,6 +12,8 @@ import {
   Alert,
   Center,
   Box,
+  Image,
+  Divider,
 } from '@mantine/core';
 import { IconMail, IconLock, IconAlertCircle } from '@tabler/icons-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -46,30 +47,23 @@ export default function Login() {
     <Box
       style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        backgroundColor: '#f0efed',
         display: 'flex',
         alignItems: 'center',
       }}
     >
-      <Container size={420} py={40}>
-        <Center mb={30}>
-          <Title
-            order={1}
-            style={{
-              color: 'white',
-              fontSize: '2rem',
-              fontWeight: 700,
-            }}
-          >
-            GEO Tracker
-          </Title>
+      <Container size={400} py={40}>
+        <Center mb={32}>
+          <Anchor component={Link} to="/" underline="never">
+            <Image src="/YeogiJeogiFontLogo (1).png" alt="여기저기" h={36} w="auto" />
+          </Anchor>
         </Center>
 
-        <Paper radius="md" p="xl" withBorder shadow="xl">
-          <Title order={2} ta="center" mb={5}>
+        <Paper radius="lg" p={32} shadow="sm" bg="white">
+          <Text size="lg" ta="center" mb={4}>
             로그인
-          </Title>
-          <Text c="dimmed" size="sm" ta="center" mb={20}>
+          </Text>
+          <Text c="dimmed" size="sm" ta="center" mb={24}>
             계정이 없으신가요?{' '}
             <Anchor component={Link} to="/register" size="sm">
               회원가입
@@ -82,13 +76,14 @@ export default function Login() {
               color="red"
               mb="md"
               variant="light"
+              radius="md"
             >
               {error}
             </Alert>
           )}
 
           <form onSubmit={handleSubmit}>
-            <Stack>
+            <Stack gap="md">
               <TextInput
                 label="이메일"
                 placeholder="your@email.com"
@@ -97,6 +92,8 @@ export default function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 type="email"
+                radius="md"
+                size="md"
               />
 
               <PasswordInput
@@ -107,17 +104,21 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
+                radius="md"
+                size="md"
               />
 
-              <Button type="submit" fullWidth loading={loading} mt="md">
+              <Button type="submit" fullWidth loading={loading} mt="sm" size="md" radius="md">
                 로그인
               </Button>
             </Stack>
           </form>
 
-          <Text c="dimmed" size="xs" ta="center" mt="xl">
-            <Anchor component={Link} to="/" size="xs">
-              홈으로 돌아가기
+          <Divider my="lg" />
+
+          <Text c="dimmed" size="xs" ta="center">
+            <Anchor component={Link} to="/" size="xs" c="dimmed">
+              ← 홈으로 돌아가기
             </Anchor>
           </Text>
         </Paper>
