@@ -3,7 +3,6 @@ import {
   Container,
   SimpleGrid,
   Paper,
-  Stack,
   Text,
   Group,
 } from '@mantine/core';

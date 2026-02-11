@@ -12,7 +12,6 @@ import {
   Alert,
   TagsInput,
   Center,
-  Box,
   UnstyledButton,
   Menu,
 } from '@mantine/core';
@@ -358,9 +357,7 @@ export function Brands() {
             style={{ position: 'relative' }}
             slideSize="154px"
             slideGap="sm"
-            align="start"
-            slidesToScroll={3}
-            containScroll="trimSnaps"
+
             withControls={sortedBrands.length > 5}
             styles={{
               controls: {

@@ -56,7 +56,7 @@ function FeatureCard({
   link,
   linkLabel,
   image,
-  imageH = 280,
+  imageH: _imageH = 280,
 }: {
   title: string;
   text: string;

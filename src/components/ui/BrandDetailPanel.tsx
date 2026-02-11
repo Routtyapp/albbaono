@@ -4,7 +4,6 @@ import {
   Text,
   Badge,
   Stack,
-  Button,
   ActionIcon,
   Grid,
   Timeline,
