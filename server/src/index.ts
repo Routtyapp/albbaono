@@ -18,6 +18,9 @@ config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// nginx 리버스 프록시 뒤에서 secure 쿠키가 동작하도록 설정
+app.set('trust proxy', 1);
+
 // 세션 시크릿 확인
 const SESSION_SECRET = process.env.SESSION_SECRET;
 if (!SESSION_SECRET) {
@@ -30,8 +33,8 @@ app.use(cors({
   origin: [
     'http://localhost:5173',
     'http://localhost:3001',
-    'https://aitopeople.com',
-    'http://aitopeople.com',
+    'https://yeogijeogi.com',
+    'http://yeogijeogi.com',
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
