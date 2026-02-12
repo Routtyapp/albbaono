@@ -22,23 +22,36 @@ export function MetricCard({
   const isPositive = change !== undefined && change >= 0;
 
   return (
-    <Paper p="md" radius="md" withBorder>
-      <Group justify="space-between" mb="xs">
-        <Text size="sm" c="dimmed">
+    <Paper
+      p="md"
+      radius="md"
+      withBorder
+      h="100%"
+      style={{ minHeight: 132 }}
+    >
+      <Group justify="space-between" align="flex-start" mb="md">
+        <Text size="sm" c="dimmed" fw={500} lh={1.35}>
           {title}
         </Text>
-        <ThemeIcon variant="light" color={color} size="lg" radius="md">
+        <ThemeIcon variant="light" color={color} size={40} radius="md">
           {icon}
         </ThemeIcon>
       </Group>
 
-      <Stack gap={4}>
+      <Stack gap={6}>
         <Group gap="xs" align="baseline">
-          <Text size="xl">
+          <Text
+            fw={600}
+            lh={1}
+            style={{
+              letterSpacing: '-0.02em',
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
             {value}
           </Text>
           {suffix && (
-            <Text size="sm" c="dimmed">
+            <Text size="sm" c="dimmed" fw={500}>
               {suffix}
             </Text>
           )}

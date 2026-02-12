@@ -8,6 +8,8 @@ export async function getBrands(): Promise<{ brands: Brand[] }> {
 export async function addBrand(data: {
   name: string;
   competitors: string[];
+  marketingPoints?: string[];
+  keywords?: string[];
 }): Promise<Brand> {
   return apiMutate('/api/brands', 'POST', data);
 }
@@ -15,6 +17,8 @@ export async function addBrand(data: {
 export async function updateBrand(id: string, data: {
   name: string;
   competitors: string[];
+  marketingPoints?: string[];
+  keywords?: string[];
 }): Promise<void> {
   return apiMutate(`/api/brands/${id}`, 'PUT', data);
 }

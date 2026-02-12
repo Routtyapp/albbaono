@@ -86,3 +86,19 @@ body {
     animation: none;
   }
 }
+
+/* ── Dashboard Master-Detail Grids ── */
+@media (min-width: 48em) {
+  .brands-grid {
+    grid-template-columns: 240px 1fr !important;
+  }
+  .query-grid {
+    grid-template-columns: 300px 1fr !important;
+  }
+  .scheduler-grid {
+    grid-template-columns: 300px 1fr !important;
+  }
+  .visibility-grid {
+    grid-template-columns: 300px 1fr !important;
+  }
+}

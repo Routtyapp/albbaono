@@ -255,20 +255,20 @@ export function Insights() {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between">
+      <Group justify="space-between" wrap="wrap">
         <div>
           <Title order={2}>AI 인사이트</Title>
           <Text c="dimmed" size="sm">
             AI 응답 패턴을 분석하여 공략 포인트를 도출합니다
           </Text>
         </div>
-        <Group>
+        <Group wrap="wrap">
           <Select
             placeholder="브랜드 선택"
             data={brands.map((b) => ({ value: b.id, label: b.name }))}
             value={selectedBrandId}
             onChange={setSelectedBrandId}
-            w={180}
+            w={{ base: 140, sm: 180 }}
             disabled={isLoading}
           />
           <Button
@@ -512,8 +512,11 @@ export function Insights() {
                         <IconChartBar size={14} />
                       </ThemeIcon>
                     </Group>
-                    <Text size="xl">{insights.metadata?.totalResponses ?? 0}</Text>
-                    <Text size="xs" c="dimmed">개 응답 분석</Text>
+                    <Group gap={4} align="baseline">
+                      <Text size="xl">{insights.metadata?.totalResponses ?? 0}</Text>
+                      <Text size="xs" c="dimmed">개</Text>
+                    </Group>
+                    <Text size="xs" c="dimmed">응답 분석</Text>
                   </Paper>
 
                   <Paper p="lg" radius="md" withBorder>
@@ -536,8 +539,11 @@ export function Insights() {
                         <IconTarget size={14} />
                       </ThemeIcon>
                     </Group>
-                    <Text size="xl">{insights.commonKeywords?.length || 0}</Text>
-                    <Text size="xs" c="dimmed">개 발견</Text>
+                    <Group gap={4} align="baseline">
+                      <Text size="xl">{insights.commonKeywords?.length || 0}</Text>
+                      <Text size="xs" c="dimmed">개</Text>
+                    </Group>
+                    <Text size="xs" c="dimmed">발견</Text>
                   </Paper>
 
                   <Paper p="lg" radius="md" withBorder>
@@ -547,8 +553,11 @@ export function Insights() {
                         <IconChecklist size={14} />
                       </ThemeIcon>
                     </Group>
-                    <Text size="xl">{insights.actionableInsights?.length || 0}</Text>
-                    <Text size="xs" c="dimmed">개 제안</Text>
+                    <Group gap={4} align="baseline">
+                      <Text size="xl">{insights.actionableInsights?.length || 0}</Text>
+                      <Text size="xs" c="dimmed">개</Text>
+                    </Group>
+                    <Text size="xs" c="dimmed">제안</Text>
                   </Paper>
                 </SimpleGrid>
 
@@ -573,11 +582,11 @@ export function Insights() {
                   <Tabs.Panel value="keywords" pt="md">
                     <Stack gap="md">
                       <Paper p="lg" radius="md" withBorder>
-                        <Title order={4} mb="md">
+                        <Text fw={600} size="sm" mb="md">
                           AI가 자주 언급하는 핵심 키워드
-                        </Title>
+                        </Text>
                         <Text size="sm" c="dimmed" mb="lg">
-                          다양한 쿼리에서 AI가 공통적으로 중요하게 다루는 요소들입니다.
+                          다양한 질문에서 AI가 공통적으로 중요하게 다루는 요소들입니다.
                           이 키워드들을 콘텐츠에 포함하면 AI 인용 확률이 높아집니다.
                         </Text>
 
@@ -649,7 +658,7 @@ export function Insights() {
                           <ThemeIcon color="green" variant="light">
                             <IconCircleCheck size={18} />
                           </ThemeIcon>
-                          <Title order={4}>인용 성공 패턴</Title>
+                          <Text fw={600} size="sm">인용 성공 패턴</Text>
                         </Group>
                         <Text size="sm" c="dimmed" mb="md">
                           브랜드가 인용된 응답에서 발견되는 공통 특징
@@ -680,7 +689,7 @@ export function Insights() {
                           <ThemeIcon color="red" variant="light">
                             <IconCircleX size={18} />
                           </ThemeIcon>
-                          <Title order={4}>인용 실패 패턴</Title>
+                          <Text fw={600} size="sm">인용 실패 패턴</Text>
                         </Group>
                         <Text size="sm" c="dimmed" mb="md">
                           브랜드가 인용되지 않은 응답에서 발견되는 특징
@@ -713,7 +722,7 @@ export function Insights() {
                           <ThemeIcon color="orange" variant="light">
                             <IconAlertTriangle size={18} />
                           </ThemeIcon>
-                          <Title order={4}>콘텐츠 보강 영역</Title>
+                          <Text fw={600} size="sm">콘텐츠 보강 영역</Text>
                         </Group>
 
                         <Stack gap="sm">

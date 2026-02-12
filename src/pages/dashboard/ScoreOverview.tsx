@@ -1,20 +1,16 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Stack,
-  Title,
   Text,
   Paper,
   Group,
   Badge,
   TextInput,
   Button,
+  ActionIcon,
   Progress,
   SimpleGrid,
-  Accordion,
-  List,
   ThemeIcon,
-  Loader,
   Alert,
   Switch,
   NumberInput,
@@ -22,6 +18,11 @@ import {
   RingProgress,
   Center,
   Box,
+  Title,
+  Tabs,
+  Table,
+  Tooltip,
+  Select,
 } from '@mantine/core';
 import {
   IconSearch,
@@ -29,17 +30,14 @@ import {
   IconX,
   IconAlertTriangle,
   IconBulb,
-  IconFileAnalytics,
   IconWorld,
-  IconCode,
-  IconLink,
-  IconFileText,
   IconChartBar,
   IconExternalLink,
   IconFileTypePdf,
+  IconArrowRight,
+  IconListDetails,
   IconHistory,
   IconTrash,
-  IconArrowRight,
 } from '@tabler/icons-react';
 import {
   analyzeGeoScore,
@@ -50,7 +48,6 @@ import {
   clearGeoScoreHistory,
   type GeoScoreResult,
   type GeoScoreHistoryItem,
-  type CategoryScore,
   type Recommendation,
 } from '../../services/api';
 
@@ -65,14 +62,6 @@ const GRADE_COLORS: Record<string, string> = {
   F: 'red',
 };
 
-const CATEGORY_ICONS: Record<string, typeof IconCode> = {
-  structure: IconFileText,
-  schema: IconCode,
-  url: IconLink,
-  meta: IconFileAnalytics,
-  content: IconChartBar,
-};
-
 const CATEGORY_LABELS: Record<string, string> = {
   structure: '구조',
   schema: '스키마',
@@ -82,7 +71,6 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export function ScoreOverview() {
-  const navigate = useNavigate();
   const [url, setUrl] = useState('');
   const [includeSubpages, setIncludeSubpages] = useState(true);
   const [maxSubpages, setMaxSubpages] = useState<number | ''>(10);
@@ -92,21 +80,38 @@ export function ScoreOverview() {
   const [serviceAvailable, setServiceAvailable] = useState<boolean | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [history, setHistory] = useState<GeoScoreHistoryItem[]>([]);
+  // 히스토리에서 선택한 결과를 보여주는 모드
+  const [selectedHistoryUrl, setSelectedHistoryUrl] = useState<string | null>(null);
 
   useEffect(() => {
     checkGeoScoreHealth()
       .then(() => setServiceAvailable(true))
       .catch(() => setServiceAvailable(false));
 
-    // 히스토리 로드 (API에서)
-    getGeoScoreHistory()
-      .then(({ scores }) => setHistory(scores))
-      .catch((err) => console.error('Failed to load history:', err));
+    loadHistory();
   }, []);
 
-  const handleLoadFromHistory = (item: GeoScoreResult) => {
-    // 성과 분석 페이지로 이동 (URL 파라미터로 전달)
-    navigate(`/dashboard/score/analysis?url=${encodeURIComponent(item.url)}`);
+  const loadHistory = async () => {
+    try {
+      const { scores } = await getGeoScoreHistory();
+      setHistory(scores);
+    } catch (err) {
+      console.error('Failed to load history:', err);
+    }
+  };
+
+  // 현재 표시할 결과 (새 분석 결과 or 히스토리에서 선택한 결과)
+  const displayResult = useMemo(() => {
+    if (result) return result;
+    if (selectedHistoryUrl) {
+      return history.find((h) => h.url === selectedHistoryUrl) || null;
+    }
+    return null;
+  }, [result, selectedHistoryUrl, history]);
+
+  const handleLoadFromHistory = (item: GeoScoreHistoryItem) => {
+    setResult(null);
+    setSelectedHistoryUrl(item.url);
   };
 
   const handleClearHistory = async () => {
@@ -119,28 +124,26 @@ export function ScoreOverview() {
   };
 
   const handleDownloadPdf = async () => {
-    if (!result) return;
+    if (!displayResult) return;
 
     setIsDownloading(true);
     try {
-      const blob = await downloadGeoScorePdf(result);
+      const blob = await downloadGeoScorePdf(displayResult);
 
-      // 도메인 추출
       let domain = 'site';
       try {
-        const urlObj = new URL(result.url);
+        const urlObj = new URL(displayResult.url);
         domain = urlObj.hostname.replace(/\./g, '_');
       } catch {}
 
-      // 다운로드 트리거
-      const url = window.URL.createObjectURL(blob);
+      const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
-      link.download = `GEO_Score_${domain}_${result.grade}_${result.totalScore}.pdf`;
+      link.href = blobUrl;
+      link.download = `GEO_Score_${domain}_${displayResult.grade}_${displayResult.totalScore}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(blobUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'PDF 다운로드에 실패했습니다');
     } finally {
@@ -157,6 +160,7 @@ export function ScoreOverview() {
     setLoading(true);
     setError(null);
     setResult(null);
+    setSelectedHistoryUrl(null);
 
     try {
       const data = await analyzeGeoScore({
@@ -168,9 +172,7 @@ export function ScoreOverview() {
       });
       setResult(data);
 
-      // 분석 결과를 서버에 저장 (히스토리)
       const savedItem = await saveGeoScoreHistory(data);
-      // 히스토리 목록 갱신
       setHistory((prev) => [savedItem, ...prev.filter((h) => h.url !== data.url)].slice(0, 10));
     } catch (err) {
       setError(err instanceof Error ? err.message : '분석 중 오류가 발생했습니다.');
@@ -179,422 +181,546 @@ export function ScoreOverview() {
     }
   };
 
+  // 카테고리별 통계
+  const categoryStats = useMemo(() => {
+    if (!displayResult) return [];
+    return Object.entries(displayResult.categories).map(([key, cat]) => ({
+      key,
+      label: CATEGORY_LABELS[key] || key,
+      score: cat.score,
+      maxScore: cat.maxScore,
+      percentage: cat.percentage,
+      passedItems: cat.items.filter((i) => i.passed).length,
+      totalItems: cat.items.length,
+    }));
+  }, [displayResult]);
+
+  // 권장사항 우선순위별 그룹화
+  const recommendationsByPriority = useMemo(() => {
+    if (!displayResult) return { high: [], medium: [], low: [] };
+    const recs = displayResult.recommendations;
+    return {
+      high: recs.filter((r) => r.priority === 'high'),
+      medium: recs.filter((r) => r.priority === 'medium'),
+      low: recs.filter((r) => r.priority === 'low'),
+    };
+  }, [displayResult]);
+
+  // 히스토리 셀렉트 옵션
+  const historySelectOptions = useMemo(() => {
+    return history.map((h) => {
+      let domain = h.url;
+      try {
+        domain = new URL(h.url).hostname;
+      } catch {}
+      return {
+        value: h.url,
+        label: `${domain} (${h.grade} - ${h.totalScore}점)`,
+      };
+    });
+  }, [history]);
+
+  // 결과 없고 로딩 아닐 때: 중앙 배치 히어로 스타일
+  if (!displayResult && !loading) {
+    return (
+      <Stack gap="lg">
+        {serviceAvailable === false && (
+          <Alert color="yellow" icon={<IconAlertTriangle />}>
+            GEO Score 분석 서버에 연결할 수 없습니다.
+          </Alert>
+        )}
+
+        {error && (
+          <Alert color="red" icon={<IconX />} withCloseButton onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+
+        <Center style={{ minHeight: 'calc(100vh - 300px)' }}>
+          <Stack align="center" gap="xl" w="100%" maw={640} px="md">
+            <Text size="xl" ta="center" c="dimmed">
+              웹사이트의 AI 최적화 점수를 분석하세요
+            </Text>
+
+            <Box w="100%">
+              <TextInput
+                placeholder="https://example.com"
+                leftSection={<IconWorld size={18} />}
+                rightSection={
+                  <ActionIcon
+                    variant="filled"
+                    radius="xl"
+                    size="md"
+                    onClick={handleAnalyze}
+                    disabled={loading || !serviceAvailable || !url.trim()}
+                    loading={loading}
+                  >
+                    <IconSearch size={16} />
+                  </ActionIcon>
+                }
+                rightSectionWidth={42}
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && url.trim()) handleAnalyze();
+                }}
+                size="lg"
+                radius="xl"
+                disabled={loading}
+                styles={{
+                  input: {
+                    border: '1px solid var(--mantine-color-default-border)',
+                    backgroundColor: 'var(--mantine-color-body)',
+                  },
+                }}
+              />
+
+              <Group justify="center" mt="sm" gap="xs">
+                <Switch
+                  label="서브페이지 포함"
+                  checked={includeSubpages}
+                  onChange={(e) => setIncludeSubpages(e.currentTarget.checked)}
+                  size="xs"
+                />
+                {includeSubpages && (
+                  <NumberInput
+                    value={maxSubpages}
+                    onChange={(val) => setMaxSubpages(val === '' ? '' : Number(val))}
+                    min={1}
+                    max={50}
+                    w={80}
+                    size="xs"
+                    suffix="페이지"
+                  />
+                )}
+              </Group>
+            </Box>
+
+            {/* 최근 분석 히스토리 */}
+            {history.length > 0 && (
+              <Box w="100%">
+                <Group justify="space-between" mb="xs">
+                  <Text size="xs" c="dimmed">최근 분석</Text>
+                  <Button
+                    variant="subtle"
+                    color="red"
+                    size="compact-xs"
+                    onClick={handleClearHistory}
+                  >
+                    전체 삭제
+                  </Button>
+                </Group>
+                <Stack gap={6}>
+                  {history.slice(0, 5).map((item, idx) => (
+                    <Paper
+                      key={idx}
+                      p="xs"
+                      withBorder
+                      radius="sm"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => handleLoadFromHistory(item)}
+                    >
+                      <Group justify="space-between" wrap="nowrap">
+                        <Box style={{ overflow: 'hidden', flex: 1 }}>
+                          <Text size="sm" truncate>
+                            {(() => {
+                              try { return new URL(item.url).hostname; } catch { return item.url; }
+                            })()}
+                          </Text>
+                        </Box>
+                        <Group gap="xs" wrap="nowrap">
+                          <Badge color={GRADE_COLORS[item.grade]} size="xs">
+                            {item.grade}
+                          </Badge>
+                          <Badge variant="light" size="xs">
+                            {item.totalScore}점
+                          </Badge>
+                          <IconArrowRight size={12} color="gray" />
+                        </Group>
+                      </Group>
+                    </Paper>
+                  ))}
+                </Stack>
+              </Box>
+            )}
+          </Stack>
+        </Center>
+      </Stack>
+    );
+  }
+
   return (
     <Stack gap="lg">
-      <Group justify="space-between">
-        <div>
-          <Title order={2}>GEO Score</Title>
-          <Text c="dimmed" size="sm">
-            AI 검색 엔진 최적화 점수를 측정합니다
-          </Text>
-        </div>
-        {serviceAvailable === false && (
-          <Badge color="red" size="lg">
-            서버 연결 필요
-          </Badge>
-        )}
-        {serviceAvailable === true && (
-          <Badge color="green" size="lg" variant="light">
-            서비스 정상
-          </Badge>
-        )}
-      </Group>
-
-      {serviceAvailable === false && (
-        <Alert color="yellow" icon={<IconAlertTriangle />}>
-          GEO Score 백엔드 서버가 실행되지 않았습니다. <code>server</code> 폴더에서{' '}
-          <code>npm install && npm run dev</code>를 실행해주세요.
-        </Alert>
-      )}
-
-      {/* URL 입력 폼 */}
-      <Paper p="lg" radius="md" withBorder>
-        <Stack gap="md">
-          <TextInput
-            label="분석할 URL"
-            placeholder="https://example.com"
-            leftSection={<IconWorld size={16} />}
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            size="md"
-            disabled={loading}
-          />
-
-          <Group>
-            <Switch
-              label="서브페이지 포함 분석"
-              checked={includeSubpages}
-              onChange={(e) => setIncludeSubpages(e.currentTarget.checked)}
-              disabled={loading}
-            />
-            {includeSubpages && (
-              <NumberInput
-                label="최대 서브페이지 수"
-                value={maxSubpages}
-                onChange={(val) => setMaxSubpages(val === '' ? '' : Number(val))}
-                min={1}
-                max={50}
-                w={150}
-                disabled={loading}
-              />
-            )}
-          </Group>
-
-          <Button
-            leftSection={loading ? <Loader size={16} color="white" /> : <IconSearch size={16} />}
-            onClick={handleAnalyze}
-            disabled={loading || !serviceAvailable}
-            size="md"
-          >
-            {loading ? '분석 중...' : '분석 시작'}
-          </Button>
-        </Stack>
-      </Paper>
+      {/* 입력 바 (결과가 있을 때는 상단 고정) */}
+      <Box>
+        <TextInput
+          placeholder="https://example.com"
+          leftSection={<IconWorld size={18} />}
+          rightSection={
+            <ActionIcon
+              variant="filled"
+              radius="xl"
+              size="md"
+              onClick={handleAnalyze}
+              disabled={loading || !serviceAvailable || !url.trim()}
+              loading={loading}
+            >
+              <IconSearch size={16} />
+            </ActionIcon>
+          }
+          rightSectionWidth={42}
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && url.trim()) handleAnalyze();
+          }}
+          size="md"
+          radius="xl"
+          disabled={loading}
+          styles={{
+            input: {
+              border: '1px solid var(--mantine-color-default-border)',
+              backgroundColor: 'var(--mantine-color-body)',
+            },
+          }}
+        />
+      </Box>
 
       {error && (
-        <Alert color="red" icon={<IconX />}>
+        <Alert color="red" icon={<IconX />} withCloseButton onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
 
-      {/* 결과가 없을 때: 소개 및 히스토리 */}
-      {!result && !loading && (
-        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
-          {/* GEO Score 소개 */}
-          <Paper p="lg" radius="md" withBorder>
-            <Group gap="xs" mb="md">
-              <ThemeIcon size="lg" variant="light" color="blue">
-                <IconFileAnalytics size={20} />
-              </ThemeIcon>
-              <Title order={4}>GEO Score란?</Title>
-            </Group>
-            <Text size="sm" c="dimmed" mb="md">
-              웹사이트가 AI 검색 엔진(ChatGPT, Gemini, Perplexity 등)에 얼마나 최적화되어 있는지 측정합니다.
-            </Text>
-            <Stack gap="xs">
-              <Group gap="xs">
-                <ThemeIcon size="sm" variant="light" color="teal">
-                  <IconFileText size={14} />
-                </ThemeIcon>
-                <Text size="sm">Structure - HTML 구조, 헤딩 계층</Text>
+      {/* 분석 결과 */}
+      {displayResult && (
+        <Stack gap="lg">
+          {/* 요약 카드 */}
+          <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
+            <Paper p="lg" radius="md" withBorder>
+              <Group justify="space-between" mb="xs">
+                <Text size="sm" c="dimmed">종합 점수</Text>
+                <Badge color={GRADE_COLORS[displayResult.grade]} size="lg">
+                  {displayResult.grade}
+                </Badge>
               </Group>
-              <Group gap="xs">
-                <ThemeIcon size="sm" variant="light" color="violet">
-                  <IconCode size={14} />
-                </ThemeIcon>
-                <Text size="sm">Schema - 구조화된 데이터 마크업</Text>
-              </Group>
-              <Group gap="xs">
-                <ThemeIcon size="sm" variant="light" color="blue">
-                  <IconLink size={14} />
-                </ThemeIcon>
-                <Text size="sm">URL - URL 구조 및 가독성</Text>
-              </Group>
-              <Group gap="xs">
-                <ThemeIcon size="sm" variant="light" color="orange">
-                  <IconFileAnalytics size={14} />
-                </ThemeIcon>
-                <Text size="sm">Meta - 메타 태그 최적화</Text>
-              </Group>
-              <Group gap="xs">
-                <ThemeIcon size="sm" variant="light" color="pink">
-                  <IconChartBar size={14} />
-                </ThemeIcon>
-                <Text size="sm">Content - 콘텐츠 품질 및 구조</Text>
-              </Group>
-            </Stack>
-          </Paper>
+              <Text size="xl">{displayResult.totalScore}</Text>
+              <Text size="xs" c="dimmed">/ 100점</Text>
+            </Paper>
 
-          {/* 최근 분석 히스토리 */}
-          <Paper p="lg" radius="md" withBorder>
-            <Group justify="space-between" mb="md">
-              <Group gap="xs">
-                <ThemeIcon size="lg" variant="light" color="gray">
-                  <IconHistory size={20} />
-                </ThemeIcon>
-                <Title order={4}>최근 분석</Title>
+            <Paper p="lg" radius="md" withBorder>
+              <Text size="sm" c="dimmed" mb="xs">분석 페이지</Text>
+              <Text size="xl">{displayResult.pages.length}</Text>
+              <Text size="xs" c="dimmed">개 페이지</Text>
+            </Paper>
+
+            <Paper p="lg" radius="md" withBorder>
+              <Text size="sm" c="dimmed" mb="xs">개선 필요 항목</Text>
+              <Text size="xl" c="red">{displayResult.recommendations.length}</Text>
+              <Text size="xs" c="dimmed">개 항목</Text>
+            </Paper>
+
+            <Paper p="lg" radius="md" withBorder>
+              <Text size="sm" c="dimmed" mb="xs">분석 일시</Text>
+              <Text size="md">
+                {new Date(displayResult.analyzedAt).toLocaleDateString('ko-KR')}
+              </Text>
+              <Text size="xs" c="dimmed">
+                {new Date(displayResult.analyzedAt).toLocaleTimeString('ko-KR')}
+              </Text>
+            </Paper>
+          </SimpleGrid>
+
+          {/* URL 정보 + 액션 */}
+          <Paper p="md" radius="md" withBorder>
+            <Group justify="space-between" wrap="nowrap">
+              <Group gap="xs" style={{ overflow: 'hidden', flex: 1 }}>
+                <IconExternalLink size={16} />
+                <Text size="sm" truncate>{displayResult.url}</Text>
               </Group>
-              {history.length > 0 && (
+              <Group gap="sm" wrap="nowrap">
+                {history.length > 1 && (
+                  <Select
+                    placeholder="다른 분석 결과 보기"
+                    data={historySelectOptions}
+                    value={selectedHistoryUrl || displayResult.url}
+                    onChange={(val) => {
+                      if (val) {
+                        setResult(null);
+                        setSelectedHistoryUrl(val);
+                      }
+                    }}
+                    w={240}
+                    size="xs"
+                    leftSection={<IconHistory size={14} />}
+                  />
+                )}
                 <Button
-                  variant="subtle"
+                  variant="light"
                   color="red"
                   size="xs"
-                  leftSection={<IconTrash size={14} />}
-                  onClick={handleClearHistory}
+                  leftSection={<IconFileTypePdf size={14} />}
+                  onClick={handleDownloadPdf}
+                  loading={isDownloading}
                 >
-                  전체 삭제
+                  PDF
                 </Button>
-              )}
+                <Tooltip label="히스토리 삭제">
+                  <ActionIcon variant="light" color="gray" size="sm" onClick={handleClearHistory}>
+                    <IconTrash size={14} />
+                  </ActionIcon>
+                </Tooltip>
+              </Group>
             </Group>
-            {history.length === 0 ? (
-              <Center py="xl">
-                <Stack align="center" gap="xs">
-                  <Text c="dimmed" size="sm">분석 히스토리가 없습니다</Text>
-                  <Text c="dimmed" size="xs">URL을 입력하고 분석을 시작해보세요</Text>
-                </Stack>
-              </Center>
-            ) : (
-              <Stack gap="xs">
-                {history.slice(0, 5).map((item, idx) => (
-                  <Paper
-                    key={idx}
-                    p="sm"
-                    withBorder
-                    radius="sm"
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => handleLoadFromHistory(item)}
-                  >
-                    <Group justify="space-between" wrap="nowrap">
-                      <Box style={{ overflow: 'hidden', flex: 1 }}>
-                        <Text size="sm" truncate>
-                          {(() => {
-                            try {
-                              return new URL(item.url).hostname;
-                            } catch {
-                              return item.url;
+          </Paper>
+
+          {/* 탭: 개요 / 상세 분석 / 권장사항 */}
+          <Tabs defaultValue="overview">
+            <Tabs.List>
+              <Tabs.Tab value="overview" leftSection={<IconChartBar size={16} />}>
+                개요
+              </Tabs.Tab>
+              <Tabs.Tab value="details" leftSection={<IconListDetails size={16} />}>
+                상세 분석
+              </Tabs.Tab>
+              <Tabs.Tab value="recommendations" leftSection={<IconBulb size={16} />}>
+                권장사항 ({displayResult.recommendations.length})
+              </Tabs.Tab>
+            </Tabs.List>
+
+            {/* 개요 탭 */}
+            <Tabs.Panel value="overview" pt="md">
+              <Stack gap="md">
+                {/* 카테고리별 점수 */}
+                <Paper p="lg" radius="md" withBorder>
+                  <Title order={4} mb="md">카테고리별 점수</Title>
+                  <SimpleGrid cols={{ base: 1, sm: 2, lg: 5 }} spacing="md">
+                    {categoryStats.map((cat) => (
+                      <Paper key={cat.key} p="md" radius="md" bg="var(--mantine-color-default-hover)">
+                        <Stack align="center" gap="xs">
+                          <RingProgress
+                            size={80}
+                            thickness={8}
+                            roundCaps
+                            sections={[
+                              {
+                                value: cat.percentage,
+                                color: cat.percentage >= 70 ? 'green' : cat.percentage >= 50 ? 'yellow' : 'red',
+                              },
+                            ]}
+                            label={
+                              <Text size="sm" ta="center">
+                                {cat.percentage}%
+                              </Text>
                             }
-                          })()}
-                        </Text>
-                        <Text size="xs" c="dimmed">
-                          {new Date(item.analyzedAt).toLocaleDateString('ko-KR')}
-                        </Text>
-                      </Box>
-                      <Group gap="xs">
-                        <Badge color={GRADE_COLORS[item.grade]} size="sm">
-                          {item.grade}
-                        </Badge>
-                        <Badge variant="light" size="sm">
-                          {item.totalScore}점
-                        </Badge>
-                        <IconArrowRight size={14} color="gray" />
-                      </Group>
-                    </Group>
-                  </Paper>
-                ))}
-              </Stack>
-            )}
-          </Paper>
-        </SimpleGrid>
-      )}
-
-      {/* 분석 결과 */}
-      {result && (
-        <Stack gap="lg">
-          {/* 종합 점수 */}
-          <Paper p="xl" radius="md" withBorder>
-            <Group align="flex-start" gap="xl">
-              <Center>
-                <RingProgress
-                  size={160}
-                  thickness={12}
-                  roundCaps
-                  sections={[
-                    {
-                      value: result.totalScore,
-                      color: GRADE_COLORS[result.grade],
-                    },
-                  ]}
-                  label={
-                    <Stack align="center" gap={0}>
-                      <Text size="xl">
-                        {result.totalScore}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        / 100
-                      </Text>
-                    </Stack>
-                  }
-                />
-              </Center>
-
-              <Stack gap="xs" style={{ flex: 1 }}>
-                <Group justify="space-between">
-                  <Badge size="xl" color={GRADE_COLORS[result.grade]}>
-                    Grade {result.grade}
-                  </Badge>
-                  <Button
-                    variant="light"
-                    color="red"
-                    size="sm"
-                    leftSection={<IconFileTypePdf size={16} />}
-                    onClick={handleDownloadPdf}
-                    loading={isDownloading}
-                  >
-                    PDF 다운로드
-                  </Button>
-                </Group>
-                <Text size="sm" c="dimmed">
-                  분석 시간: {new Date(result.analyzedAt).toLocaleString('ko-KR')}
-                </Text>
-                <Group gap="xs">
-                  <IconExternalLink size={14} />
-                  <Text size="sm" c="dimmed">
-                    {result.url}
-                  </Text>
-                </Group>
-                <Text size="sm">
-                  {result.pages.length}개 페이지 분석 완료
-                </Text>
-              </Stack>
-            </Group>
-          </Paper>
-
-          {/* 카테고리별 점수 */}
-          <Paper p="lg" radius="md" withBorder>
-            <Title order={4} mb="md">
-              카테고리별 점수
-            </Title>
-            <Stack gap="sm">
-              {Object.entries(result.categories).map(([key, category]) => (
-                <CategoryScoreBar
-                  key={key}
-                  name={CATEGORY_LABELS[key] || key}
-                  category={category}
-                  icon={CATEGORY_ICONS[key] || IconChartBar}
-                />
-              ))}
-            </Stack>
-          </Paper>
-
-          {/* 상세 분석 */}
-          <Paper p="lg" radius="md" withBorder>
-            <Title order={4} mb="md">
-              상세 분석
-            </Title>
-            <Accordion>
-              {Object.entries(result.categories).map(([key, category]) => (
-                <Accordion.Item key={key} value={key}>
-                  <Accordion.Control
-                    icon={
-                      <ThemeIcon
-                        color={category.percentage >= 70 ? 'green' : category.percentage >= 50 ? 'yellow' : 'red'}
-                        variant="light"
-                        size="sm"
-                      >
-                        {(() => {
-                          const Icon = CATEGORY_ICONS[key] || IconChartBar;
-                          return <Icon size={14} />;
-                        })()}
-                      </ThemeIcon>
-                    }
-                  >
-                    {CATEGORY_LABELS[key]} ({category.score}/{category.maxScore}점)
-                  </Accordion.Control>
-                  <Accordion.Panel>
-                    <List spacing="xs" size="sm">
-                      {category.items.map((item, idx) => (
-                        <List.Item
-                          key={idx}
-                          icon={
-                            <ThemeIcon
-                              color={item.passed ? 'green' : 'red'}
-                              size={20}
-                              radius="xl"
-                              variant="light"
-                            >
-                              {item.passed ? <IconCheck size={12} /> : <IconX size={12} />}
-                            </ThemeIcon>
-                          }
-                        >
-                          <Group gap="xs" wrap="nowrap">
-                            <Text size="sm">
-                              {item.name}
-                            </Text>
-                            <Badge size="xs" variant="outline">
-                              {item.score}/{item.maxScore}
-                            </Badge>
-                          </Group>
+                          />
+                          <Text size="sm">{cat.label}</Text>
                           <Text size="xs" c="dimmed">
-                            {item.detail}
+                            {cat.score}/{cat.maxScore}점
                           </Text>
-                        </List.Item>
-                      ))}
-                    </List>
-                  </Accordion.Panel>
-                </Accordion.Item>
-              ))}
-            </Accordion>
-          </Paper>
+                        </Stack>
+                      </Paper>
+                    ))}
+                  </SimpleGrid>
+                </Paper>
 
-          {/* 개선 권장사항 */}
-          {result.recommendations.length > 0 && (
-            <Paper p="lg" radius="md" withBorder>
-              <Title order={4} mb="md">
-                <Group gap="xs">
-                  <IconBulb size={20} />
-                  개선 권장사항 ({result.recommendations.length})
-                </Group>
-              </Title>
-              <Stack gap="sm">
-                {result.recommendations.map((rec, idx) => (
-                  <RecommendationCard key={idx} recommendation={rec} />
-                ))}
+                {/* 항목별 통과율 */}
+                <Paper p="lg" radius="md" withBorder>
+                  <Title order={4} mb="md">항목별 통과율</Title>
+                  <Stack gap="sm">
+                    {categoryStats.map((cat) => (
+                      <Group key={cat.key} gap="sm" wrap="nowrap">
+                        <Text size="sm" w={80}>{cat.label}</Text>
+                        <Progress.Root size="lg" style={{ flex: 1 }}>
+                          <Progress.Section
+                            value={(cat.passedItems / cat.totalItems) * 100}
+                            color="green"
+                          >
+                            <Progress.Label>
+                              {cat.passedItems}/{cat.totalItems} 통과
+                            </Progress.Label>
+                          </Progress.Section>
+                        </Progress.Root>
+                        <Badge
+                          color={cat.passedItems === cat.totalItems ? 'green' : 'yellow'}
+                          variant="light"
+                          w={60}
+                        >
+                          {Math.round((cat.passedItems / cat.totalItems) * 100)}%
+                        </Badge>
+                      </Group>
+                    ))}
+                  </Stack>
+                </Paper>
+
+                {/* 페이지별 점수 */}
+                {displayResult.pages.length > 1 && (
+                  <Paper p="lg" radius="md" withBorder>
+                    <Title order={4} mb="md">페이지별 점수</Title>
+                    <Table striped highlightOnHover>
+                      <Table.Thead>
+                        <Table.Tr>
+                          <Table.Th>페이지</Table.Th>
+                          <Table.Th ta="center">구조</Table.Th>
+                          <Table.Th ta="center">스키마</Table.Th>
+                          <Table.Th ta="center">URL</Table.Th>
+                          <Table.Th ta="center">메타</Table.Th>
+                          <Table.Th ta="center">콘텐츠</Table.Th>
+                          <Table.Th ta="center">총점</Table.Th>
+                        </Table.Tr>
+                      </Table.Thead>
+                      <Table.Tbody>
+                        {displayResult.pages.map((page, idx) => (
+                          <Table.Tr key={idx}>
+                            <Table.Td maw={200}>
+                              <Text size="sm" lineClamp={1}>
+                                {page.title || '제목 없음'}
+                              </Text>
+                            </Table.Td>
+                            <Table.Td ta="center">{page.scores.structure}</Table.Td>
+                            <Table.Td ta="center">{page.scores.schema}</Table.Td>
+                            <Table.Td ta="center">{page.scores.url}</Table.Td>
+                            <Table.Td ta="center">{page.scores.meta}</Table.Td>
+                            <Table.Td ta="center">{page.scores.content}</Table.Td>
+                            <Table.Td ta="center">
+                              <Badge
+                                color={page.scores.total >= 70 ? 'green' : page.scores.total >= 50 ? 'yellow' : 'red'}
+                              >
+                                {page.scores.total}
+                              </Badge>
+                            </Table.Td>
+                          </Table.Tr>
+                        ))}
+                      </Table.Tbody>
+                    </Table>
+                  </Paper>
+                )}
               </Stack>
-            </Paper>
-          )}
+            </Tabs.Panel>
 
-          {/* 페이지별 점수 */}
-          {result.pages.length > 1 && (
-            <Paper p="lg" radius="md" withBorder>
-              <Title order={4} mb="md">
-                페이지별 점수
-              </Title>
-              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
-                {result.pages.map((page, idx) => (
-                  <Paper key={idx} p="sm" withBorder radius="sm">
-                    <Group justify="space-between" wrap="nowrap">
-                      <Box style={{ overflow: 'hidden', flex: 1 }}>
-                        <Text size="sm" truncate>
-                          {page.title || '제목 없음'}
-                        </Text>
-                        <Text size="xs" c="dimmed" truncate>
-                          {page.url}
-                        </Text>
-                      </Box>
-                      <Badge size="lg" color={page.scores.total >= 70 ? 'green' : page.scores.total >= 50 ? 'yellow' : 'red'}>
-                        {page.scores.total}점
-                      </Badge>
+            {/* 상세 분석 탭 */}
+            <Tabs.Panel value="details" pt="md">
+              <Stack gap="md">
+                {Object.entries(displayResult.categories).map(([key, category]) => (
+                  <Paper key={key} p="lg" radius="md" withBorder>
+                    <Group justify="space-between" mb="md">
+                      <Group gap="xs">
+                        <Title order={4}>{CATEGORY_LABELS[key] || key}</Title>
+                        <Badge
+                          color={category.percentage >= 70 ? 'green' : category.percentage >= 50 ? 'yellow' : 'red'}
+                        >
+                          {category.percentage}%
+                        </Badge>
+                      </Group>
+                      <Text size="sm" c="dimmed">
+                        {category.score}/{category.maxScore}점
+                      </Text>
                     </Group>
+
+                    <Table striped>
+                      <Table.Thead>
+                        <Table.Tr>
+                          <Table.Th>항목</Table.Th>
+                          <Table.Th ta="center">점수</Table.Th>
+                          <Table.Th ta="center">결과</Table.Th>
+                          <Table.Th>상세</Table.Th>
+                        </Table.Tr>
+                      </Table.Thead>
+                      <Table.Tbody>
+                        {category.items.map((item, idx) => (
+                          <Table.Tr key={idx}>
+                            <Table.Td>{item.name}</Table.Td>
+                            <Table.Td ta="center">
+                              {item.score}/{item.maxScore}
+                            </Table.Td>
+                            <Table.Td ta="center">
+                              <ThemeIcon
+                                color={item.passed ? 'green' : 'red'}
+                                size="sm"
+                                radius="xl"
+                                variant="light"
+                              >
+                                {item.passed ? <IconCheck size={12} /> : <IconX size={12} />}
+                              </ThemeIcon>
+                            </Table.Td>
+                            <Table.Td>
+                              <Text size="xs" c="dimmed">{item.detail}</Text>
+                            </Table.Td>
+                          </Table.Tr>
+                        ))}
+                      </Table.Tbody>
+                    </Table>
                   </Paper>
                 ))}
-              </SimpleGrid>
-            </Paper>
-          )}
+              </Stack>
+            </Tabs.Panel>
+
+            {/* 권장사항 탭 */}
+            <Tabs.Panel value="recommendations" pt="md">
+              <Stack gap="md">
+                {recommendationsByPriority.high.length > 0 && (
+                  <Paper p="lg" radius="md" withBorder>
+                    <Group gap="xs" mb="md">
+                      <Badge color="red" size="lg">높은 우선순위</Badge>
+                      <Text size="sm" c="dimmed">즉시 개선이 필요합니다</Text>
+                    </Group>
+                    <Stack gap="sm">
+                      {recommendationsByPriority.high.map((rec, idx) => (
+                        <RecommendationCard key={idx} recommendation={rec} />
+                      ))}
+                    </Stack>
+                  </Paper>
+                )}
+
+                {recommendationsByPriority.medium.length > 0 && (
+                  <Paper p="lg" radius="md" withBorder>
+                    <Group gap="xs" mb="md">
+                      <Badge color="yellow" size="lg">중간 우선순위</Badge>
+                      <Text size="sm" c="dimmed">개선하면 좋습니다</Text>
+                    </Group>
+                    <Stack gap="sm">
+                      {recommendationsByPriority.medium.map((rec, idx) => (
+                        <RecommendationCard key={idx} recommendation={rec} />
+                      ))}
+                    </Stack>
+                  </Paper>
+                )}
+
+                {recommendationsByPriority.low.length > 0 && (
+                  <Paper p="lg" radius="md" withBorder>
+                    <Group gap="xs" mb="md">
+                      <Badge color="blue" size="lg">낮은 우선순위</Badge>
+                      <Text size="sm" c="dimmed">추가로 고려할 사항입니다</Text>
+                    </Group>
+                    <Stack gap="sm">
+                      {recommendationsByPriority.low.map((rec, idx) => (
+                        <RecommendationCard key={idx} recommendation={rec} />
+                      ))}
+                    </Stack>
+                  </Paper>
+                )}
+
+                {displayResult.recommendations.length === 0 && (
+                  <Paper p="xl" radius="md" withBorder>
+                    <Center py={40}>
+                      <Stack align="center" gap="md">
+                        <ThemeIcon size={60} radius="xl" variant="light" color="green">
+                          <IconCheck size={30} />
+                        </ThemeIcon>
+                        <Title order={4}>모든 항목이 양호합니다!</Title>
+                        <Text c="dimmed" ta="center">
+                          현재 사이트는 GEO 최적화가 잘 되어 있습니다.
+                        </Text>
+                      </Stack>
+                    </Center>
+                  </Paper>
+                )}
+              </Stack>
+            </Tabs.Panel>
+          </Tabs>
         </Stack>
       )}
     </Stack>
-  );
-}
-
-function CategoryScoreBar({
-  name,
-  category,
-  icon: Icon,
-}: {
-  name: string;
-  category: CategoryScore;
-  icon: typeof IconCode;
-}) {
-  const color =
-    category.percentage >= 70 ? 'green' : category.percentage >= 50 ? 'yellow' : 'red';
-
-  return (
-    <Group gap="sm" wrap="nowrap">
-      <ThemeIcon color={color} variant="light" size="sm">
-        <Icon size={14} />
-      </ThemeIcon>
-      <Text size="sm" w={60}>
-        {name}
-      </Text>
-      <Progress.Root size="lg" style={{ flex: 1 }}>
-        <Progress.Section value={category.percentage} color={color}>
-          <Progress.Label>{category.percentage}%</Progress.Label>
-        </Progress.Section>
-      </Progress.Root>
-      <Text size="sm" c="dimmed" w={50} ta="right">
-        {category.score}/{category.maxScore}
-      </Text>
-    </Group>
   );
 }
 
@@ -605,19 +731,17 @@ function RecommendationCard({ recommendation }: { recommendation: Recommendation
     low: 'blue',
   }[recommendation.priority];
 
-  const priorityLabel = {
-    high: '높음',
-    medium: '중간',
-    low: '낮음',
-  }[recommendation.priority];
-
   return (
-    <Paper p="sm" withBorder radius="sm" bg="gray.0">
+    <Paper p="md" radius="sm" bg="var(--mantine-color-default-hover)">
       <Stack gap="xs">
         <Group justify="space-between">
           <Group gap="xs">
             <Badge size="xs" color={priorityColor}>
-              {priorityLabel}
+              {{
+                high: '높음',
+                medium: '중간',
+                low: '낮음',
+              }[recommendation.priority]}
             </Badge>
             <Badge size="xs" variant="outline">
               {CATEGORY_LABELS[recommendation.category] || recommendation.category}
@@ -632,7 +756,7 @@ function RecommendationCard({ recommendation }: { recommendation: Recommendation
         </Text>
         <Divider />
         <Text size="xs" c="dimmed">
-          💡 {recommendation.suggestion}
+          {recommendation.suggestion}
         </Text>
       </Stack>
     </Paper>

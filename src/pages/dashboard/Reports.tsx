@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Stack,
   Title,
@@ -14,7 +14,13 @@ import {
   Progress,
   Tooltip,
   SimpleGrid,
+  Grid,
+  ScrollArea,
+  Loader,
+  Box,
+  ActionIcon,
 } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import { Sparkline } from '@mantine/charts';
 import {
   IconFileDescription,
@@ -23,16 +29,16 @@ import {
   IconChevronDown,
   IconCalendarWeek,
   IconCalendarMonth,
-  IconSelect,
   IconPlayerPlay,
   IconTrendingUp,
   IconTrendingDown,
   IconMinus,
+  IconArrowLeft,
 } from '@tabler/icons-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getStats, generateReport, downloadReportPdf, deleteReport } from '../../services/api';
 import type { Stats } from '../../types';
-import { ReportsSkeleton, ReportDetailPanel } from '../../components/ui';
+import { ReportsSkeleton, ReportDetailPanel, ReportListItem } from '../../components/ui';
 import { useSidebarData } from '../../hooks/useSidebarData';
 
 export function Reports() {
@@ -46,21 +52,24 @@ export function Reports() {
   const [error, setError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [sparklineReady, setSparklineReady] = useState(false);
 
+  const isMobile = useMediaQuery('(max-width: 62em)');
   const selectedReportId = searchParams.get('reportId');
 
   useEffect(() => {
     loadStats();
+    requestAnimationFrame(() => setSparklineReady(true));
   }, []);
 
-  // 첫 리포트 자동 선택 (사이드바 데이터 로드 후)
+  // 첫 리포트 자동 선택 (데스크톱에서만)
   useEffect(() => {
-    if (sidebarData.reports.length > 0 && !selectedReportId) {
+    if (!isMobile && sidebarData.reports.length > 0 && !selectedReportId) {
       const next = new URLSearchParams(searchParams);
       next.set('reportId', sidebarData.reports[0].id);
       setSearchParams(next, { replace: true });
     }
-  }, [sidebarData.reports, selectedReportId]);
+  }, [sidebarData.reports, selectedReportId, isMobile]);
 
   const loadStats = async () => {
     setIsLoading(true);
@@ -94,6 +103,40 @@ export function Reports() {
       setIsGenerating(false);
     }
   };
+
+  const handleSelectReport = useCallback((id: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('reportId', id);
+    setSearchParams(next);
+  }, [searchParams, setSearchParams]);
+
+  const handleBackToList = useCallback(() => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('reportId');
+    setSearchParams(next);
+  }, [searchParams, setSearchParams]);
+
+  // 리포트 무한스크롤 Observer
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!sidebarData.reportsHasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && sidebarData.reportsHasMore && !sidebarData.isLoadingMoreReports) {
+          sidebarData.loadMoreReports();
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    const sentinel = document.querySelector('[data-report-list-sentinel]');
+    if (sentinel) {
+      observer.observe(sentinel);
+    }
+
+    return () => observer.disconnect();
+  }, [sidebarData.reportsHasMore, sidebarData.isLoadingMoreReports, sidebarData.loadMoreReports, sidebarData.reports.length]);
 
   const selectedReport = sidebarData.reports.find(r => r.id === selectedReportId) || null;
 
@@ -185,18 +228,22 @@ export function Reports() {
   return (
     <Stack gap="lg">
       {/* 헤더 */}
-      <Group justify="space-between">
+      <Group justify="space-between" wrap="wrap">
         <div>
-          <Title order={2}>리포트</Title>
+          <Title order={2} size={isMobile ? 'h3' : 'h2'}>리포트</Title>
           <Text c="dimmed" size="sm">
             AI 가시성 리포트를 확인하세요
           </Text>
         </div>
-        <Group>
+        <Group gap="xs">
+          <ActionIcon variant="light" size="lg" onClick={handleRefresh} hiddenFrom="sm">
+            <IconRefresh size={16} />
+          </ActionIcon>
           <Button
             variant="light"
             leftSection={<IconRefresh size={16} />}
             onClick={handleRefresh}
+            visibleFrom="sm"
           >
             새로고침
           </Button>
@@ -250,20 +297,22 @@ export function Reports() {
       {/* 트렌드 + 시그널 요약 */}
       {(sparklineData.length >= 2 || latestReport) && (
         <Paper p="md" radius="md" withBorder>
-          <Group grow align="flex-start">
+          <Group grow align="flex-start" style={{ minWidth: 0 }} wrap="nowrap">
             {/* 트렌드 스냅샷 */}
             {sparklineData.length >= 2 && (
-              <div>
+              <div style={{ minWidth: 0, overflow: 'hidden' }}>
                 <Text size="xs" c="dimmed" mb={4}>인용률 추이</Text>
-                <Sparkline
-                  w="100%"
-                  h={48}
-                  data={sparklineData}
-                  curveType="linear"
-                  trendColors={{ positive: 'teal.6', negative: 'red.6', neutral: 'gray.5' }}
-                  fillOpacity={0.15}
-                  strokeWidth={2}
-                />
+                {sparklineReady && (
+                  <Sparkline
+                    w="100%"
+                    h={48}
+                    data={sparklineData}
+                    curveType="linear"
+                    trendColors={{ positive: 'teal.6', negative: 'red.6', neutral: 'gray.5' }}
+                    fillOpacity={0.15}
+                    strokeWidth={2}
+                  />
+                )}
                 <Group gap={6} mt={6}>
                   <Text size="lg">
                     {sparklineData[sparklineData.length - 1]}%
@@ -332,7 +381,7 @@ export function Reports() {
               <Badge variant="light" color="teal" size="lg">인용률 추이</Badge>
               <Badge variant="light" color="blue" size="lg">점유율 분석</Badge>
               <Badge variant="light" color="grape" size="lg">엔진별 성과</Badge>
-              <Badge variant="light" color="orange" size="lg">주요 쿼리 순위</Badge>
+              <Badge variant="light" color="orange" size="lg">주요 질문 순위</Badge>
             </SimpleGrid>
 
             {stats && stats.totalTests >= 5 ? (
@@ -361,29 +410,114 @@ export function Reports() {
                   leftSection={<IconPlayerPlay size={16} />}
                   onClick={() => navigate('/dashboard/query-ops')}
                 >
-                  쿼리 운영에서 테스트 실행하기
+                  질문 관리에서 테스트 실행하기
                 </Button>
               </Stack>
             )}
           </Stack>
         </Paper>
-      ) : selectedReport ? (
-        <ReportDetailPanel
-          report={selectedReport}
-          onDownloadPdf={handleDownloadPdf}
-          isDownloading={isDownloading}
-          onDelete={handleDeleteReport}
-          isDeleting={isDeleting}
-        />
-      ) : (
-        <Paper p="xl" radius="md" withBorder>
-          <Center h={400}>
-            <Stack align="center" gap="md">
-              <IconSelect size={48} stroke={1.5} color="gray" />
-              <Text c="dimmed">사이드바에서 리포트를 선택하세요</Text>
+      ) : isMobile ? (
+        /* 모바일: 목록/상세 전환 */
+        selectedReport ? (
+          <Stack gap="md">
+            <Button
+              variant="subtle"
+              leftSection={<IconArrowLeft size={16} />}
+              onClick={handleBackToList}
+              size="compact-sm"
+              px={0}
+            >
+              목록으로
+            </Button>
+            <ReportDetailPanel
+              report={selectedReport}
+              onDownloadPdf={handleDownloadPdf}
+              isDownloading={isDownloading}
+              onDelete={handleDeleteReport}
+              isDeleting={isDeleting}
+            />
+          </Stack>
+        ) : (
+          <Paper p="sm" radius="md" withBorder>
+            <Group justify="space-between" mb="sm">
+              <Text size="sm" fw={600}>목록</Text>
+              <Badge size="sm" variant="light">{sidebarData.reportsTotalCount}</Badge>
+            </Group>
+            <Stack gap={6}>
+              {sidebarData.reports.map((report) => (
+                <ReportListItem
+                  key={report.id}
+                  report={report}
+                  isSelected={selectedReportId === report.id}
+                  onClick={() => handleSelectReport(report.id)}
+                  compact
+                />
+              ))}
+              {sidebarData.isLoadingMoreReports && (
+                <Center py="xs">
+                  <Loader size="xs" />
+                </Center>
+              )}
+              {sidebarData.reportsHasMore && !sidebarData.isLoadingMoreReports && (
+                <Box data-report-list-sentinel style={{ height: 1 }} />
+              )}
             </Stack>
-          </Center>
-        </Paper>
+          </Paper>
+        )
+      ) : (
+        /* 데스크톱: 목록 + 상세 나란히 */
+        <Grid gutter="md">
+          <Grid.Col span={3}>
+            <Paper p="sm" radius="md" withBorder>
+              <Group justify="space-between" mb="sm">
+                <Text size="sm" fw={600}>목록</Text>
+                <Badge size="sm" variant="light">{sidebarData.reportsTotalCount}</Badge>
+              </Group>
+              <ScrollArea.Autosize mah={600} ref={scrollAreaRef}>
+                <Stack gap={6}>
+                  {sidebarData.reports.map((report) => (
+                    <ReportListItem
+                      key={report.id}
+                      report={report}
+                      isSelected={selectedReportId === report.id}
+                      onClick={() => handleSelectReport(report.id)}
+                      compact
+                    />
+                  ))}
+                  {sidebarData.isLoadingMoreReports && (
+                    <Center py="xs">
+                      <Loader size="xs" />
+                    </Center>
+                  )}
+                  {sidebarData.reportsHasMore && !sidebarData.isLoadingMoreReports && (
+                    <Box data-report-list-sentinel style={{ height: 1 }} />
+                  )}
+                </Stack>
+              </ScrollArea.Autosize>
+            </Paper>
+          </Grid.Col>
+
+          <Grid.Col span={9}>
+            {selectedReport ? (
+              <ReportDetailPanel
+                report={selectedReport}
+                onDownloadPdf={handleDownloadPdf}
+                isDownloading={isDownloading}
+                onDelete={handleDeleteReport}
+                isDeleting={isDeleting}
+              />
+            ) : (
+              <Paper p="xl" radius="md" withBorder>
+                <Center h={300}>
+                  <Stack align="center" gap="md">
+                    <IconFileDescription size={48} stroke={1.5} color="gray" />
+                    <Text c="dimmed">리포트를 선택하세요</Text>
+                  </Stack>
+                </Center>
+              </Paper>
+            )}
+          </Grid.Col>
+        </Grid>
       )}
     </Stack>
   );

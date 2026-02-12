@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import {
   Stack,
@@ -16,37 +16,36 @@ import {
   Menu,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { Carousel } from '@mantine/carousel';
 import {
   IconPlus,
   IconAlertCircle,
   IconRefresh,
   IconTags,
-  IconSelect,
-  IconBuilding,
   IconMessageQuestion,
-  IconBrain,
+  IconChartBar,
+  IconCalendarEvent,
   IconFileDescription,
   IconChevronDown,
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
-import { getBrands, addBrand, updateBrand, deleteBrand, getStats, getResults, getQueries, getSavedInsights } from '../../services/api';
-import type { Brand, BrandDetail, TestResult, MonitoredQuery, BrandStats } from '../../types';
-import type { SavedInsight } from '../../services/api';
+import { getBrands } from '../../services/api';
+import type { Brand, BrandDetail } from '../../types';
+import { addBrand, updateBrand, deleteBrand } from '../../services/api';
 import { BrandsSkeleton, BrandDetailPanel } from '../../components/ui';
 
 export function Brands() {
   const navigate = useNavigate();
   const [brands, setBrands] = useState<Brand[]>([]);
-  const [brandStats, setBrandStats] = useState<BrandStats[]>([]);
-  const [results, setResults] = useState<TestResult[]>([]);
-  const [queries, setQueries] = useState<MonitoredQuery[]>([]);
-  const [insights, setInsights] = useState<SavedInsight[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // 선택된 브랜드 ID
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
+
+  // 무한 스크롤
+  const PAGE_SIZE = 15;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   // 정렬
   type SortMode = 'alpha' | 'oldest' | 'newest';
@@ -67,27 +66,18 @@ export function Brands() {
   // 모달 상태
   const [opened, { open, close }] = useDisclosure(false);
   useBodyScrollLock(opened);
-  const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
   const [brandName, setBrandName] = useState('');
   const [competitors, setCompetitors] = useState<string[]>([]);
+  const [modalMarketingPoints, setModalMarketingPoints] = useState<string[]>([]);
+  const [modalKeywords, setModalKeywords] = useState<string[]>([]);
 
-  // 모든 데이터 로드
-  const loadAllData = useCallback(async () => {
+  // 데이터 로드
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const [brandsData, statsData, resultsData, queriesData, insightsData] = await Promise.all([
-        getBrands(),
-        getStats(),
-        getResults(),
-        getQueries(),
-        getSavedInsights().catch(() => ({ insights: [] })),
-      ]);
+      const brandsData = await getBrands();
       setBrands(brandsData.brands);
-      setBrandStats(statsData.brandStats || []);
-      setResults(resultsData.results || []);
-      setQueries(queriesData.queries || []);
-      setInsights(insightsData.insights || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data');
     } finally {
@@ -96,8 +86,29 @@ export function Brands() {
   }, []);
 
   useEffect(() => {
-    loadAllData();
-  }, [loadAllData]);
+    loadData();
+  }, [loadData]);
+
+  // 무한 스크롤 IntersectionObserver
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisibleCount((prev) => prev + PAGE_SIZE);
+        }
+      },
+      { rootMargin: '100px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [brands.length]);
+
+  // 정렬 변경 시 visibleCount 리셋
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [sortMode]);
 
   // 첫 브랜드 자동 선택
   useEffect(() => {
@@ -106,80 +117,19 @@ export function Brands() {
     }
   }, [brands, selectedBrandId]);
 
-  // 브랜드별 상세 데이터 계산
+  // 브랜드별 상세 데이터
   const brandDetailsMap = useMemo(() => {
     const map: Record<string, BrandDetail> = {};
 
     brands.forEach((brand) => {
-      // 브랜드 통계 찾기
-      const stats = brandStats.find((s) => s.brandId === brand.id);
-
-      // 연결된 쿼리 수 계산
-      const linkedQueries = queries.filter((q) => q.brandIds?.includes(brand.id)).length;
-
-      // 경쟁사별 인용률 계산
-      const competitorStats: Array<{ name: string; citationRate: number }> = [];
-      if (brand.competitors && brand.competitors.length > 0) {
-        brand.competitors.forEach((competitorName) => {
-          // 해당 경쟁사가 언급된 결과 수 계산
-          let mentionCount = 0;
-          results.forEach((result) => {
-            const brandResult = result.brandResults?.find((br) => br.brandId === brand.id);
-            if (brandResult?.competitorMentions?.includes(competitorName)) {
-              mentionCount++;
-            }
-          });
-          const rate = results.length > 0 ? Math.round((mentionCount / results.length) * 1000) / 10 : 0;
-          competitorStats.push({ name: competitorName, citationRate: rate });
-        });
-      }
-
-      // 최근 활동 생성 (실제 데이터 기반)
-      const recentActivity: BrandDetail['recentActivity'] = [];
-
-      // 최근 테스트 결과 추가
-      const brandResults = results
-        .filter((r) => r.brandResults?.some((br) => br.brandId === brand.id))
-        .slice(0, 3);
-      brandResults.forEach((result) => {
-        recentActivity.push({
-          type: 'test',
-          title: `"${result.query.slice(0, 30)}${result.query.length > 30 ? '...' : ''}" 테스트 완료`,
-          timestamp: result.testedAt,
-        });
-      });
-
-      // 해당 브랜드의 인사이트 추가
-      const brandInsights = insights
-        .filter((i) => i.brandId === brand.id)
-        .slice(0, 2);
-      brandInsights.forEach((insight) => {
-        recentActivity.push({
-          type: 'insight',
-          title: `${brand.name} 인사이트 분석 완료`,
-          timestamp: insight.metadata?.analyzedAt || new Date().toISOString(),
-        });
-      });
-
-      // 시간순 정렬
-      recentActivity.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
       map[brand.id] = {
         ...brand,
         isActive: true,
-        stats: {
-          citationRate: stats?.citationRate ?? 0,
-          avgRank: stats?.avgRank ?? null,
-          totalTests: stats?.totalTests ?? 0,
-          linkedQueries,
-        },
-        competitorStats,
-        recentActivity: recentActivity.slice(0, 5),
       };
     });
 
     return map;
-  }, [brands, brandStats, results, queries, insights]);
+  }, [brands]);
 
   // 선택된 브랜드 상세 정보
   const selectedBrandDetail = selectedBrandId ? brandDetailsMap[selectedBrandId] : null;
@@ -189,38 +139,38 @@ export function Brands() {
   };
 
   const handleOpenAdd = () => {
-    setEditingBrand(null);
     setBrandName('');
     setCompetitors([]);
+    setModalMarketingPoints([]);
+    setModalKeywords([]);
     open();
   };
 
-  const handleOpenEdit = (brand?: Brand) => {
-    const targetBrand = brand || brands.find((b) => b.id === selectedBrandId);
-    if (targetBrand) {
-      setEditingBrand(targetBrand);
-      setBrandName(targetBrand.name);
-      setCompetitors(targetBrand.competitors || []);
-      open();
+  const handleInlineSave = async (data: { name: string; competitors: string[]; marketingPoints: string[]; keywords: string[] }) => {
+    if (!selectedBrandId) return;
+    try {
+      await updateBrand(selectedBrandId, data);
+      setBrands((prev) =>
+        prev.map((b) =>
+          b.id === selectedBrandId ? { ...b, ...data } : b
+        )
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save brand');
     }
   };
 
-  const handleSave = async () => {
+  const handleAddSave = async () => {
     if (!brandName.trim()) return;
-
     try {
-      if (editingBrand) {
-        await updateBrand(editingBrand.id, { name: brandName, competitors });
-        setBrands((prev) =>
-          prev.map((b) =>
-            b.id === editingBrand.id ? { ...b, name: brandName, competitors } : b
-          )
-        );
-      } else {
-        const newBrand = await addBrand({ name: brandName, competitors });
-        setBrands((prev) => [...prev, newBrand]);
-        setSelectedBrandId(newBrand.id);
-      }
+      const newBrand = await addBrand({
+        name: brandName,
+        competitors,
+        marketingPoints: modalMarketingPoints,
+        keywords: modalKeywords,
+      });
+      setBrands((prev) => [...prev, newBrand]);
+      setSelectedBrandId(newBrand.id);
       close();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save brand');
@@ -243,6 +193,33 @@ export function Brands() {
     }
   };
 
+  const serviceGuides = [
+    {
+      icon: IconMessageQuestion,
+      title: '질문 관리',
+      description: 'AI에게 테스트할 질문을 등록하고 실행',
+      path: '/dashboard/query-ops',
+    },
+    {
+      icon: IconChartBar,
+      title: '성과 개요',
+      description: '인용률·순위·엔진별 성과를 한눈에',
+      path: '/dashboard/overview',
+    },
+    {
+      icon: IconCalendarEvent,
+      title: '스케줄러',
+      description: '자동 테스트 실행 빈도 설정',
+      path: '/dashboard/scheduler',
+    },
+    {
+      icon: IconFileDescription,
+      title: '리포트 & 인사이트',
+      description: 'AI 분석 리포트와 실행 가이드 확인',
+      path: '/dashboard/reports',
+    },
+  ];
+
   if (isLoading) {
     return <BrandsSkeleton />;
   }
@@ -250,18 +227,18 @@ export function Brands() {
   return (
     <Stack gap="lg">
       {/* 헤더 */}
-      <Group justify="space-between">
+      <Group justify="space-between" wrap="wrap">
         <div>
-          <Title order={2}>브랜드 설정</Title>
+          <Title order={2}>브랜드 관리</Title>
           <Text c="dimmed" size="sm">
             모니터링할 브랜드와 경쟁사를 등록하세요
           </Text>
         </div>
-        <Group>
+        <Group wrap="wrap">
           <Button
             variant="light"
             leftSection={<IconRefresh size={16} />}
-            onClick={loadAllData}
+            onClick={loadData}
           >
             새로고침
           </Button>
@@ -336,142 +313,74 @@ export function Brands() {
           </Center>
         </Paper>
       ) : (
-        <Stack gap="lg">
-          {/* 상단: 브랜드 캐러셀 */}
-          <style>{`
-            .brand-carousel .mantine-Carousel-control[data-inactive] { visibility: hidden !important; pointer-events: none !important; }
-            .brand-carousel::after {
-              content: '';
-              position: absolute;
-              top: 0;
-              right: 0;
-              width: 60px;
-              height: 100%;
-              background: linear-gradient(to right, transparent, var(--mantine-color-body));
-              pointer-events: none;
-              z-index: 1;
-            }
-          `}</style>
-          <Carousel
-            className="brand-carousel"
-            style={{ position: 'relative' }}
-            slideSize="154px"
-            slideGap="sm"
-
-            withControls={sortedBrands.length > 5}
-            styles={{
-              controls: {
-                top: '50%',
-                transform: 'translateY(-50%)',
-                left: -18,
-                right: -18,
-                zIndex: 2,
-              },
-              control: {
-                backgroundColor: 'var(--mantine-color-body)',
-                border: '1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))',
-                boxShadow: 'var(--mantine-shadow-sm)',
-                width: 36,
-                height: 36,
-                borderRadius: '50%',
-              },
-            }}
-          >
-            {sortedBrands.map((brand) => {
-              const isSelected = selectedBrandId === brand.id;
-
-              return (
-                <Carousel.Slide key={brand.id}>
-                  <UnstyledButton
-                    onClick={() => handleSelectBrand(brand.id)}
-                    style={{
-                      width: '100%',
-                      aspectRatio: '1 / 1',
-                      borderRadius: 16,
-                      backgroundColor: 'light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))',
-                      position: 'relative',
-                      overflow: 'hidden',
-                      border: isSelected
-                        ? '3px solid var(--mantine-color-brand-5)'
-                        : '3px solid transparent',
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    {/* 하단 브랜드 라벨 */}
-                    <Group
-                      gap={6}
-                      wrap="nowrap"
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 'var(--mantine-spacing-md)', alignItems: 'start' }} className="brands-grid">
+          {/* 왼쪽: 브랜드 목록 */}
+          <Paper p="xs" radius="md" withBorder style={{ maxHeight: 480, display: 'flex', flexDirection: 'column' }}>
+            <Group justify="space-between" px="xs" py={6}>
+              <Text size="xs" c="dimmed">브랜드 목록</Text>
+              <Text size="xs" c="dimmed">{brands.length}개</Text>
+            </Group>
+            <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+              <Stack gap={2}>
+                {sortedBrands.slice(0, visibleCount).map((brand) => {
+                  const isSelected = selectedBrandId === brand.id;
+                  return (
+                    <UnstyledButton
+                      key={brand.id}
+                      onClick={() => handleSelectBrand(brand.id)}
                       style={{
-                        position: 'absolute',
-                        bottom: 10,
-                        left: 12,
-                        right: 12,
+                        display: 'block',
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: 'var(--mantine-radius-sm)',
+                        backgroundColor: isSelected
+                          ? 'light-dark(var(--mantine-color-brand-0), var(--mantine-color-brand-9))'
+                          : 'transparent',
+                        transition: 'background-color 0.15s ease',
                       }}
                     >
-                      <IconBuilding size={16} stroke={1.5} color="light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-2))" style={{ flexShrink: 0 }} />
-                      <Text size="sm" c="light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-0))" truncate>
+                      <Text
+                        size="sm"
+                        fw={isSelected ? 600 : 400}
+                        c={isSelected ? 'brand' : undefined}
+                        truncate
+                      >
                         {brand.name}
                       </Text>
-                    </Group>
-                  </UnstyledButton>
-                </Carousel.Slide>
-              );
-            })}
-          </Carousel>
+                    </UnstyledButton>
+                  );
+                })}
+                {visibleCount < sortedBrands.length && (
+                  <div ref={sentinelRef} style={{ height: 1 }} />
+                )}
+              </Stack>
+            </div>
+          </Paper>
 
-          {/* 바로가기 */}
-          <Group gap="sm">
-            <Button
-              variant="default"
-              c="dimmed"
-              leftSection={<IconMessageQuestion size={16} />}
-              onClick={() => navigate('/dashboard/query-ops')}
-            >
-              쿼리 관리
-            </Button>
-            <Button
-              variant="default"
-              c="dimmed"
-              leftSection={<IconBrain size={16} />}
-              onClick={() => navigate('/dashboard/reports?tab=insights')}
-            >
-              인사이트 보기
-            </Button>
-            <Button
-              variant="default"
-              c="dimmed"
-              leftSection={<IconFileDescription size={16} />}
-              onClick={() => navigate('/dashboard/reports?tab=reports')}
-            >
-              리포트 확인
-            </Button>
-          </Group>
-
-          {/* 하단: 브랜드 상세 */}
-          {selectedBrandDetail ? (
-            <BrandDetailPanel
-              brand={selectedBrandDetail}
-              onEdit={() => handleOpenEdit()}
-              onDelete={() => handleDelete()}
-            />
-          ) : (
-            <Paper p="xl" radius="md" withBorder>
-              <Center h={400}>
-                <Stack align="center" gap="md">
-                  <IconSelect size={48} stroke={1.5} color="gray" />
-                  <Text c="dimmed">상단 캐러셀에서 브랜드를 선택하세요</Text>
-                </Stack>
-              </Center>
+          {/* 오른쪽: 페이지 스타일 패널 */}
+          {selectedBrandDetail && (
+            <Paper p={{ base: 'md', sm: 'xl' }} radius="md" withBorder>
+              <BrandDetailPanel
+                brand={selectedBrandDetail}
+                onSave={handleInlineSave}
+                onDelete={() => handleDelete()}
+                serviceGuides={serviceGuides.map((g) => ({
+                  icon: g.icon,
+                  title: g.title,
+                  description: g.description,
+                  onClick: () => navigate(g.path),
+                }))}
+              />
             </Paper>
           )}
-        </Stack>
+        </div>
       )}
 
       {/* 브랜드 추가/수정 모달 */}
       <Modal
         opened={opened}
         onClose={close}
-        title={editingBrand ? '브랜드 수정' : '새 브랜드 추가'}
+        title="새 브랜드 추가"
         centered
         lockScroll={false}
       >
@@ -490,15 +399,26 @@ export function Brands() {
             value={competitors}
             onChange={setCompetitors}
           />
-          <Text size="xs" c="dimmed">
-            예시: "삼성", "LG", "애플" (경쟁사가 언급되면 별도 표시됩니다)
-          </Text>
+          <TagsInput
+            label="마케팅 포인트"
+            placeholder="USP·강점 입력 후 Enter"
+            description="브랜드의 핵심 차별점이나 강점"
+            value={modalMarketingPoints}
+            onChange={setModalMarketingPoints}
+          />
+          <TagsInput
+            label="키워드"
+            placeholder="키워드 입력 후 Enter"
+            description="브랜드와 관련된 핵심 키워드"
+            value={modalKeywords}
+            onChange={setModalKeywords}
+          />
           <Group justify="flex-end" mt="md">
             <Button variant="subtle" onClick={close}>
               취소
             </Button>
-            <Button onClick={handleSave} disabled={!brandName.trim()}>
-              {editingBrand ? '수정' : '추가'}
+            <Button onClick={handleAddSave} disabled={!brandName.trim()}>
+              추가
             </Button>
           </Group>
         </Stack>

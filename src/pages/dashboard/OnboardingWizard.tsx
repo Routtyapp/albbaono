@@ -126,7 +126,7 @@ export function OnboardingWizard() {
       // auto-trigger test
       handleTestQuery(q.id, queryText.trim(), queryCategory);
     } catch (err) {
-      setQueryError(err instanceof Error ? err.message : '쿼리 추가에 실패했습니다.');
+      setQueryError(err instanceof Error ? err.message : '질문 추가에 실패했습니다.');
       setQueryLoading(false);
     }
   };
@@ -214,7 +214,7 @@ export function OnboardingWizard() {
                     <IconMessageQuestion size={18} />
                   </ThemeIcon>
                   <Box style={{ flex: 1 }}>
-                    <Text size="sm">쿼리 추가</Text>
+                    <Text size="sm">질문 추가</Text>
                     <Text size="xs" c="dimmed">AI에게 물어볼 질문을 작성합니다</Text>
                   </Box>
                 </Group>
@@ -224,7 +224,7 @@ export function OnboardingWizard() {
                   </ThemeIcon>
                   <Box style={{ flex: 1 }}>
                     <Text size="sm">테스트 실행</Text>
-                    <Text size="xs" c="dimmed">ChatGPT에 쿼리를 보내 결과를 확인합니다</Text>
+                    <Text size="xs" c="dimmed">ChatGPT에 질문을 보내 결과를 확인합니다</Text>
                   </Box>
                 </Group>
               </Stack>
@@ -318,7 +318,7 @@ export function OnboardingWizard() {
                   <IconMessageQuestion size={20} />
                 </ThemeIcon>
                 <div>
-                  <Text size="lg">쿼리 추가</Text>
+                  <Text size="lg">질문 추가</Text>
                   <Text size="xs" c="dimmed">약 20초</Text>
                 </div>
               </Group>
@@ -330,7 +330,7 @@ export function OnboardingWizard() {
 
               {/* Template chips */}
               <Box>
-                <Text size="xs" mb="xs">추천 쿼리 템플릿</Text>
+                <Text size="xs" mb="xs">추천 질문 템플릿</Text>
                 <Group gap="xs">
                   {QUERY_TEMPLATES.map((t) => (
                     <Button
@@ -347,7 +347,7 @@ export function OnboardingWizard() {
               </Box>
 
               <TextInput
-                label="쿼리"
+                label="질문"
                 placeholder="AI에게 물어볼 질문을 입력하세요"
                 value={queryText}
                 onChange={(e) => setQueryText(e.target.value)}
@@ -383,7 +383,7 @@ export function OnboardingWizard() {
                   loading={queryLoading}
                   disabled={!queryText.trim() || !queryCategory}
                 >
-                  쿼리 추가하고 테스트하기
+                  질문 추가하고 테스트하기
                 </Button>
               </Group>
             </Stack>
@@ -502,7 +502,7 @@ export function OnboardingWizard() {
                           <IconMessageQuestion size={14} />
                         </ThemeIcon>
                         <Box style={{ flex: 1 }}>
-                          <Text size="sm">쿼리 추가</Text>
+                          <Text size="sm">질문 추가</Text>
                           <Text size="xs" c="dimmed">더 많은 질문을 등록하고 다양한 AI 엔진에서 테스트하세요</Text>
                         </Box>
                       </Group>

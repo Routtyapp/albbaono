@@ -60,7 +60,7 @@ export function DashboardHeader({ opened, toggle, onSettingsOpen }: DashboardHea
 
   return (
     <>
-      <Group h="100%" px={36} justify="space-between">
+      <Group h="100%" px={{ base: 'sm', sm: 36 }} justify="space-between">
         <Group gap="md">
           <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
           <UnstyledButton onClick={() => navigate('/')}>

@@ -4,8 +4,6 @@ export { Visibility } from './Visibility';
 export { Reports } from './Reports';
 export { Insights } from './Insights';
 export { ScoreOverview } from './ScoreOverview';
-export { ScoreAnalysis } from './ScoreAnalysis';
-export { ScoreCompetitors } from './ScoreCompetitors';
 export { PerformancePage } from './PerformancePage';
 export { QueryOpsPage } from './QueryOpsPage';
 export { SchedulerPage } from './SchedulerPage';

@@ -1,11 +1,79 @@
 import { Response, Router } from 'express';
 import { randomUUID } from 'crypto';
+import OpenAI from 'openai';
 import db from '../config/db.js';
 import { isAuthenticated } from '../middleware/auth.js';
 
 const router = Router();
 
 type ApiErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'FORBIDDEN' | 'UNAUTHORIZED' | 'INTERNAL_ERROR';
+
+let openaiClient: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OpenAI API key not configured');
+  }
+
+  if (!openaiClient) {
+    openaiClient = new OpenAI({ apiKey });
+  }
+
+  return openaiClient;
+}
+
+function parseStringArray(json: string | null | undefined): string[] {
+  if (!json) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(json);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed.filter((item): item is string => typeof item === 'string');
+  } catch {
+    return [];
+  }
+}
+
+function parseJsonObject(text: string): Record<string, unknown> {
+  const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  if (!cleaned) {
+    throw new Error('Empty LLM response');
+  }
+
+  try {
+    return JSON.parse(cleaned) as Record<string, unknown>;
+  } catch {
+    const start = cleaned.indexOf('{');
+    const end = cleaned.lastIndexOf('}');
+    if (start === -1 || end <= start) {
+      throw new Error('No JSON object found in LLM response');
+    }
+    return JSON.parse(cleaned.slice(start, end + 1)) as Record<string, unknown>;
+  }
+}
+
+function normalizeInsightsPayload(payload: Record<string, unknown>) {
+  const citationPatterns =
+    payload.citationPatterns && typeof payload.citationPatterns === 'object'
+      ? (payload.citationPatterns as Record<string, unknown>)
+      : {};
+
+  return {
+    commonKeywords: Array.isArray(payload.commonKeywords) ? payload.commonKeywords : [],
+    categoryInsights: Array.isArray(payload.categoryInsights) ? payload.categoryInsights : [],
+    citationPatterns: {
+      citedPatterns: Array.isArray(citationPatterns.citedPatterns) ? citationPatterns.citedPatterns : [],
+      uncitedPatterns: Array.isArray(citationPatterns.uncitedPatterns) ? citationPatterns.uncitedPatterns : [],
+    },
+    actionableInsights: Array.isArray(payload.actionableInsights) ? payload.actionableInsights : [],
+    contentGaps: Array.isArray(payload.contentGaps) ? payload.contentGaps : [],
+  };
+}
 
 function sendError(
   res: Response,
@@ -54,7 +122,7 @@ router.patch('/onboarding', (req, res) => {
 router.get('/brands', (req, res) => {
   const userId = req.user!.id;
   const brands = db.prepare(`
-    SELECT id, name, competitors, is_active, created_at
+    SELECT id, name, competitors, marketing_points, keywords, is_active, created_at
     FROM brands WHERE user_id = ? AND is_active = 1
     ORDER BY created_at DESC
   `).all(userId);
@@ -63,6 +131,8 @@ router.get('/brands', (req, res) => {
   const parsed = brands.map((b: any) => ({
     ...b,
     competitors: JSON.parse(b.competitors || '[]'),
+    marketingPoints: JSON.parse(b.marketing_points || '[]'),
+    keywords: JSON.parse(b.keywords || '[]'),
     isActive: !!b.is_active,
     createdAt: b.created_at,
   }));
@@ -72,7 +142,7 @@ router.get('/brands', (req, res) => {
 
 router.post('/brands', (req, res) => {
   const userId = req.user!.id;
-  const { name, competitors = [] } = req.body;
+  const { name, competitors = [], marketingPoints = [], keywords = [] } = req.body;
 
   if (!name) {
     return res.status(400).json({ error: '브랜드 이름은 필수입니다.' });
@@ -80,14 +150,16 @@ router.post('/brands', (req, res) => {
 
   const id = randomUUID();
   db.prepare(`
-    INSERT INTO brands (id, user_id, name, competitors)
-    VALUES (?, ?, ?, ?)
-  `).run(id, userId, name, JSON.stringify(competitors));
+    INSERT INTO brands (id, user_id, name, competitors, marketing_points, keywords)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(id, userId, name, JSON.stringify(competitors), JSON.stringify(marketingPoints), JSON.stringify(keywords));
 
   res.status(201).json({
     id,
     name,
     competitors,
+    marketingPoints,
+    keywords,
     isActive: true,
     createdAt: new Date().toISOString(),
   });
@@ -96,16 +168,23 @@ router.post('/brands', (req, res) => {
 router.put('/brands/:id', (req, res) => {
   const userId = req.user!.id;
   const { id } = req.params;
-  const { name, competitors } = req.body;
+  const { name, competitors, marketingPoints, keywords } = req.body;
 
   if (!name) {
     return sendError(res, 400, 'VALIDATION_ERROR', 'Brand name is required');
   }
 
   const result = db.prepare(`
-    UPDATE brands SET name = ?, competitors = ?
+    UPDATE brands SET name = ?, competitors = ?, marketing_points = ?, keywords = ?
     WHERE id = ? AND user_id = ?
-  `).run(name, JSON.stringify(competitors || []), id, userId);
+  `).run(
+    name,
+    JSON.stringify(competitors || []),
+    JSON.stringify(marketingPoints || []),
+    JSON.stringify(keywords || []),
+    id,
+    userId
+  );
 
   if (result.changes === 0) {
     return sendError(res, 404, 'NOT_FOUND', 'Brand not found');
@@ -459,6 +538,7 @@ router.get('/results', (req, res) => {
   const rawPage = parseInt(req.query.page as string);
   const page = isNaN(rawPage) ? 1 : rawPage;
   const limit = parseInt(req.query.limit as string) || 20;
+  const queryId = req.query.queryId as string | undefined;
 
   const getBrandResults = db.prepare(
     'SELECT brand_id, brand_name, cited, rank, competitor_mentions FROM brand_results WHERE result_id = ?'
@@ -486,14 +566,20 @@ router.get('/results', (req, res) => {
     };
   };
 
+  // queryId 필터 조건
+  const whereClause = queryId
+    ? 'WHERE user_id = ? AND query_id = ?'
+    : 'WHERE user_id = ?';
+  const whereParams = queryId ? [userId, queryId] : [userId];
+
   // page=0: 전체 조회 (프론트엔드 호환)
   if (page === 0) {
     const results = db.prepare(`
       SELECT id, query_id, query, category, engine, cited, response, full_response, tested_at
-      FROM results WHERE user_id = ?
+      FROM results ${whereClause}
       ORDER BY tested_at DESC
       LIMIT 500
-    `).all(userId);
+    `).all(...whereParams);
 
     const parsed = results.map(mapResult);
     const lastResult = parsed[0];
@@ -508,14 +594,14 @@ router.get('/results', (req, res) => {
   const offset = (page - 1) * limit;
   const results = db.prepare(`
     SELECT id, query_id, query, category, engine, cited, response, full_response, tested_at
-    FROM results WHERE user_id = ?
+    FROM results ${whereClause}
     ORDER BY tested_at DESC
     LIMIT ? OFFSET ?
-  `).all(userId, limit, offset);
+  `).all(...whereParams, limit, offset);
 
   const total = db.prepare(
-    'SELECT COUNT(*) as count FROM results WHERE user_id = ?'
-  ).get(userId) as { count: number };
+    `SELECT COUNT(*) as count FROM results ${whereClause}`
+  ).get(...whereParams) as { count: number };
 
   const parsed = results.map(mapResult);
 
@@ -870,8 +956,7 @@ router.post('/reports', async (req, res) => {
       }
 
       // OpenAI 호출
-      const { default: OpenAI } = await import('openai');
-      const openai = new OpenAI({ apiKey: openaiKey });
+      const openai = getOpenAIClient();
 
       const systemPrompt = `당신은 AI 검색 엔진 최적화(AEO/GEO) 전문 분석가입니다. 브랜드의 AI 검색 노출 데이터를 분석하여 실행 가능한 인사이트를 제공합니다.
 
@@ -961,7 +1046,7 @@ ${uncitedSamples.length > 0 ? uncitedSamples.join('\n---\n') : '샘플 없음'}
           { role: 'user', content: userPrompt },
         ],
         max_completion_tokens: 3000,
-        temperature: 0.7,
+        temperature: 0.2,
         response_format: { type: 'json_object' },
       });
 
@@ -1057,7 +1142,7 @@ router.post('/insights', async (req, res) => {
     return res.status(404).json({ error: '브랜드를 찾을 수 없습니다.' });
   }
 
-  const competitors: string[] = JSON.parse(brand.competitors || '[]');
+  const competitors = parseStringArray(brand.competitors);
 
   // 해당 브랜드가 포함된 결과 조회
   const brandResultRows = db.prepare(`
@@ -1118,20 +1203,24 @@ ${competitors.length > 0 ? `경쟁사: ${competitors.join(', ')}` : ''}
    - 각 갭에 대해: area, currentState, recommendation
 
 분석할 응답 데이터:
-${JSON.stringify(responses.slice(0, 20), null, 2)}
+${JSON.stringify(responses.slice(0, 15))}
 
 반드시 유효한 JSON 형식으로만 응답하세요. 마크다운이나 추가 설명 없이 JSON만 출력하세요.`;
 
-  let analysisResult: any;
+  let analysisResult: {
+    commonKeywords: unknown[];
+    categoryInsights: unknown[];
+    citationPatterns: { citedPatterns: unknown[]; uncitedPatterns: unknown[] };
+    actionableInsights: unknown[];
+    contentGaps: unknown[];
+  };
 
   try {
-    const openaiKey = process.env.OPENAI_API_KEY;
-    if (!openaiKey) {
+    if (!process.env.OPENAI_API_KEY) {
       return res.status(500).json({ error: 'OpenAI API 키가 설정되지 않았습니다.' });
     }
 
-    const { default: OpenAI } = await import('openai');
-    const openai = new OpenAI({ apiKey: openaiKey });
+    const openai = getOpenAIClient();
 
     const systemPrompt = 'You are an AI marketing analyst. Always respond with valid JSON only, no markdown.';
     const fullPrompt = `${systemPrompt}\n\n${analysisPrompt}`;
@@ -1139,14 +1228,17 @@ ${JSON.stringify(responses.slice(0, 20), null, 2)}
     const response = await openai.responses.create({
       model: 'gpt-5-mini',
       input: fullPrompt,
+      reasoning: { effort: 'minimal' },
+      max_output_tokens: 4000,
+      text: { format: { type: 'json_object' } },
     });
 
-    const content = response.output_text || '{}';
-    const jsonContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    analysisResult = JSON.parse(jsonContent);
+    const parsed = parseJsonObject(response.output_text || '');
+    analysisResult = normalizeInsightsPayload(parsed);
   } catch (llmError) {
     console.error('LLM analysis error:', llmError);
-    return res.status(500).json({ error: 'AI 분석 중 오류가 발생했습니다. 다시 시도해주세요.' });
+    const message = llmError instanceof Error ? llmError.message : 'unknown';
+    return res.status(500).json({ error: `AI 분석 중 오류가 발생했습니다. (${message})` });
   }
 
   // 인사이트 저장
@@ -1293,16 +1385,17 @@ router.post('/test-query', async (req, res) => {
     let fullResponse = '';
 
     if (engine === 'gpt') {
-      const { default: OpenAI } = await import('openai');
-      const openaiKey = process.env.OPENAI_API_KEY;
-      if (!openaiKey) {
+      if (!process.env.OPENAI_API_KEY) {
         return res.status(500).json({ error: 'OpenAI API 키가 설정되지 않았습니다.' });
       }
-      const openai = new OpenAI({ apiKey: openaiKey });
+      const openai = getOpenAIClient();
       const response = await openai.responses.create({
         model: 'gpt-5-mini',
+        instructions: '사용자의 질문에 즉시 답변하세요. 절대 되묻거나 추가 정보를 요청하지 마세요. 질문을 그대로 받아들이고 바로 구체적인 답변을 제공하세요. 브랜드, 제품, 서비스를 추천할 때는 실제 이름을 명시하세요.',
         input: query,
         tools: [{ type: 'web_search' }],
+        reasoning: { effort: 'low' },
+        max_output_tokens: 600,
       });
       fullResponse = response.output_text || '';
     } else {
@@ -1312,23 +1405,34 @@ router.post('/test-query', async (req, res) => {
     // 인용 마커 제거한 클린 텍스트로 브랜드 매칭
     const cleanResponse = stripCitations(fullResponse);
     const cleanLower = cleanResponse.toLowerCase();
+    const lines = cleanResponse.split('\n');
+    const linesLower = lines.map((line) => line.toLowerCase());
 
     // 해당 유저의 브랜드 조회
     const brands = db.prepare(
       'SELECT id, name, competitors FROM brands WHERE user_id = ? AND is_active = 1'
     ).all(userId) as { id: string; name: string; competitors: string }[];
+    const normalizedBrands = brands.map((brand) => {
+      const competitors = parseStringArray(brand.competitors);
+      return {
+        id: brand.id,
+        name: brand.name,
+        nameLower: brand.name.toLowerCase(),
+        competitors,
+        competitorsLower: competitors.map((competitor) => competitor.toLowerCase()),
+      };
+    });
 
     // 브랜드별 인용 체크
     const brandResults: { brandId: string; brandName: string; cited: boolean; rank: number | null; competitorMentions: string[] }[] = [];
 
-    for (const brand of brands) {
-      const cited = cleanLower.includes(brand.name.toLowerCase());
+    for (const brand of normalizedBrands) {
+      const cited = cleanLower.includes(brand.nameLower);
       let rank: number | null = null;
 
       if (cited) {
-        const lines = cleanResponse.split('\n');
         for (let i = 0; i < lines.length; i++) {
-          if (lines[i].toLowerCase().includes(brand.name.toLowerCase())) {
+          if (linesLower[i].includes(brand.nameLower)) {
             const match = lines[i].match(/^[\s]*(\d+)[.)\]]/);
             if (match) {
               rank = parseInt(match[1]);
@@ -1338,11 +1442,10 @@ router.post('/test-query', async (req, res) => {
         }
       }
 
-      const competitors: string[] = JSON.parse(brand.competitors || '[]');
       const competitorMentions: string[] = [];
-      for (const competitor of competitors) {
-        if (cleanLower.includes(competitor.toLowerCase())) {
-          competitorMentions.push(competitor);
+      for (let i = 0; i < brand.competitors.length; i++) {
+        if (cleanLower.includes(brand.competitorsLower[i])) {
+          competitorMentions.push(brand.competitors[i]);
         }
       }
 

@@ -75,14 +75,14 @@ export function QueryHistoryPanel() {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between">
+      <Group justify="space-between" wrap="wrap">
         <div>
           <Title order={2}>테스트 이력</Title>
           <Text c="dimmed" size="sm">
             전체 {data?.total ?? 0}건의 테스트 결과
           </Text>
         </div>
-        <Group>
+        <Group wrap="wrap">
           <Select
             placeholder="엔진 필터"
             data={[
@@ -92,7 +92,7 @@ export function QueryHistoryPanel() {
             ]}
             value={engineFilter || ''}
             onChange={(v) => setEngineFilter(v || null)}
-            w={140}
+            w={{ base: 120, sm: 140 }}
             clearable
           />
           <Button variant="subtle" leftSection={<IconRefresh size={16} />} onClick={loadData} size="sm">새로고침</Button>
@@ -112,10 +112,11 @@ export function QueryHistoryPanel() {
           <Text c="dimmed" ta="center" py="xl">테스트 결과가 없습니다</Text>
         ) : (
           <>
-            <Table striped highlightOnHover>
+            <ScrollArea type="auto">
+            <Table striped highlightOnHover style={{ minWidth: 500 }}>
               <Table.Thead>
                 <Table.Tr>
-                  <Table.Th>쿼리</Table.Th>
+                  <Table.Th>질문</Table.Th>
                   <Table.Th ta="center">엔진</Table.Th>
                   <Table.Th ta="center">브랜드별 인용</Table.Th>
                   <Table.Th>테스트 시간</Table.Th>
@@ -165,6 +166,7 @@ export function QueryHistoryPanel() {
                 ))}
               </Table.Tbody>
             </Table>
+            </ScrollArea>
 
             {totalPages > 1 && (
               <Group justify="center" mt="md">
@@ -181,7 +183,7 @@ export function QueryHistoryPanel() {
           <Stack gap="md">
             <Group justify="space-between">
               <div>
-                <Text size="sm" c="dimmed">쿼리</Text>
+                <Text size="sm" c="dimmed">질문</Text>
                 <Text>{selectedResult.query}</Text>
               </div>
               <Badge color={selectedResult.engine === 'gemini' ? 'blue' : 'teal'} variant="filled" size="lg">

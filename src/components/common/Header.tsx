@@ -74,7 +74,7 @@ export function Header() {
           <Group gap={36} visibleFrom="sm">
             <Button
               radius="xl"
-              color="accent.4"
+              color="dark"
               c="dark"
              
               size="sm"
@@ -114,7 +114,7 @@ export function Header() {
           {links}
           <Button
             radius="xl"
-            color="accent.4"
+            color="dark"
             c="dark"
            
             fullWidth

@@ -38,7 +38,7 @@ export function SectionTitle({
           <Box
             w={6}
             h={6}
-            style={{ borderRadius: '50%', background: 'var(--mantine-color-accent-4)' }}
+            style={{ borderRadius: '50%', background: 'var(--mantine-color-dark-8)' }}
           />
           <Text
             size="sm"

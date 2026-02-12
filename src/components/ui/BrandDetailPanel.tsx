@@ -1,231 +1,234 @@
+import { useState } from 'react';
 import {
-  Paper,
   Group,
   Text,
   Badge,
   Stack,
-  ActionIcon,
-  Grid,
-  Timeline,
-  ThemeIcon,
+  Button,
+  Divider,
+  SimpleGrid,
+  TextInput,
+  TagsInput,
 } from '@mantine/core';
-import { BarChart } from '@mantine/charts';
 import {
   IconEdit,
   IconTrash,
-  IconFlask,
-  IconFileReport,
-  IconSearch,
-  IconBulb,
+  IconCheck,
+  IconX,
 } from '@tabler/icons-react';
 import type { BrandDetail } from '../../types';
 
+interface ServiceGuide {
+  icon: React.FC<{ size?: number; stroke?: number; color?: string; style?: React.CSSProperties }>;
+  title: string;
+  description: string;
+  onClick: () => void;
+}
+
 interface BrandDetailPanelProps {
   brand: BrandDetail;
-  onEdit?: () => void;
+  onSave?: (data: { name: string; competitors: string[]; marketingPoints: string[]; keywords: string[] }) => void;
   onDelete?: () => void;
+  serviceGuides?: ServiceGuide[];
 }
 
-function StatBox({
-  label,
-  value,
-  color = 'blue',
-}: {
-  label: string;
-  value: string | number;
-  color?: string;
-}) {
-  return (
-    <Paper p="md" radius="md" withBorder>
-      <Stack gap={4} align="center">
-        <Text size="xs" c="dimmed" ta="center">
-          {label}
-        </Text>
-        <Text size="xl" c={color}>
-          {value}
-        </Text>
-      </Stack>
-    </Paper>
-  );
-}
-
-function getActivityIcon(type: string) {
-  switch (type) {
-    case 'test':
-      return <IconFlask size={12} />;
-    case 'insight':
-      return <IconBulb size={12} />;
-    case 'report':
-      return <IconFileReport size={12} />;
-    default:
-      return <IconSearch size={12} />;
-  }
-}
-
-function getActivityColor(type: string) {
-  switch (type) {
-    case 'test':
-      return 'blue';
-    case 'insight':
-      return 'violet';
-    case 'report':
-      return 'green';
-    default:
-      return 'gray';
-  }
-}
-
-function formatRelativeTime(timestamp: string): string {
-  const now = new Date();
-  const date = new Date(timestamp);
-  const diffMs = now.getTime() - date.getTime();
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffHours < 1) return '방금 전';
-  if (diffHours < 24) return `${diffHours}시간 전`;
-  if (diffDays === 1) return '어제';
-  if (diffDays < 7) return `${diffDays}일 전`;
-  return date.toLocaleDateString('ko-KR');
-}
-
-export function BrandDetailPanel({ brand, onEdit, onDelete }: BrandDetailPanelProps) {
+export function BrandDetailPanel({ brand, onSave, onDelete, serviceGuides }: BrandDetailPanelProps) {
   const isActive = brand.isActive !== false;
-
-  // 기본값 설정
-  const stats = brand.stats ?? {
-    citationRate: 0,
-    avgRank: null,
-    totalTests: 0,
-    linkedQueries: 0,
-  };
   const competitors = brand.competitors ?? [];
-  const competitorStats = brand.competitorStats ?? [];
-  const recentActivity = brand.recentActivity ?? [];
+  const marketingPoints = brand.marketingPoints ?? [];
+  const keywords = brand.keywords ?? [];
 
-  // 경쟁사 비교 차트 데이터
-  const chartData = [
-    { name: brand.name, citationRate: stats.citationRate },
-    ...competitorStats,
-  ].sort((a, b) => b.citationRate - a.citationRate);
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editCompetitors, setEditCompetitors] = useState<string[]>([]);
+  const [editMarketingPoints, setEditMarketingPoints] = useState<string[]>([]);
+  const [editKeywords, setEditKeywords] = useState<string[]>([]);
+
+  const startEdit = () => {
+    setEditName(brand.name);
+    setEditCompetitors([...competitors]);
+    setEditMarketingPoints([...marketingPoints]);
+    setEditKeywords([...keywords]);
+    setEditing(true);
+  };
+
+  const cancelEdit = () => setEditing(false);
+
+  const saveAll = () => {
+    if (!editName.trim()) return;
+    onSave?.({
+      name: editName.trim(),
+      competitors: editCompetitors,
+      marketingPoints: editMarketingPoints,
+      keywords: editKeywords,
+    });
+    setEditing(false);
+  };
+
+  const globalActions = (
+    <Group gap="xs" justify="flex-end">
+      <Button size="xs" variant="subtle" color="gray" leftSection={<IconX size={14} />} onClick={cancelEdit}>
+        취소
+      </Button>
+      <Button size="xs" leftSection={<IconCheck size={14} />} onClick={saveAll}>
+        저장
+      </Button>
+    </Group>
+  );
 
   return (
-    <Stack gap="md">
-      {/* 헤더 */}
-      <Paper p="md" radius="md" withBorder>
-        <Group justify="space-between" wrap="nowrap">
-          <Stack gap={4}>
-            <Group gap="sm">
-              <Text size="xl">
-                {brand.name}
-              </Text>
-              <Badge color={isActive ? 'green' : 'gray'} variant="light">
-                {isActive ? '활성' : '비활성'}
-              </Badge>
-            </Group>
-            <Text size="sm" c="dimmed">
-              등록일: {brand.createdAt ? new Date(brand.createdAt).toLocaleDateString('ko-KR') : '-'}
+    <Stack gap="lg">
+      {/* 브랜드 헤더 */}
+      <div>
+        {editing ? (
+          <TextInput
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            placeholder="브랜드명"
+            size="md"
+            autoFocus
+          />
+        ) : (
+          <>
+            <Stack gap="xs">
+              <Group gap="sm" align="baseline" wrap="wrap">
+                <Text fw={700} size="xl">{brand.name}</Text>
+                <Badge color={isActive ? 'green' : 'gray'} variant="light" size="sm">
+                  {isActive ? '활성' : '비활성'}
+                </Badge>
+              </Group>
+              <Group gap="xs">
+                <Button size="xs" variant="subtle" color="gray" leftSection={<IconEdit size={14} />} onClick={startEdit}>
+                  수정
+                </Button>
+                <Button size="xs" variant="subtle" color="red" leftSection={<IconTrash size={14} />} onClick={onDelete}>
+                  삭제
+                </Button>
+              </Group>
+            </Stack>
+            <Text size="xs" c="dimmed" mt={2}>
+              등록일 {brand.createdAt ? new Date(brand.createdAt).toLocaleDateString('ko-KR') : '-'}
             </Text>
-          </Stack>
+          </>
+        )}
+      </div>
+
+      <Divider />
+
+      {/* 경쟁사 */}
+      <div>
+        <Text size="sm" c="dimmed" mb={8}>경쟁사</Text>
+        {editing ? (
+          <TagsInput
+            value={editCompetitors}
+            onChange={setEditCompetitors}
+            placeholder="경쟁사 입력 후 Enter"
+            size="sm"
+          />
+        ) : competitors.length > 0 ? (
           <Group gap="xs">
-            <ActionIcon variant="light" color="blue" size="lg" onClick={onEdit}>
-              <IconEdit size={18} />
-            </ActionIcon>
-            <ActionIcon variant="light" color="red" size="lg" onClick={onDelete}>
-              <IconTrash size={18} />
-            </ActionIcon>
-          </Group>
-        </Group>
-      </Paper>
-
-      {/* 통계 카드 그리드 */}
-      <Grid>
-        <Grid.Col span={{ base: 6, sm: 3 }}>
-          <StatBox
-            label="인용률"
-            value={`${stats.citationRate}%`}
-            color={stats.citationRate >= 70 ? 'green' : stats.citationRate >= 40 ? 'yellow' : 'red'}
-          />
-        </Grid.Col>
-        <Grid.Col span={{ base: 6, sm: 3 }}>
-          <StatBox
-            label="평균 순위"
-            value={stats.avgRank !== null ? `#${stats.avgRank.toFixed(1)}` : '-'}
-            color="blue"
-          />
-        </Grid.Col>
-        <Grid.Col span={{ base: 6, sm: 3 }}>
-          <StatBox label="테스트 수" value={`${stats.totalTests}회`} color="violet" />
-        </Grid.Col>
-        <Grid.Col span={{ base: 6, sm: 3 }}>
-          <StatBox label="연결된 쿼리" value={`${stats.linkedQueries}개`} color="cyan" />
-        </Grid.Col>
-      </Grid>
-
-      {/* 경쟁사 비교 차트 */}
-      {chartData.length > 1 && (
-        <Paper p="md" radius="md" withBorder>
-          <Text mb="md">
-            경쟁사 인용 비교
-          </Text>
-          <BarChart
-            h={Math.max(120, chartData.length * 40)}
-            data={chartData}
-            dataKey="name"
-            orientation="vertical"
-            series={[{ name: 'citationRate', color: 'blue.6', label: '인용률' }]}
-            tickLine="none"
-            gridAxis="none"
-            barProps={{ radius: 4 }}
-            valueFormatter={(value) => `${value}%`}
-          />
-        </Paper>
-      )}
-
-      {/* 경쟁사 태그 */}
-      {competitors.length > 0 && (
-        <Paper p="md" radius="md" withBorder>
-          <Text mb="sm">
-            등록된 경쟁사
-          </Text>
-          <Group gap="xs">
-            {competitors.map((competitor, i) => (
-              <Badge key={i} variant="light" color="orange" size="lg">
-                {competitor}
+            {competitors.map((c, i) => (
+              <Badge key={i} variant="light" color="gray" size="lg" radius="sm">
+                {c}
               </Badge>
             ))}
           </Group>
-        </Paper>
-      )}
-
-      {/* 최근 활동 타임라인 */}
-      {recentActivity.length > 0 && (
-        <Paper p="md" radius="md" withBorder>
-          <Text mb="md">
-            최근 활동
+        ) : (
+          <Text size="xs" c="dimmed" fs="italic">
+            경쟁사를 등록하면 AI 응답에서 경쟁사 언급을 추적합니다.
           </Text>
-          <Timeline bulletSize={24} lineWidth={2}>
-            {recentActivity.slice(0, 5).map((activity, i) => (
-              <Timeline.Item
-                key={i}
-                bullet={
-                  <ThemeIcon size={24} radius="xl" color={getActivityColor(activity.type)}>
-                    {getActivityIcon(activity.type)}
-                  </ThemeIcon>
-                }
-              >
-                <Group justify="space-between" wrap="nowrap">
-                  <Text size="sm">{activity.title}</Text>
-                  <Text size="xs" c="dimmed" style={{ flexShrink: 0 }}>
-                    {formatRelativeTime(activity.timestamp)}
-                  </Text>
-                </Group>
-              </Timeline.Item>
-            ))}
-          </Timeline>
-        </Paper>
-      )}
+        )}
+      </div>
 
+      {/* 마케팅 포인트 */}
+      <div>
+        <Text size="sm" c="dimmed" mb={8}>마케팅 포인트</Text>
+        {editing ? (
+          <TagsInput
+            value={editMarketingPoints}
+            onChange={setEditMarketingPoints}
+            placeholder="USP·강점 입력 후 Enter"
+            size="sm"
+          />
+        ) : marketingPoints.length > 0 ? (
+          <Group gap="xs">
+            {marketingPoints.map((mp, i) => (
+              <Badge key={i} variant="light" color="teal" size="lg" radius="sm">
+                {mp}
+              </Badge>
+            ))}
+          </Group>
+        ) : (
+          <Text size="xs" c="dimmed" fs="italic">
+            브랜드의 USP·강점을 입력하면 AI 인사이트 분석에 활용됩니다.
+          </Text>
+        )}
+      </div>
+
+      {/* 키워드 */}
+      <div>
+        <Text size="sm" c="dimmed" mb={8}>키워드</Text>
+        {editing ? (
+          <TagsInput
+            value={editKeywords}
+            onChange={setEditKeywords}
+            placeholder="키워드 입력 후 Enter"
+            size="sm"
+          />
+        ) : keywords.length > 0 ? (
+          <Group gap="xs">
+            {keywords.map((kw, i) => (
+              <Badge key={i} variant="light" color="blue" size="lg" radius="sm">
+                {kw}
+              </Badge>
+            ))}
+          </Group>
+        ) : (
+          <Text size="xs" c="dimmed" fs="italic">
+            관련 키워드를 등록하면 더 정확한 마케팅 전략을 제안받을 수 있습니다.
+          </Text>
+        )}
+      </div>
+
+      {/* 저장/취소 */}
+      {editing && globalActions}
+
+      {/* 가이드 */}
+      {serviceGuides && serviceGuides.length > 0 && (
+        <>
+          <Divider />
+          <div>
+            <Text size="xs" c="dimmed" mb="sm">시작하기</Text>
+            <SimpleGrid cols={{ base: 1, sm: 2 }}>
+              {serviceGuides.map((guide) => (
+                <Group
+                  key={guide.title}
+                  gap="sm"
+                  wrap="nowrap"
+                  py="xs"
+                  px="sm"
+                  style={{
+                    cursor: 'pointer',
+                    borderRadius: 'var(--mantine-radius-sm)',
+                    transition: 'background-color 0.15s ease',
+                  }}
+                  className="guide-row"
+                  onClick={guide.onClick}
+                >
+                  <guide.icon size={16} stroke={1.5} color="var(--mantine-color-dimmed)" style={{ flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <Text size="sm" fw={500}>{guide.title}</Text>
+                    <Text size="xs" c="dimmed">{guide.description}</Text>
+                  </div>
+                  <Button variant="outline" color="gray" size="compact-xs" onClick={guide.onClick}>
+                    바로가기
+                  </Button>
+                </Group>
+              ))}
+            </SimpleGrid>
+          </div>
+        </>
+      )}
     </Stack>
   );
 }

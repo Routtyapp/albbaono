@@ -99,26 +99,25 @@ export function ReportDetailPanel({
     <Stack gap="md">
       {/* 헤더 */}
       <Paper p="md" radius="md" withBorder>
-        <Group justify="space-between" wrap="nowrap">
-          <Stack gap={4}>
-            <Group gap="sm">
-              <Text size="xl">
-                {report.title}
-              </Text>
-              <Badge color={isWeekly ? 'blue' : 'teal'} variant="light">
-                {isWeekly ? '주간' : '월간'}
-              </Badge>
-            </Group>
-            <Text size="sm" c="dimmed">
-              기간: {report.period} | 생성일: {new Date(report.generatedAt).toLocaleDateString('ko-KR')}
+        <Stack gap="sm">
+          <Group gap="sm" wrap="wrap">
+            <Text size="xl" style={{ flex: 1, minWidth: 0 }} lineClamp={2}>
+              {report.title}
             </Text>
-          </Stack>
-          <Group gap="xs">
+            <Badge color={isWeekly ? 'blue' : 'teal'} variant="light" style={{ flexShrink: 0 }}>
+              {isWeekly ? '주간' : '월간'}
+            </Badge>
+          </Group>
+          <Text size="sm" c="dimmed">
+            기간: {report.period} | 생성일: {new Date(report.generatedAt).toLocaleDateString('ko-KR')}
+          </Text>
+          <Group gap="xs" wrap="wrap">
             <Button
               variant="light"
               leftSection={<IconFileTypePdf size={18} />}
               onClick={onDownloadPdf}
               loading={isDownloading}
+              size="sm"
             >
               PDF 다운로드
             </Button>
@@ -128,11 +127,12 @@ export function ReportDetailPanel({
               leftSection={<IconTrash size={18} />}
               onClick={onDelete}
               loading={isDeleting}
+              size="sm"
             >
               삭제
             </Button>
           </Group>
-        </Group>
+        </Stack>
       </Paper>
 
       {/* 주요 지표 */}
@@ -323,7 +323,7 @@ export function ReportDetailPanel({
             <ThemeIcon size="sm" variant="light" color="teal">
               <IconTrendingUp size={14} />
             </ThemeIcon>
-            <Text>인용률 높은 쿼리</Text>
+            <Text>인용률 높은 질문</Text>
           </Group>
           <Stack gap="sm">
             {report.topQueries.map((q, i) => (
@@ -347,7 +347,7 @@ export function ReportDetailPanel({
             <ThemeIcon size="sm" variant="light" color="red">
               <IconAlertTriangle size={14} />
             </ThemeIcon>
-            <Text>개선 필요 쿼리</Text>
+            <Text>개선 필요 질문</Text>
           </Group>
           <Stack gap="sm">
             {report.worstQueries.map((q, i) => (

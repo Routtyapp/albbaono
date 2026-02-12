@@ -2,16 +2,16 @@ import { createTheme } from '@mantine/core';
 import type { MantineColorsTuple } from '@mantine/core';
 
 const brand: MantineColorsTuple = [
-  '#e6f9ee',
-  '#cef2dc',
-  '#9de5b9',
-  '#67d692',
-  '#3bca72',
-  '#1fc15c',
-  '#00b34a',
-  '#009a40',
-  '#008837',
-  '#00752e'
+  '#f8f9fa',
+  '#f1f3f5',
+  '#e9ecef',
+  '#dee2e6',
+  '#ced4da',
+  '#adb5bd',
+  '#868e96',
+  '#495057',
+  '#343a40',
+  '#212529'
 ];
 
 const accent: MantineColorsTuple = [
@@ -67,6 +67,12 @@ export const theme = createTheme({
     Table: {
       styles: {
         th: { fontWeight: 500 },
+      },
+    },
+    Tabs: {
+      defaultProps: {
+        variant: 'pills',
+        radius: 'xl',
       },
     },
   },

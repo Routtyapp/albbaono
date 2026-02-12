@@ -20,6 +20,22 @@ function stripCitations(text: string): string {
     .trim();
 }
 
+function parseStringArray(json: string | null | undefined): string[] {
+  if (!json) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(json);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed.filter((item): item is string => typeof item === 'string');
+  } catch {
+    return [];
+  }
+}
+
 // .env 파일 로드 (프로젝트 루트에서)
 const envPath = join(__dirname, '..', '..', '..', '.env');
 config({ path: envPath });
@@ -101,6 +117,14 @@ interface DbBrand {
   user_id: string;
   name: string;
   competitors: string;
+}
+
+interface PreparedBrand {
+  id: string;
+  name: string;
+  nameLower: string;
+  competitors: string[];
+  competitorsLower: string[];
 }
 
 interface BrandResult {
@@ -430,6 +454,16 @@ export class QueryScheduler {
       const brands = db.prepare(
         'SELECT * FROM brands WHERE user_id = ? AND is_active = 1'
       ).all(userId) as DbBrand[];
+      const preparedBrands: PreparedBrand[] = brands.map((brand) => {
+        const competitors = parseStringArray(brand.competitors);
+        return {
+          id: brand.id,
+          name: brand.name,
+          nameLower: brand.name.toLowerCase(),
+          competitors,
+          competitorsLower: competitors.map((competitor) => competitor.toLowerCase()),
+        };
+      });
 
       if (brands.length === 0) {
         console.log(`[Scheduler] No active brands for user ${userId}`);
@@ -439,17 +473,33 @@ export class QueryScheduler {
         console.log(`[Scheduler] No active ${type} queries for user ${userId}`);
       }
 
-      // 순차 처리
-      for (const query of queries) {
-        queriesProcessed++;
-        try {
-          await this.testQueryForUser(userId, query, brands, engine);
-          success++;
-        } catch (err) {
-          failed++;
-          console.error('[Scheduler] Query failed:', err);
+      // 설정된 동시성으로 처리
+      const configuredConcurrency = this.getUserConfig(userId).concurrent_queries || 1;
+      const concurrency = Math.max(1, Math.min(configuredConcurrency, 10));
+      let currentIndex = 0;
+      const workerCount = Math.min(concurrency, queries.length);
+
+      const workers = Array.from({ length: workerCount }, async () => {
+        while (true) {
+          const index = currentIndex++;
+          if (index >= queries.length) {
+            return;
+          }
+
+          const query = queries[index];
+          queriesProcessed++;
+
+          try {
+            await this.testQueryForUser(userId, query, preparedBrands, engine);
+            success++;
+          } catch (err) {
+            failed++;
+            console.error('[Scheduler] Query failed:', err);
+          }
         }
-      }
+      });
+
+      await Promise.all(workers);
     } catch (error) {
       console.error(`[Scheduler] Schedule run failed for user ${userId}:`, error);
     } finally {
@@ -487,7 +537,7 @@ export class QueryScheduler {
   private async testQueryForUser(
     userId: string,
     query: DbQuery,
-    brands: DbBrand[],
+    brands: PreparedBrand[],
     engine: 'gpt' | 'gemini'
   ): Promise<void> {
     let response = '';
@@ -507,6 +557,8 @@ export class QueryScheduler {
           model: 'gpt-5-mini',
           input: query.query,
           tools: [{ type: 'web_search' }],
+          reasoning: { effort: 'low' },
+          max_output_tokens: 600,
         });
         response = result.output_text || '';
       }
@@ -518,18 +570,19 @@ export class QueryScheduler {
     // 인용 마커 제거한 클린 텍스트로 브랜드 매칭
     const cleanResponse = stripCitations(response);
     const cleanLower = cleanResponse.toLowerCase();
+    const lines = cleanResponse.split('\n');
+    const linesLower = lines.map((line) => line.toLowerCase());
 
     // 브랜드별 인용 체크
     const brandResults: BrandResult[] = [];
 
     for (const brand of brands) {
-      const cited = cleanLower.includes(brand.name.toLowerCase());
+      const cited = cleanLower.includes(brand.nameLower);
       let rank: number | null = null;
 
       if (cited) {
-        const lines = cleanResponse.split('\n');
         for (let i = 0; i < lines.length; i++) {
-          if (lines[i].toLowerCase().includes(brand.name.toLowerCase())) {
+          if (linesLower[i].includes(brand.nameLower)) {
             const match = lines[i].match(/^[\s]*(\d+)[.)\]]/);
             if (match) {
               rank = parseInt(match[1]);
@@ -539,11 +592,10 @@ export class QueryScheduler {
         }
       }
 
-      const competitors: string[] = JSON.parse(brand.competitors || '[]');
       const competitorMentions: string[] = [];
-      for (const competitor of competitors) {
-        if (cleanLower.includes(competitor.toLowerCase())) {
-          competitorMentions.push(competitor);
+      for (let i = 0; i < brand.competitors.length; i++) {
+        if (cleanLower.includes(brand.competitorsLower[i])) {
+          competitorMentions.push(brand.competitors[i]);
         }
       }
 

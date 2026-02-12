@@ -16,7 +16,7 @@ const metrics = [
 
 const steps = [
   { num: '01', title: 'AI 가시성 진단' },
-  { num: '02', title: '쿼리별 점수 산출' },
+  { num: '02', title: '질문별 점수 산출' },
   { num: '03', title: '콘텐츠 개선' },
   { num: '04', title: '성과 추적' },
 ];
@@ -40,7 +40,7 @@ function MetricBar({ label, before, after, unit, invert }: {
         <Text fz="sm">{label}</Text>
         <Group gap={6}>
           <Text fz="xs" c="dimmed" td="line-through">{beforeLabel}</Text>
-          <Text fz="md" c={improved ? 'teal.6' : 'red.6'}>
+          <Text fz="md" c={improved ? 'dark.8' : 'red.6'}>
             {after}{unit}
           </Text>
         </Group>
@@ -66,7 +66,7 @@ function MetricBar({ label, before, after, unit, invert }: {
             top: 0,
             left: 0,
             background: improved
-              ? 'linear-gradient(90deg, #20c997, #12b886)'
+              ? 'linear-gradient(90deg, #343a40, #212529)'
               : 'linear-gradient(90deg, #ff6b6b, #fa5252)',
           }}
         />
@@ -91,7 +91,7 @@ export function CaseStudy() {
             py={3}
             style={{
               borderRadius: 20,
-              background: 'linear-gradient(90deg, #20c997, #12b886)',
+              background: 'linear-gradient(90deg, #343a40, #212529)',
             }}
           >
             <Text fz={11} c="white">3개월 후</Text>
@@ -114,7 +114,7 @@ export function CaseStudy() {
                   h={28}
                   style={{
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #20c997, #12b886)',
+                    background: 'linear-gradient(135deg, #343a40, #212529)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -129,7 +129,7 @@ export function CaseStudy() {
                 <Box
                   w={40}
                   h={2}
-                  bg="teal.2"
+                  bg="gray.3"
                   mx={12}
                   style={{ borderRadius: 1, flexShrink: 0 }}
                   visibleFrom="md"

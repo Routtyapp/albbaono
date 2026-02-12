@@ -1,4 +1,5 @@
-import { Paper, Text, Group, ActionIcon, Menu } from '@mantine/core';
+import { useState, useEffect } from 'react';
+import { Paper, Text, Group, ActionIcon, Menu, Box } from '@mantine/core';
 import { IconDots, IconDownload, IconMaximize } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 
@@ -15,8 +16,15 @@ export function ChartCard({
   children,
   actions = true,
 }: ChartCardProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
   return (
-    <Paper p="md" radius="md" withBorder h="100%">
+    <Paper p="md" radius="md" withBorder miw={0}>
       <Group justify="space-between" mb="md">
         <div>
           <Text>{title}</Text>
@@ -47,7 +55,9 @@ export function ChartCard({
         )}
       </Group>
 
-      {children}
+      <Box miw={0} style={{ overflow: 'hidden' }}>
+        {mounted ? children : null}
+      </Box>
     </Paper>
   );
 }

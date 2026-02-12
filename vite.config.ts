@@ -295,6 +295,8 @@ export default defineConfig({
                 model: 'gpt-5-mini',
                 input: query,
                 tools: [{ type: 'web_search' }],
+                reasoning: { effort: 'low' },
+                max_output_tokens: 600,
               });
               response = gptResult.output_text || '';
             }
@@ -782,7 +784,7 @@ ${JSON.stringify(responses.slice(0, 20), null, 2)}
                     },
                   ],
                   max_completion_tokens: 3000,
-                  temperature: 0.3,
+                  temperature: 0.2,
                 });
 
                 const content = completion.choices[0]?.message?.content || '{}';

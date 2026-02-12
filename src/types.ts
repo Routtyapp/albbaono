@@ -6,6 +6,8 @@ export interface Brand {
   id: string;
   name: string;
   competitors: string[];
+  marketingPoints?: string[];
+  keywords?: string[];
   createdAt?: string;
   isActive?: boolean;
 }

@@ -104,6 +104,10 @@ export function Overview() {
   }
 
   const recentResults = filteredStats?.recentResults || [];
+  const activeQueriesCount = queries.filter((q) => q.isActive).length;
+  const selectedBrandAvgRank = selectedBrandId && selectedBrandId !== 'all'
+    ? stats?.brandStats?.find((bs) => bs.brandId === selectedBrandId)?.avgRank
+    : null;
 
   // 최근 결과로 차트 데이터 생성 (브랜드 필터링 적용)
   const chartData = recentResults.slice(0, 10).reverse().map((r: TestResult, i: number) => {
@@ -123,7 +127,7 @@ export function Overview() {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between">
+      <Group justify="space-between" wrap="wrap">
         <div>
           <Title order={2}>Overview</Title>
           <Group gap="xs">
@@ -144,7 +148,7 @@ export function Overview() {
             value={selectedBrandId || 'all'}
             onChange={(value) => setSelectedBrandId(value)}
             leftSection={<IconBuilding size={16} />}
-            w={180}
+            w={{ base: 140, sm: 180 }}
             size="sm"
             allowDeselect={false}
             styles={{
@@ -212,13 +216,13 @@ export function Overview() {
                       <ThemeIcon size={32} radius="md" variant="light" color="blue">
                         <IconMessageQuestion size={18} />
                       </ThemeIcon>
-                      <Text size="sm">쿼리 추가</Text>
+                      <Text size="sm">질문 추가</Text>
                     </Group>
                     <Text size="xs" c="dimmed" mb="md">
-                      다양한 쿼리를 등록하면 AI가 브랜드를 어떤 맥락에서 추천하는지 인용 추세를 파악할 수 있습니다.
+                      다양한 질문을 등록하면 AI가 브랜드를 어떤 맥락에서 추천하는지 인용 추세를 파악할 수 있습니다.
                     </Text>
                     <Button size="xs" variant="light" fullWidth onClick={() => navigate('/dashboard/query-ops')}>
-                      쿼리 더 추가하기
+                      질문 더 추가하기
                     </Button>
                   </Paper>
                   <Paper p="md" radius="md" withBorder>
@@ -253,7 +257,7 @@ export function Overview() {
               </Paper>
             </Grid.Col>
           )}
-          <Grid.Col span={{ base: 12, lg: 7 }}>
+          <Grid.Col span={{ base: 12, lg: 7 }} miw={0}>
             <ChartCard
               title="최근 테스트 결과"
               subtitle={`최근 ${Math.min(10, recentResults.length)}개 테스트`}
@@ -270,47 +274,104 @@ export function Overview() {
           <Grid.Col span={{ base: 12, lg: 5 }}>
             <ChartCard
               title={selectedBrand ? `${selectedBrand.name} 현황` : "모니터링 현황"}
-              subtitle={selectedBrand ? "선택된 브랜드 통계" : "등록된 쿼리 및 엔진별 통계"}
+              subtitle={selectedBrand ? "선택된 브랜드 통계" : "등록된 질문 및 엔진별 통계"}
             >
-              <Stack gap="md" p="md">
-                <Group justify="space-between">
-                  <Text>등록된 쿼리</Text>
-                  <Text size="xl">{queries.length}개</Text>
+              <Stack gap="sm">
+                <Group
+                  justify="space-between"
+                  px="sm"
+                  py={10}
+                  style={{
+                    borderRadius: 8,
+                    background: 'light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))',
+                  }}
+                >
+                  <Text size="sm" c="dimmed" fw={500}>등록된 질문</Text>
+                  <Text size="xl" fw={600} lh={1} style={{ letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
+                    {queries.length}개
+                  </Text>
                 </Group>
-                <Group justify="space-between">
-                  <Text>활성 쿼리</Text>
-                  <Text size="xl">{queries.filter(q => q.isActive).length}개</Text>
+                <Group
+                  justify="space-between"
+                  px="sm"
+                  py={10}
+                  style={{
+                    borderRadius: 8,
+                    background: 'light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))',
+                  }}
+                >
+                  <Text size="sm" c="dimmed" fw={500}>활성 질문</Text>
+                  <Text size="xl" fw={600} lh={1} style={{ letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
+                    {activeQueriesCount}개
+                  </Text>
                 </Group>
-                <Group justify="space-between">
-                  <Text>총 테스트</Text>
-                  <Text size="xl">{filteredStats?.totalTests || 0}회</Text>
+                <Group
+                  justify="space-between"
+                  px="sm"
+                  py={10}
+                  style={{
+                    borderRadius: 8,
+                    background: 'light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))',
+                  }}
+                >
+                  <Text size="sm" c="dimmed" fw={500}>총 테스트</Text>
+                  <Text size="xl" fw={600} lh={1} style={{ letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
+                    {filteredStats?.totalTests || 0}회
+                  </Text>
                 </Group>
-                <Group justify="space-between">
-                  <Text>인용 성공</Text>
-                  <Text size="xl" c="teal">{filteredStats?.citedCount || 0}회</Text>
+                <Group
+                  justify="space-between"
+                  px="sm"
+                  py={10}
+                  style={{
+                    borderRadius: 8,
+                    background: 'light-dark(var(--mantine-color-teal-0), var(--mantine-color-dark-6))',
+                  }}
+                >
+                  <Text size="sm" c="dimmed" fw={500}>인용 성공</Text>
+                  <Text size="xl" c="teal" fw={700} lh={1} style={{ letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
+                    {filteredStats?.citedCount || 0}회
+                  </Text>
                 </Group>
                 {selectedBrand && (
-                  <Group justify="space-between">
-                    <Text>평균 순위</Text>
-                    <Text size="xl" c="blue">
-                      {stats?.brandStats?.find(bs => bs.brandId === selectedBrandId)?.avgRank
-                        ? `${stats?.brandStats?.find(bs => bs.brandId === selectedBrandId)?.avgRank}위`
+                  <Group
+                    justify="space-between"
+                    px="sm"
+                    py={10}
+                    style={{
+                      borderRadius: 8,
+                      background: 'light-dark(var(--mantine-color-blue-0), var(--mantine-color-dark-6))',
+                    }}
+                  >
+                    <Text size="sm" c="dimmed" fw={500}>평균 순위</Text>
+                    <Text size="xl" c="blue" fw={700} lh={1} style={{ letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
+                      {selectedBrandAvgRank
+                        ? `${selectedBrandAvgRank}위`
                         : '-'}
                     </Text>
                   </Group>
                 )}
                 {!selectedBrand && stats?.engineStats && stats.engineStats.length > 0 && (
                   <>
-                    <Text size="sm" c="dimmed" mt="md">엔진별 통계</Text>
+                    <Text size="sm" c="dimmed" fw={500} mt="xs" mb={2}>엔진별 통계</Text>
                     {stats.engineStats.map((es) => (
-                      <Group key={es.engine} justify="space-between">
+                      <Group
+                        key={es.engine}
+                        justify="space-between"
+                        px="sm"
+                        py={8}
+                        style={{
+                          borderRadius: 8,
+                          background: 'light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))',
+                        }}
+                      >
                         <Badge
                           color={es.engine === 'gemini' ? 'blue' : 'teal'}
                           variant="light"
                         >
                           {ENGINES.find(e => e.value === es.engine)?.label || es.engine}
                         </Badge>
-                        <Text size="sm">
+                        <Text size="sm" fw={500} style={{ fontVariantNumeric: 'tabular-nums' }}>
                           {es.citedCount}/{es.totalTests} ({es.citationRate}%)
                         </Text>
                       </Group>

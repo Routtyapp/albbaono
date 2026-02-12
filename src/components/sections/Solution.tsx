@@ -14,9 +14,9 @@ import { SectionTitle } from '../ui/SectionTitle';
 const features = [
   {
     title: 'AI 언급 모니터링',
-    text: 'ChatGPT, Gemini에 쿼리를 실행하고 브랜드 언급 여부, 인용 순위, 경쟁사 노출까지 실시간으로 추적합니다.',
+    text: 'ChatGPT, Gemini에 질문을 실행하고 브랜드 언급 여부, 인용 순위, 경쟁사 노출까지 실시간으로 추적합니다.',
     link: '/dashboard/query-ops',
-    linkLabel: '쿼리 운영 바로가기',
+    linkLabel: '질문 관리 바로가기',
     image: '/images/ai_monitoring.png',
   },
   {

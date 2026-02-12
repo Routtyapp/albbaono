@@ -35,6 +35,8 @@ db.exec(`
     user_id TEXT NOT NULL,
     name TEXT NOT NULL,
     competitors TEXT DEFAULT '[]',
+    marketing_points TEXT DEFAULT '[]',
+    keywords TEXT DEFAULT '[]',
     is_active INTEGER DEFAULT 1,
     created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -192,6 +194,18 @@ try {
 // users 테이블에 onboarding_step 컬럼 추가 (기존 DB 호환)
 try {
   db.exec(`ALTER TABLE users ADD COLUMN onboarding_step INTEGER DEFAULT 0`);
+} catch {
+  // 이미 컬럼이 존재하면 무시
+}
+
+// brands 테이블에 marketing_points, keywords 컬럼 추가 (기존 DB 호환)
+try {
+  db.exec(`ALTER TABLE brands ADD COLUMN marketing_points TEXT DEFAULT '[]'`);
+} catch {
+  // 이미 컬럼이 존재하면 무시
+}
+try {
+  db.exec(`ALTER TABLE brands ADD COLUMN keywords TEXT DEFAULT '[]'`);
 } catch {
   // 이미 컬럼이 존재하면 무시
 }

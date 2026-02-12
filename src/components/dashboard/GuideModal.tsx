@@ -35,8 +35,8 @@ interface GuideModalProps {
 
 const menuItems = [
   { key: 'overview', label: '개요', icon: IconChartBar },
-  { key: 'brands', label: '브랜드 설정', icon: IconTags },
-  { key: 'queries', label: '쿼리 관리', icon: IconMessageQuestion },
+  { key: 'brands', label: '브랜드 관리', icon: IconTags },
+  { key: 'queries', label: '질문 관리', icon: IconMessageQuestion },
   { key: 'visibility', label: 'AI 가시성', icon: IconEye },
   { key: 'trend', label: '트렌드 분석', icon: IconTrendingUp },
   { key: 'insights', label: 'AI 인사이트', icon: IconBrain },
@@ -83,11 +83,11 @@ function GuideContent({ active }: { active: string }) {
       <Stack gap="lg">
         <Section title="확인할 수 있는 지표">
           <List spacing="xs" fz="sm" c="dimmed">
-            <List.Item><b>총 테스트 수</b> — 지금까지 실행된 전체 쿼리 테스트 횟수</List.Item>
+            <List.Item><b>총 테스트 수</b> — 지금까지 실행된 전체 질문 테스트 횟수</List.Item>
             <List.Item><b>인용률</b> — AI 응답에서 브랜드가 언급된 비율 (%)</List.Item>
             <List.Item><b>인용 횟수</b> — 브랜드가 실제로 인용된 총 횟수</List.Item>
             <List.Item><b>등록 브랜드 수</b> — 현재 모니터링 중인 브랜드 개수</List.Item>
-            <List.Item><b>등록/활성 쿼리</b> — 전체 쿼리 수와 스케줄링이 활성화된 쿼리 수</List.Item>
+            <List.Item><b>등록/활성 질문</b> — 전체 질문 수와 스케줄링이 활성화된 질문 수</List.Item>
           </List>
         </Section>
         <Section title="브랜드 필터">
@@ -109,9 +109,9 @@ function GuideContent({ active }: { active: string }) {
         </Section>
         <Section title="처음 시작하기">
           <Steps steps={[
-            '먼저 "브랜드 설정"에서 모니터링할 브랜드를 등록합니다.',
-            '"쿼리 관리"에서 AI에게 테스트할 질문을 추가합니다.',
-            '쿼리를 브랜드에 연결하고 테스트를 실행합니다.',
+            '먼저 "브랜드 관리"에서 모니터링할 브랜드를 등록합니다.',
+            '"질문 관리"에서 AI에게 테스트할 질문을 추가합니다.',
+            '질문을 브랜드에 연결하고 테스트를 실행합니다.',
             '개요 페이지로 돌아와 전체 성과를 확인합니다.',
             '데이터가 쌓이면 "트렌드" 탭에서 시간에 따른 인용률 변화를 분석합니다.',
           ]} />
@@ -120,7 +120,7 @@ function GuideContent({ active }: { active: string }) {
     ),
     brands: (
       <Stack gap="lg">
-        <Requirement>쿼리 테스트를 실행하려면 최소 1개 이상의 브랜드가 등록되어 있어야 합니다.</Requirement>
+        <Requirement>질문 테스트를 실행하려면 최소 1개 이상의 브랜드가 등록되어 있어야 합니다.</Requirement>
         <Section title="브랜드 등록 방법">
           <Steps steps={[
             '"브랜드 추가" 버튼을 클릭합니다.',
@@ -136,15 +136,15 @@ function GuideContent({ active }: { active: string }) {
           <List spacing="xs" fz="sm" c="dimmed">
             <List.Item><b>인용률</b> — 해당 브랜드가 AI 응답에서 언급된 비율</List.Item>
             <List.Item><b>평균 순위</b> — AI 응답 내 브랜드 언급 순서의 평균</List.Item>
-            <List.Item><b>테스트 수</b> — 브랜드에 연결된 쿼리의 총 테스트 횟수</List.Item>
-            <List.Item><b>연결된 쿼리</b> — 브랜드에 할당된 쿼리 개수</List.Item>
+            <List.Item><b>테스트 수</b> — 브랜드에 연결된 질문의 총 테스트 횟수</List.Item>
+            <List.Item><b>연결된 질문</b> — 브랜드에 할당된 질문 개수</List.Item>
             <List.Item><b>경쟁사 언급</b> — AI 응답에서 경쟁사가 언급된 통계</List.Item>
           </List>
         </Section>
         <Section title="경쟁사 트래킹">
           <Text fz="sm" c="dimmed" lh={1.7}>
             경쟁사를 등록하면 AI 응답에서 경쟁사가 언급되는지도 함께 추적합니다.
-            이를 통해 같은 쿼리에서 우리 브랜드와 경쟁사의 인용 여부를 비교 분석할 수 있습니다.
+            이를 통해 같은 질문에서 우리 브랜드와 경쟁사의 인용 여부를 비교 분석할 수 있습니다.
           </Text>
         </Section>
         <Section title="최근 활동">
@@ -160,16 +160,16 @@ function GuideContent({ active }: { active: string }) {
     queries: (
       <Stack gap="lg">
         <Requirement>테스트를 실행하려면 최소 1개 이상의 브랜드가 등록되어 있어야 합니다.</Requirement>
-        <Section title="쿼리 등록 방법">
+        <Section title="질문 등록 방법">
           <Steps steps={[
-            '"쿼리 추가" 버튼을 클릭합니다.',
+            '"질문 추가" 버튼을 클릭합니다.',
             '질의 내용을 입력합니다.',
             '카테고리를 선택합니다.',
             '모니터링할 브랜드를 연결합니다.',
             '등록 후 수동 테스트 또는 자동 스케줄링이 가능합니다.',
           ]} />
         </Section>
-        <Section title="쿼리 카테고리">
+        <Section title="질문 카테고리">
           <List spacing="xs" fz="sm" c="dimmed">
             <List.Item><b>제품 추천</b> — "OO 분야에서 추천할 만한 서비스는?"</List.Item>
             <List.Item><b>서비스 비교</b> — "A와 B 중 어떤 것이 더 나은가요?"</List.Item>
@@ -181,13 +181,13 @@ function GuideContent({ active }: { active: string }) {
         </Section>
         <Section title="테스트 실행">
           <Text fz="sm" c="dimmed" lh={1.7}>
-            쿼리 목록에서 "테스트 실행" 버튼을 클릭하면 해당 쿼리가 AI 엔진(ChatGPT)에 전송됩니다.
+            질문 목록에서 "테스트 실행" 버튼을 클릭하면 해당 질문이 AI 엔진(ChatGPT)에 전송됩니다.
             테스트 결과는 최근 10건까지 히스토리에 저장되며, 각 결과에서 브랜드별 인용 여부, 인용 순위, 경쟁사 언급을 확인할 수 있습니다.
           </Text>
         </Section>
         <Section title="자동 스케줄링">
           <Text fz="sm" c="dimmed" lh={1.7}>
-            쿼리별로 테스트 빈도를 설정하여 자동 실행할 수 있습니다.
+            질문별로 테스트 빈도를 설정하여 자동 실행할 수 있습니다.
           </Text>
           <List spacing="xs" fz="sm" c="dimmed">
             <List.Item><b>일간</b> — 매일 지정된 시간에 실행 (기본 09:00)</List.Item>
@@ -213,7 +213,7 @@ function GuideContent({ active }: { active: string }) {
       <Stack gap="lg">
         <Section title="결과 확인 방법">
           <Steps steps={[
-            '쿼리 관리에서 테스트를 실행하거나, 실행된 결과 목록에서 항목을 선택합니다.',
+            '질문 관리에서 테스트를 실행하거나, 실행된 결과 목록에서 항목을 선택합니다.',
             '선택한 결과의 AI 응답 원문과 브랜드별 인용 분석이 표시됩니다.',
             '키워드 하이라이트와 인용 맥락을 확인합니다.',
           ]} />
@@ -235,12 +235,12 @@ function GuideContent({ active }: { active: string }) {
         </Section>
         <Section title="필터 및 검색">
           <Text fz="sm" c="dimmed" lh={1.7}>
-            브랜드별, 엔진별로 결과를 필터링할 수 있습니다. 특정 쿼리의 결과만 모아보거나,
+            브랜드별, 엔진별로 결과를 필터링할 수 있습니다. 특정 질문의 결과만 모아보거나,
             카테고리별로 분류하여 확인하세요.
           </Text>
         </Section>
         <Tip>
-          인용되지 않는 쿼리 패턴을 파악하는 것이 핵심입니다. 미인용 결과를 분석하면 어떤 종류의 질문에서
+          인용되지 않는 질문 패턴을 파악하는 것이 핵심입니다. 미인용 결과를 분석하면 어떤 종류의 질문에서
           브랜드가 누락되는지 파악하여 콘텐츠 전략을 개선할 수 있습니다.
         </Tip>
       </Stack>
@@ -272,7 +272,7 @@ function GuideContent({ active }: { active: string }) {
               특정 엔진에서 인용률이 더 높거나 낮은 패턴을 발견할 수 있습니다.
             </List.Item>
             <List.Item>
-              <b>카테고리별 인용률</b> — 쿼리 카테고리(제품 추천, 서비스 비교 등)별 평균 인용률을 비교합니다.
+              <b>카테고리별 인용률</b> — 질문 카테고리(제품 추천, 서비스 비교 등)별 평균 인용률을 비교합니다.
               어떤 유형의 질문에서 브랜드가 잘 인용되는지 파악하세요.
             </List.Item>
           </List>
@@ -308,7 +308,7 @@ function GuideContent({ active }: { active: string }) {
               각 키워드에 대한 설명과 출현 빈도를 함께 확인할 수 있습니다.
             </List.Item>
             <List.Item>
-              <b>카테고리별 분석</b> — 쿼리 카테고리(제품 추천, 서비스 비교 등)별로 AI가 중요시하는 요소와
+              <b>카테고리별 분석</b> — 질문 카테고리(제품 추천, 서비스 비교 등)별로 AI가 중요시하는 요소와
               개선 권장 사항을 분석합니다.
             </List.Item>
             <List.Item>
@@ -357,7 +357,7 @@ function GuideContent({ active }: { active: string }) {
             <List.Item><b>평균 순위 및 변동</b> — 인용 순위의 평균과 변화</List.Item>
             <List.Item><b>엔진별 성과</b> — ChatGPT, Gemini 각 엔진의 인용 수, 순위, 테스트 수</List.Item>
             <List.Item><b>브랜드별 상세</b> — 브랜드별 인용률, 순위, 성과 비교</List.Item>
-            <List.Item><b>상위/하위 쿼리</b> — 가장 인용이 잘 되는 쿼리와 개선이 필요한 쿼리</List.Item>
+            <List.Item><b>상위/하위 질문</b> — 가장 인용이 잘 되는 질문과 개선이 필요한 질문</List.Item>
             <List.Item><b>핵심 인사이트</b> — 주요 하이라이트 요약</List.Item>
           </List>
         </Section>

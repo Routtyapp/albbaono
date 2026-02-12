@@ -36,7 +36,7 @@ const plans = [
       'Free 플랜 전체 포함',
       '주간/월간 자동 리포트 (PDF)',
       '스케줄러 자동 테스트 실행',
-      '무제한 쿼리 테스트',
+      '무제한 질문 테스트',
       '경쟁사 GEO 점수 비교',
       '우선 기술 지원',
     ],
@@ -88,7 +88,7 @@ export function Pricing() {
                       size={18}
                       radius="xl"
                       variant="light"
-                      color="accent.4"
+                      color="dark"
                       c="dark"
                     >
                       <IconCheck size={11} stroke={2.5} />

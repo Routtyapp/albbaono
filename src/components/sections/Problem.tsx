@@ -37,7 +37,7 @@ const problems: Array<{
   },
   {
     icon: IconChartBar,
-    title: '엔진·쿼리별 성과 편차',
+    title: '엔진·질문별 성과 편차',
     description: 'ChatGPT, Gemini, Perplexity마다 결과가 달라 대응 우선순위를 놓칩니다.',
     gradient: 'linear-gradient(135deg, #d0d0ce 0%, #0a0a0a 100%)',
     image: '/images/engine.png',

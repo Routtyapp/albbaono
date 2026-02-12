@@ -61,7 +61,7 @@ export function BrandListItem({
                 {isActive ? '활성' : '비활성'}
               </Badge>
               <Text size="xs" c="dimmed">
-                {queryCount} 쿼리
+                {queryCount} 질문
               </Text>
             </Group>
           </Stack>
