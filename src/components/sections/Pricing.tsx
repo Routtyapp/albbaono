@@ -49,7 +49,7 @@ export function Pricing() {
   const navigate = useNavigate();
   return (
     <Box component="section" id="pricing" py={{ base: 80, md: 140 }} bg="#f0efed">
-      <Container size={1440} px={{ base: 20, md: 40 }}>
+      <Container fluid px={0}>
         <SectionTitle
           title={<>필요한 만큼<br />시작하세요</>}
           description="무료로 시작하고, 자동화가 필요할 때 업그레이드하세요."

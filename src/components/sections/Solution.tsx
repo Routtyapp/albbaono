@@ -123,7 +123,7 @@ function FeatureCard({
 export function Solution() {
   return (
     <Box component="section" id="solution" py={{ base: 80, md: 140 }}>
-      <Container size={1440} px={{ base: 20, md: 40 }}>
+      <Container fluid px={0}>
         <SectionTitle
           title={<>AI 가시성의 모든 것을<br />하나의 대시보드에서</>}
           description="브랜드 모니터링부터 경쟁사 분석, GEO 점수까지. AI 검색 성과를 한눈에 파악하고 개선합니다."

@@ -47,7 +47,7 @@ const problems: Array<{
 export function Problem() {
   return (
     <Box component="section" id="problem" py={{ base: 80, md: 140 }} bg="#f0efed">
-      <Container size={1440} px={{ base: 20, md: 40 }}>
+      <Container fluid px={0}>
         <SectionTitle
           title={<>AI 검색 환경에서 발생하는<br />가시성 공백</>}
           description="AI 검색이 빠르게 확산되지만, 브랜드가 어떻게 추천되는지 보여주는 지표는 부족합니다."

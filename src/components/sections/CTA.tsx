@@ -38,21 +38,21 @@ const faqs = [
 export function CTA() {
   return (
     <Box component="section" id="faq" py={{ base: 80, md: 140 }}>
-      <Container size={1440} px={{ base: 20, md: 40 }}>
-        <Grid gutter={{ base: 40, md: 80 }} align="flex-start">
+      <Container fluid px={0}>
+        <Grid gutter={{ base: 40, md: 32 }} align="flex-start">
           <Grid.Col span={{ base: 12, md: 4 }}>
-            <Stack gap="md" pos="sticky" top={100}>
+            <Stack gap="md" pos="sticky" top={100} align="flex-end" ta="right">
               <Title
                 order={2}
-                fz={{ base: 'calc(1.5rem + 0.5vw)', md: '2.2rem' }}
-               
+                fz={{ base: 'calc(1.2rem + 0.5vw)', md: '1.6rem' }}
+
                 lh={1.15}
                 style={{ letterSpacing: '-0.035em' }}
               >
                 자주 묻는 질문
               </Title>
-              <Text fz="md" c="dimmed" lh={1.7} maw={320}>
-                GEO와 서비스 이용에 대해 가장 많이 받는 질문들을 모았습니다.
+              <Text fz="sm" c="dimmed" lh={1.7} maw={320}>
+                GEO와 서비스 이용에 대해<br />가장 많이 받는 질문들을 모았습니다.
               </Text>
             </Stack>
           </Grid.Col>
@@ -62,22 +62,22 @@ export function CTA() {
               variant="default"
               styles={{
                 control: {
-                  paddingTop: 18,
-                  paddingBottom: 18,
+                  paddingTop: 12,
+                  paddingBottom: 12,
                   '&:hover': { backgroundColor: 'transparent' },
                 },
                 content: {
-                  padding: 16,
+                  padding: '8px 16px 12px',
                 },
               }}
             >
               {faqs.map((faq, i) => (
                 <Accordion.Item key={i} value={`faq-${i}`}>
                   <Accordion.Control>
-                    <Text fz="md">{faq.q}</Text>
+                    <Text fz="sm">{faq.q}</Text>
                   </Accordion.Control>
                   <Accordion.Panel>
-                    <Text fz="md" c="dimmed" lh={1.7}>
+                    <Text fz="sm" c="dimmed" lh={1.7}>
                       {faq.a}
                     </Text>
                   </Accordion.Panel>

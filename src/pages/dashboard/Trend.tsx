@@ -93,7 +93,7 @@ export function Trend() {
       <Group justify="space-between" align="center">
         <Group gap="xs">
           <IconTrendingUp size={24} />
-          <Text size="xl">트렌드 분석</Text>
+          <Text size="xl">성장 분석</Text>
         </Group>
         <SegmentedControl
           value={range}

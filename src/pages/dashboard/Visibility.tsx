@@ -147,7 +147,7 @@ export function Visibility() {
     <Stack gap="lg">
       <Group justify="space-between">
         <div>
-          <Title order={2}>AI 가시성 상세</Title>
+          <Title order={2}>상세 인용 여부</Title>
           <Text c="dimmed" size="sm">질문별 AI 응답 및 인용 분석</Text>
         </div>
         <Button

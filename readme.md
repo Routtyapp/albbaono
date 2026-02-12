@@ -8,41 +8,37 @@ ChatGPT, Gemini 등 생성형 AI 검색 결과에서 브랜드가 얼마나 노�
 
 ## 주요 기능
 
-### 브랜드 관리
+### 브랜드 관리 (`/dashboard/brands`)
 - 모니터링 대상 브랜드 등록/수정/삭제
 - 경쟁사 브랜드 추적
-- 브랜드별 인용 통계
+- 마케팅 포인트, 키워드 인라인 편집
+- 브랜드별 인용 통계 (인용률, 평균 순위, 테스트 수)
 
-### 쿼리 모니터링
-- AI 엔진에 테스트할 쿼리 관리 (일간/주간/월간 빈도 설정)
-- 쿼리-브랜드 연결 관리
-- ChatGPT (GPT-4o-mini), Gemini (2.0 Flash) 엔진 대상 실시간 테스트
-- 인용 여부, 응답 내용, 브랜드 노출 순위 기록
+### 질문 관리 (`/dashboard/query-ops`)
+- **질문 관리 탭**: AI 엔진에 테스트할 질문 등록/수정/삭제, 브랜드 연결, 수동 테스트 실행
+- **질문 예약 탭**: 자동 스케줄링 (일간/주간/월간), 실행 시간 설정, 실행 이력 확인
+- 지원 엔진: ChatGPT (GPT-4o-mini), Gemini (2.0 Flash)
+- 질문 카테고리: 제품 추천, 서비스 비교, 기술 문의, 가격 문의, 브랜드 평판, 기타
 
-### 성과 대시보드
-- 전체 인용률, 테스트 수, SOV(Share of Voice) 등 핵심 KPI
-- 기간별 가시성 트렌드 차트
-- AI 엔진별 성과 비교
-- **트렌드 분석**: 시계열 인용률 추이 (1주/1개월/3개월 기간 선택)
+### 성과 (`/dashboard/performance`)
+- **개요 탭**: 핵심 KPI (총 테스트 수, 인용률, 인용 횟수, SOV), 브랜드별 필터, 엔진별 성과 비교
+- **가시성 탭**: 테스트 결과 상세 (AI 응답 원문, 인용 여부, 순위, 키워드 분석, 경쟁사 언급)
+- **트렌드 탭**: 시계열 인용률 추이 (1주/1개월/3개월)
   - 전체 인용률 추이 AreaChart
   - 엔진별(ChatGPT vs Gemini) 인용률 비교 AreaChart
   - 카테고리별 평균 인용률 비교 BarChart
 
-### GEO Score 분석
+### 리포트/인사이트 (`/dashboard/reports`)
+- **리포트 탭**: 주간/월간 AI 가시성 리포트 생성 (최소 5개 테스트 필요)
+- **인사이트 탭**: AI 기반 전략 인사이트 생성 (공략 키워드, 카테고리 분석, 인용 패턴, 실행 가이드)
+- PDF 다운로드 (가시성 리포트, 인사이트 리포트)
+
+### GEO 스코어 (`/dashboard/score`)
 - URL 기반 GEO 최적화 점수 측정 (100점 만점, A+~F 등급)
-- 5개 카테고리 분석: 콘텐츠, 구조, 스키마 마크업, 메타태그, URL
-- 항목별 통과/미통과 상태 및 개선 권장사항
+- 5개 카테고리 분석: Structure, Schema, URL, Meta, Content
+- 항목별 통과/미통과 상태 및 우선순위별 개선 권장사항
 - 경쟁사 URL 비교 분석
-
-### 리포트 & 인사이트
-- 주간/월간 AI 가시성 리포트 자동 생성
-- AI 기반 인사이트 생성 (키워드 패턴, 카테고리별 분석, 콘텐츠 갭)
-- PDF 리포트 다운로드 (가시성 리포트, GEO Score 리포트, 인사이트 리포트)
-
-### 자동화 스케줄러
-- node-cron 기반 쿼리 자동 실행 (일간/주간/월간)
-- 실행 시간/요일 설정
-- 실행 이력 관리
+- GEO Score PDF 리포트 다운로드
 
 ---
 
@@ -74,7 +70,7 @@ geo-tracker/
 ├── src/                           # 프론트엔드 (React)
 │   ├── components/
 │   │   ├── common/                # 공통 레이아웃 (Header, Footer)
-│   │   ├── dashboard/             # 대시보드 레이아웃, 사이드바
+│   │   ├── dashboard/             # 대시보드 레이아웃, 사이드바, 가이드 모달
 │   │   ├── ui/                    # UI 컴포넌트 (카드, 패널)
 │   │   ├── sections/              # 랜딩 페이지 섹션
 │   │   └── ProtectedRoute.tsx     # 인증 라우트 가드
@@ -85,15 +81,20 @@ geo-tracker/
 │   │   ├── Login.tsx              # 로그인
 │   │   ├── Register.tsx           # 회원가입
 │   │   └── dashboard/
-│   │       ├── PerformancePage.tsx # 성과 대시보드 (개요/가시성/트렌드 탭)
-│   │       ├── Overview.tsx       # 대시보드 오버뷰 탭
-│   │       ├── Visibility.tsx     # 가시성 탭
-│   │       ├── Trend.tsx          # 트렌드 분석 탭 (시계열 차트)
-│   │       ├── QueryOpsPage.tsx   # 쿼리 관리 & 테스트
-│   │       ├── ReportsInsightsPage.tsx # 리포트 & 인사이트
-│   │       ├── ScorePage.tsx      # GEO Score 분석
-│   │       ├── Brands.tsx         # 브랜드 관리
-│   │       └── ...
+│   │       ├── Brands.tsx         # 브랜드 관리 페이지
+│   │       ├── QueryOpsPage.tsx   # 질문 관리 (질문 관리 탭 + 질문 예약 탭)
+│   │       ├── QueryListPanel.tsx # 질문 관리 탭 컴포넌트
+│   │       ├── SchedulerPage.tsx  # 질문 예약 탭 컴포넌트
+│   │       ├── PerformancePage.tsx # 성과 (개요 + 가시성 + 트렌드 탭)
+│   │       ├── Overview.tsx       # 개요 탭 컴포넌트
+│   │       ├── Visibility.tsx     # 가시성 탭 컴포넌트
+│   │       ├── Trend.tsx          # 트렌드 분석 탭 컴포넌트
+│   │       ├── ReportsInsightsPage.tsx # 리포트/인사이트 (리포트 + 인사이트 탭)
+│   │       ├── Reports.tsx        # 리포트 탭 컴포넌트
+│   │       ├── Insights.tsx       # 인사이트 탭 컴포넌트
+│   │       ├── ScorePage.tsx      # GEO 스코어 페이지
+│   │       ├── ScoreOverview.tsx  # GEO 스코어 메인 컴포넌트
+│   │       └── OnboardingWizard.tsx # 온보딩 위자드
 │   ├── services/                  # API 클라이언트 모듈
 │   │   ├── client.ts             # Fetch 래퍼 (인증 헤더)
 │   │   ├── auth.ts               # 인증 API
@@ -104,11 +105,14 @@ geo-tracker/
 │   │   ├── insights.ts           # 인사이트 API
 │   │   ├── geoScore.ts           # GEO Score API
 │   │   ├── scheduler.ts          # 스케줄러 API
+│   │   ├── onboarding.ts         # 온보딩 상태 API
 │   │   └── stats.ts              # 통계 & 트렌드 API
-│   ├── db/
-│   │   ├── repositories/         # Repository 패턴 데이터 접근
-│   │   └── schema.ts             # SQLite 스키마 정의
-│   ├── types.ts                   # 공통 TypeScript 타입 (TrendData 등)
+│   ├── hooks/                     # 커스텀 훅
+│   │   ├── useBodyScrollLock.ts  # 모달 스크롤 잠금
+│   │   └── useSidebarData.ts     # 사이드바 상태 데이터
+│   ├── utils/
+│   │   └── queryTemplates.ts     # 온보딩 질문 템플릿
+│   ├── types.ts                   # 공통 TypeScript 타입
 │   ├── theme.ts                   # Mantine 테마 설정
 │   └── App.tsx                    # 루트 컴포넌트 (라우터 설정)
 │
@@ -145,6 +149,9 @@ geo-tracker/
 ├── prisma/
 │   └── dev.db                    # SQLite 데이터베이스 파일
 │
+├── docs/
+│   └── GEO_SCORE_METHODOLOGY.md  # GEO 점수 산정 방법론
+│
 ├── vite.config.ts                 # Vite 빌드 & API 프록시 설정
 ├── vitest.config.ts               # Vitest 테스트 설정
 ├── tsconfig.json                  # TypeScript 설정
@@ -154,9 +161,25 @@ geo-tracker/
 
 ---
 
-## API 엔드포인트
+## 라우팅 구조
 
-### 인증 (`/api/auth`)
+### 프론트엔드 페이지
+
+| 경로 | 페이지 | 설명 |
+|------|--------|------|
+| `/` | Landing | 랜딩 페이지 (Hero, 기능소개, 가격) |
+| `/login` | Login | 로그인 |
+| `/register` | Register | 회원가입 |
+| `/dashboard` | — | `/dashboard/performance?tab=overview`로 리다이렉트 |
+| `/dashboard/brands` | Brands | 브랜드 관리 |
+| `/dashboard/query-ops` | QueryOpsPage | 질문 관리 (탭: 질문 관리 / 질문 예약) |
+| `/dashboard/performance` | PerformancePage | 성과 (탭: 개요 / 가시성 / 트렌드) |
+| `/dashboard/reports` | ReportsInsightsPage | 리포트/인사이트 (탭: 리포트 / 인사이트) |
+| `/dashboard/score` | ScorePage | GEO 스코어 분석 |
+
+### API 엔드포인트
+
+#### 인증 (`/api/auth`)
 
 | 메서드 | 경로 | 설명 |
 |--------|------|------|
@@ -165,7 +188,7 @@ geo-tracker/
 | POST | `/logout` | 로그아웃 |
 | GET | `/me` | 현재 사용자 정보 |
 
-### 데이터 (`/api`) — 인증 필요
+#### 데이터 (`/api`) — 인증 필요
 
 | 메서드 | 경로 | 설명 |
 |--------|------|------|
@@ -179,16 +202,17 @@ geo-tracker/
 | GET/POST/DELETE | `/reports` | 리포트 관리 |
 | GET/POST/DELETE | `/insights` | 인사이트 관리 |
 | GET | `/stats` | 통계 데이터 |
-| GET | `/trends?range=week\|month\|quarter` | 시계열 트렌드 데이터 (전체/엔진별/카테고리별) |
+| GET | `/trends?range=week\|month\|quarter` | 시계열 트렌드 데이터 |
+| PATCH | `/onboarding` | 온보딩 단계 업데이트 |
 
-### GEO Score (`/api/geo-score`)
+#### GEO Score (`/api/geo-score`)
 
 | 메서드 | 경로 | 설명 |
 |--------|------|------|
 | POST | `/analyze` | URL GEO 점수 분석 |
 | GET | `/health` | 서비스 상태 확인 |
 
-### PDF 리포트 (`/api/reports`)
+#### PDF 리포트 (`/api/reports`)
 
 | 메서드 | 경로 | 설명 |
 |--------|------|------|
@@ -196,7 +220,7 @@ geo-tracker/
 | POST | `/geo-score` | GEO Score 리포트 PDF 생성 |
 | POST | `/insights` | 인사이트 리포트 PDF 생성 |
 
-### 스케줄러 (`/api/scheduler`)
+#### 스케줄러 (`/api/scheduler`)
 
 | 메서드 | 경로 | 설명 |
 |--------|------|------|
@@ -212,7 +236,8 @@ geo-tracker/
 
 | 테이블 | 설명 |
 |--------|------|
-| `brands` | 브랜드 정보 (이름, 경쟁사, 활성 상태) |
+| `users` | 사용자 정보 (이름, 이메일, 온보딩 단계) |
+| `brands` | 브랜드 정보 (이름, 경쟁사, 마케팅포인트, 키워드) |
 | `queries` | 모니터링 쿼리 (검색어, 카테고리, 빈도) |
 | `query_brands` | 쿼리-브랜드 다대다 관계 |
 | `results` | AI 엔진 테스트 결과 (엔진, 인용여부, 응답) |
@@ -285,55 +310,25 @@ npm run preview      # 빌드 미리보기
 - **Repository 패턴**: 데이터 접근 레이어 추상화
 - **Service 패턴**: 비즈니스 로직 분리 (프론트엔드 서비스 모듈, 백엔드 서비스)
 - **Context API**: React 전역 인증 상태 관리 (`useAuth` 훅)
+- **탭 기반 페이지 구조**: URL 쿼리 파라미터(`?tab=`)로 탭 상태 관리
 - **미들웨어 패턴**: Express 인증, CORS, 세션 관리
 - **하이브리드 프로세스**: Node.js → Python child_process 스폰 (PDF 생성)
 
 ---
 
-## PDF 생성 시스템
+## 사용자 플로우
 
-### 파이프라인
-```
-[클라이언트 (React)]
-        ↓ HTTP POST (JSON 데이터)
-[서버 (Node.js/Express)]
-        ↓ 프로세스 스폰 (stdin/stdout)
-[Python 스크립트 (ReportLab + Matplotlib)]
-        ↓ 파일 시스템
-[PDF 파일 생성]
-        ↓ 바이너리 스트림
-[클라이언트 다운로드]
-```
+### 첫 사용자
+1. `/register`에서 회원가입
+2. 온보딩 위자드 4단계 진행 (브랜드 등록 → 질문 추가 → 테스트 실행 → 대시보드 진입)
+3. 대시보드에서 성과 확인
 
-### 리포트 유형
-
-**AI 가시성 리포트 (주간/월간)**
-- 핵심 KPI 카드 (인용률, 테스트 수, SOV, 평균 순위)
-- 기간별 인용률 트렌드 차트
-- AI 엔진별 성과 비교
-- 상위/하위 쿼리 분석
-- 데이터 기반 개선 권장사항
-
-**GEO Score 분석 리포트**
-- 종합 점수 및 등급 (A+~F)
-- 5개 카테고리별 상세 분석
-- 항목별 통과/미통과 상태
-- 우선순위별 개선 권장사항
-
-**AI 인사이트 리포트**
-- 키워드 패턴 분석
-- 카테고리별 인사이트
-- 인용 패턴 및 콘텐츠 갭
-
-### 차트 유형
-
-| 차트 | 용도 | 사용처 |
-|------|------|--------|
-| AreaChart | 시계열 인용률 추이 (전체, 엔진별) | 트렌드 탭, PDF 리포트 |
-| BarChart (수평) | AI 엔진별 성과 비교 | 리포트 상세, 오버뷰 |
-| BarChart (수직) | 카테고리별/쿼리별 성과 | 트렌드 탭, 리포트 |
-| 라인 차트 (PDF) | 시계열 인용률 트렌드 | PDF 리포트 |
-| 도넛 차트 (PDF) | 카테고리 분포, 달성률 | PDF 리포트 |
+### 일상적 사용
+1. **브랜드** — 모니터링 대상 브랜드와 경쟁사 관리
+2. **질문 관리** — 질문 등록/테스트, 자동 예약 설정
+3. **성과** — 개요에서 KPI 확인, 가시성에서 상세 결과, 트렌드에서 시계열 분석
+4. **리포트/인사이트** — 주간/월간 리포트 생성, AI 인사이트 확인
+5. **GEO 스코어** — 웹사이트 최적화 점수 분석 및 경쟁사 비교
 
 ---
 

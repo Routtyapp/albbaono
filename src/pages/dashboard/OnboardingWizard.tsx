@@ -28,8 +28,9 @@ import {
   IconArrowLeft,
   IconArrowRight,
   IconSparkles,
+  IconChartBar,
   IconFileDescription,
-  IconBrain,
+  IconTrophy,
 } from '@tabler/icons-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { addBrand } from '../../services/brands';
@@ -53,6 +54,8 @@ export function OnboardingWizard() {
   // Step 1 state
   const [brandName, setBrandName] = useState('');
   const [competitors, setCompetitors] = useState<string[]>([]);
+  const [marketingPoints, setMarketingPoints] = useState<string[]>([]);
+  const [keywords, setKeywords] = useState<string[]>([]);
   const [brandLoading, setBrandLoading] = useState(false);
   const [brandError, setBrandError] = useState('');
   const [createdBrand, setCreatedBrand] = useState<CreatedBrand | null>(null);
@@ -95,7 +98,12 @@ export function OnboardingWizard() {
     setBrandLoading(true);
     setBrandError('');
     try {
-      const brand = await addBrand({ name: brandName.trim(), competitors });
+      const brand = await addBrand({
+        name: brandName.trim(),
+        competitors,
+        marketingPoints,
+        keywords,
+      });
       setCreatedBrand({ id: brand.id, name: brand.name, competitors: brand.competitors || [] });
       await updateStep(1);
       setStep(2);
@@ -199,14 +207,20 @@ export function OnboardingWizard() {
                 </Text>
               </Stack>
 
+              <Text size="sm" c="dimmed" ta="center">
+                여기저기는 ChatGPT 등 AI 검색에서 브랜드 인용 여부를 추적하고,
+                성과를 분석하여 AI 가시성을 높이는 데 도움을 줍니다.
+              </Text>
+
               <Stack gap="sm">
+                <Text size="xs" c="dimmed" mb={-4}>3단계로 시작해 보세요</Text>
                 <Group gap="sm" align="flex-start">
                   <ThemeIcon size={36} radius="md" variant="light" color="teal">
                     <IconTags size={18} />
                   </ThemeIcon>
                   <Box style={{ flex: 1 }}>
-                    <Text size="sm">브랜드 등록</Text>
-                    <Text size="xs" c="dimmed">AI 검색에서 추적할 브랜드를 등록합니다</Text>
+                    <Text size="sm">1. 브랜드 등록</Text>
+                    <Text size="xs" c="dimmed">추적할 브랜드명, 경쟁사, 키워드를 등록합니다</Text>
                   </Box>
                 </Group>
                 <Group gap="sm" align="flex-start">
@@ -214,7 +228,7 @@ export function OnboardingWizard() {
                     <IconMessageQuestion size={18} />
                   </ThemeIcon>
                   <Box style={{ flex: 1 }}>
-                    <Text size="sm">질문 추가</Text>
+                    <Text size="sm">2. 질문 추가</Text>
                     <Text size="xs" c="dimmed">AI에게 물어볼 질문을 작성합니다</Text>
                   </Box>
                 </Group>
@@ -223,8 +237,8 @@ export function OnboardingWizard() {
                     <IconPlayerPlay size={18} />
                   </ThemeIcon>
                   <Box style={{ flex: 1 }}>
-                    <Text size="sm">테스트 실행</Text>
-                    <Text size="xs" c="dimmed">ChatGPT에 질문을 보내 결과를 확인합니다</Text>
+                    <Text size="sm">3. 테스트 실행</Text>
+                    <Text size="xs" c="dimmed">ChatGPT에 질문을 보내 브랜드 인용 결과를 확인합니다</Text>
                   </Box>
                 </Group>
               </Stack>
@@ -265,7 +279,7 @@ export function OnboardingWizard() {
               </Group>
 
               <Text size="sm" c="dimmed">
-                대표적인 제품/서비스 브랜드명을 입력하세요. AI 응답에서 이 브랜드가 언급되는지 추적합니다.
+                AI 응답에서 추적할 브랜드를 등록하세요. 경쟁사·마케팅 포인트·키워드는 나중에 추가할 수도 있습니다.
               </Text>
 
               <TextInput
@@ -283,6 +297,24 @@ export function OnboardingWizard() {
                 description="AI 응답에서 함께 추적할 경쟁사 브랜드명"
                 value={competitors}
                 onChange={setCompetitors}
+                size="md"
+              />
+
+              <TagsInput
+                label="마케팅 포인트"
+                placeholder="USP·강점 입력 후 Enter (선택)"
+                description="브랜드의 핵심 차별점이나 강점"
+                value={marketingPoints}
+                onChange={setMarketingPoints}
+                size="md"
+              />
+
+              <TagsInput
+                label="키워드"
+                placeholder="키워드 입력 후 Enter (선택)"
+                description="브랜드와 관련된 핵심 키워드"
+                value={keywords}
+                onChange={setKeywords}
                 size="md"
               />
 
@@ -493,7 +525,7 @@ export function OnboardingWizard() {
                     </ScrollArea>
                   </Box>
 
-                  {/* 다음 기능 프리뷰 */}
+                  {/* Feature preview */}
                   <Paper p="md" radius="md" withBorder bg="gray.0">
                     <Text size="sm" mb="sm">대시보드에서 할 수 있는 것들</Text>
                     <Stack gap="sm">
@@ -502,26 +534,38 @@ export function OnboardingWizard() {
                           <IconMessageQuestion size={14} />
                         </ThemeIcon>
                         <Box style={{ flex: 1 }}>
-                          <Text size="sm">질문 추가</Text>
-                          <Text size="xs" c="dimmed">더 많은 질문을 등록하고 다양한 AI 엔진에서 테스트하세요</Text>
+                          <Text size="sm">질문 관리 & 예약</Text>
+                          <Text size="xs" c="dimmed">질문을 등록하고 일간·주간·월간 자동 테스트를 예약하세요</Text>
                         </Box>
                       </Group>
+
                       <Group gap="sm" align="flex-start">
                         <ThemeIcon size={28} radius="md" variant="light" color="teal">
+                          <IconChartBar size={14} />
+                        </ThemeIcon>
+                        <Box style={{ flex: 1 }}>
+                          <Text size="sm">성과 분석</Text>
+                          <Text size="xs" c="dimmed">인용률·순위·엔진별 비교와 성장 추이를 추적하세요</Text>
+                        </Box>
+                      </Group>
+
+                      <Group gap="sm" align="flex-start">
+                        <ThemeIcon size={28} radius="md" variant="light" color="indigo">
                           <IconFileDescription size={14} />
                         </ThemeIcon>
                         <Box style={{ flex: 1 }}>
-                          <Text size="sm">리포트</Text>
-                          <Text size="xs" c="dimmed">5개 이상 테스트 시 인용률, 점유율 등 성과 리포트를 생성합니다</Text>
+                          <Text size="sm">리포트 & 인사이트</Text>
+                          <Text size="xs" c="dimmed">주간·월간 리포트 생성과 AI 기반 전략 인사이트를 확인하세요</Text>
                         </Box>
                       </Group>
+
                       <Group gap="sm" align="flex-start">
                         <ThemeIcon size={28} radius="md" variant="light" color="grape">
-                          <IconBrain size={14} />
+                          <IconTrophy size={14} />
                         </ThemeIcon>
                         <Box style={{ flex: 1 }}>
-                          <Text size="sm">AI 인사이트</Text>
-                          <Text size="xs" c="dimmed">AI가 공략 키워드와 실행 가이드를 분석하여 전략을 제안합니다</Text>
+                          <Text size="sm">GEO 스코어</Text>
+                          <Text size="xs" c="dimmed">웹사이트의 AI 검색 최적화 점수를 분석하고 경쟁사와 비교하세요</Text>
                         </Box>
                       </Group>
                     </Stack>

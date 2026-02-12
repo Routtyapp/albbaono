@@ -27,9 +27,9 @@ export function Header() {
     <Anchor
       key={link.href}
       href={link.href}
-      c="gray.6"
+      c="gray.7"
       fz="sm"
-     
+      fw={500}
       underline="never"
       style={{ letterSpacing: '-0.01em' }}
       onClick={close}
@@ -52,13 +52,13 @@ export function Header() {
         WebkitBackdropFilter: 'blur(16px)',
       }}
     >
-      <Container size={1440} px={{ base: 20, md: 40 }} h={56}>
+      <Container fluid px={{ base: 'sm', sm: 36 }} h={52}>
         <Group h="100%" justify="space-between">
-          <Group gap={32} visibleFrom="sm">
+          <Group gap={36} visibleFrom="sm">
             <Image
               src="/YeogiJeogiFontLogo (1).png"
               alt="여기저기"
-              h={26}
+              h={20}
               w="auto"
             />
             {links}
@@ -66,18 +66,17 @@ export function Header() {
           <Image
             src="/YeogiJeogiFontLogo (1).png"
             alt="여기저기"
-            h={26}
+            h={20}
             w="auto"
             hiddenFrom="sm"
           />
 
-          <Group gap={36} visibleFrom="sm">
+          <Group gap="md" visibleFrom="sm">
             <Button
               radius="xl"
               color="dark"
-              c="dark"
-             
-              size="sm"
+              c="white"
+              size="xs"
               onClick={() => navigate('/dashboard')}
             >
               시작하기
@@ -103,7 +102,7 @@ export function Header() {
           <Image
             src="/YeogiJeogiFontLogo (1).png"
             alt="여기저기"
-            h={24}
+            h={20}
             w="auto"
           />
         }

@@ -78,7 +78,7 @@ function MetricBar({ label, before, after, unit, invert }: {
 export function CaseStudy() {
   return (
     <Box component="section" id="case-study" py={{ base: 80, md: 140 }}>
-      <Container size={1440} px={{ base: 20, md: 40 }}>
+      <Container fluid px={0}>
         <SectionTitle
           title={<>실제 고객사 성과로<br />증명합니다</>}
           description="AI 검색 유입이 감소하던 B2B SaaS 브랜드가 GEO 최적화 후 달라진 수치입니다."

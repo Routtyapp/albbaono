@@ -16,7 +16,7 @@ export function Hero() {
 
   return (
     <Box component="section" className="hero">
-      <Container size={1440} px={{ base: 20, md: 80 }} py={{ base: 60, md: 100 }} pos="relative" style={{ zIndex: 1 }}>
+      <Container fluid px={0} py={{ base: 60, md: 100 }} pos="relative" style={{ zIndex: 1 }}>
         <Group align="center" wrap="wrap" gap={40} style={{ minHeight: 400 }}>
         {/* 왼쪽: 텍스트 */}
         <Stack align="flex-start" gap="lg" style={{ flex: 1, minWidth: 320 }}>
@@ -66,7 +66,7 @@ export function Hero() {
               variant="outline"
               color="gray"
               size="md"
-             
+              c="white"
               onClick={() => {
                 document.getElementById('solution')?.scrollIntoView({ behavior: 'smooth' });
               }}

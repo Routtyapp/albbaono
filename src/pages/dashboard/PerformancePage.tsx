@@ -22,8 +22,8 @@ export function PerformancePage() {
     <Tabs value={tab} onChange={handleTabChange}>
       <Tabs.List mb="md">
         <Tabs.Tab value="overview">개요</Tabs.Tab>
-        <Tabs.Tab value="visibility">가시성</Tabs.Tab>
-        <Tabs.Tab value="trend">트렌드</Tabs.Tab>
+        <Tabs.Tab value="visibility">상세 인용</Tabs.Tab>
+        <Tabs.Tab value="trend">성장</Tabs.Tab>
       </Tabs.List>
 
       <Tabs.Panel value="overview">
