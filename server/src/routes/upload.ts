@@ -43,7 +43,7 @@ const upload = multer({
 const router = Router();
 
 // POST /api/upload — 이미지 업로드 (인증 사용자)
-router.post('/', upload.single('image'), (req, res) => {
+router.post('/', upload.single('image'), (req: any, res: any) => {
   if (!req.file) {
     return res.status(400).json({ success: false, message: '파일이 없습니다.' });
   }

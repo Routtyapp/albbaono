@@ -72,11 +72,11 @@ app.use(passport.session());
 // 인증 라우터 (인증 불필요)
 app.use('/api/auth', authRouter);
 
-// 데이터 라우터 (인증 필요, 자체 인증 미들웨어 포함)
-app.use('/api', dataRouter);
-
 // 피드 라우터 (GET은 공개, POST/PUT/DELETE는 라우터 내부에서 isAdmin 보호)
 app.use('/api/feeds', feedRouter);
+
+// 데이터 라우터 (인증 필요, 자체 인증 미들웨어 포함)
+app.use('/api', dataRouter);
 
 // 보호된 라우터 (인증 필요)
 app.use('/api/geo-score', isAuthenticated, geoScoreRouter);
