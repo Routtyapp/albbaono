@@ -100,6 +100,351 @@ function stripCitations(text: string): string {
     .trim();
 }
 
+// === 리포트 헬퍼 함수 ===
+
+function fetchReportData(userId: string, startDate: Date, prevStartDate: Date, now: Date) {
+  const currentResults = db.prepare(`
+    SELECT r.id, r.query_id, r.query, r.engine, r.cited, r.tested_at
+    FROM results r
+    WHERE r.user_id = ? AND r.tested_at >= ? AND r.tested_at <= ?
+  `).all(userId, startDate.toISOString(), now.toISOString()) as any[];
+
+  const prevResults = db.prepare(`
+    SELECT r.id, r.query_id, r.query, r.engine, r.cited, r.tested_at
+    FROM results r
+    WHERE r.user_id = ? AND r.tested_at >= ? AND r.tested_at < ?
+  `).all(userId, prevStartDate.toISOString(), startDate.toISOString()) as any[];
+
+  const currentResultIds = currentResults.map((r: any) => r.id);
+  const prevResultIds = prevResults.map((r: any) => r.id);
+
+  let currentBrandResults: any[] = [];
+  if (currentResultIds.length > 0) {
+    const placeholders = currentResultIds.map(() => '?').join(',');
+    currentBrandResults = db.prepare(
+      `SELECT * FROM brand_results WHERE result_id IN (${placeholders})`
+    ).all(...currentResultIds) as any[];
+  }
+
+  let prevBrandResults: any[] = [];
+  if (prevResultIds.length > 0) {
+    const placeholders = prevResultIds.map(() => '?').join(',');
+    prevBrandResults = db.prepare(
+      `SELECT * FROM brand_results WHERE result_id IN (${placeholders})`
+    ).all(...prevResultIds) as any[];
+  }
+
+  return { currentResults, prevResults, currentResultIds, prevResultIds, currentBrandResults, prevBrandResults };
+}
+
+function calculateReportMetrics(
+  userId: string,
+  currentResults: any[],
+  prevResults: any[],
+  currentBrandResults: any[],
+  prevBrandResults: any[]
+) {
+  const totalTests = currentResults.length;
+  const citedCount = currentResults.filter((r: any) => r.cited).length;
+  const citationRate = totalTests > 0 ? Math.round((citedCount / totalTests) * 100 * 10) / 10 : 0;
+
+  const prevTotalTests = prevResults.length;
+  const prevCitedCount = prevResults.filter((r: any) => r.cited).length;
+  const prevCitationRate = prevTotalTests > 0 ? Math.round((prevCitedCount / prevTotalTests) * 100 * 10) / 10 : 0;
+
+  const totalBrandChecks = currentBrandResults.length;
+  const brandCited = currentBrandResults.filter((br: any) => br.cited).length;
+  const shareOfVoice = totalBrandChecks > 0 ? Math.round((brandCited / totalBrandChecks) * 100 * 10) / 10 : 0;
+
+  const prevTotalBrandChecks = prevBrandResults.length;
+  const prevBrandCited = prevBrandResults.filter((br: any) => br.cited).length;
+  const prevShareOfVoice = prevTotalBrandChecks > 0 ? Math.round((prevBrandCited / prevTotalBrandChecks) * 100 * 10) / 10 : 0;
+
+  const rankedResults = currentBrandResults.filter((br: any) => br.cited && br.rank != null);
+  const avgRank = rankedResults.length > 0
+    ? Math.round((rankedResults.reduce((sum: number, br: any) => sum + br.rank, 0) / rankedResults.length) * 10) / 10
+    : null;
+
+  const prevRankedResults = prevBrandResults.filter((br: any) => br.cited && br.rank != null);
+  const prevAvgRank = prevRankedResults.length > 0
+    ? Math.round((prevRankedResults.reduce((sum: number, br: any) => sum + br.rank, 0) / prevRankedResults.length) * 10) / 10
+    : null;
+
+  // 엔진별 성능
+  const engines = [...new Set(currentResults.map((r: any) => r.engine))];
+  const enginePerformance = engines.map((engine: string) => {
+    const engineResults = currentResults.filter((r: any) => r.engine === engine);
+    const engineCited = engineResults.filter((r: any) => r.cited).length;
+    const engineTotal = engineResults.length;
+    const engineRate = engineTotal > 0 ? Math.round((engineCited / engineTotal) * 100 * 10) / 10 : 0;
+
+    const prevEngineResults = prevResults.filter((r: any) => r.engine === engine);
+    const prevEngineCited = prevEngineResults.filter((r: any) => r.cited).length;
+    const prevEngineTotal = prevEngineResults.length;
+    const prevEngineRate = prevEngineTotal > 0 ? Math.round((prevEngineCited / prevEngineTotal) * 100 * 10) / 10 : 0;
+
+    const engineBR = currentBrandResults.filter((br: any) => {
+      const r = currentResults.find((cr: any) => cr.id === br.result_id);
+      return r && r.engine === engine;
+    });
+    const engineRanked = engineBR.filter((br: any) => br.cited && br.rank != null);
+    const engineAvgRank = engineRanked.length > 0
+      ? Math.round((engineRanked.reduce((s: number, br: any) => s + br.rank, 0) / engineRanked.length) * 10) / 10
+      : null;
+
+    return {
+      engine: engine === 'gpt' ? 'ChatGPT' : engine === 'gemini' ? 'Gemini' : engine,
+      citationRate: engineRate,
+      avgRank: engineAvgRank,
+      totalTests: engineTotal,
+      citations: engineCited,
+      change: Math.round((engineRate - prevEngineRate) * 10) / 10,
+    };
+  });
+
+  // 브랜드별 성능
+  const brands = db.prepare(
+    'SELECT id, name FROM brands WHERE user_id = ? AND is_active = 1'
+  ).all(userId) as any[];
+
+  const brandPerformance = brands.map((brand: any) => {
+    const brandBR = currentBrandResults.filter((br: any) => br.brand_id === brand.id);
+    const bCited = brandBR.filter((br: any) => br.cited).length;
+    const bTotal = brandBR.length;
+    const bRate = bTotal > 0 ? Math.round((bCited / bTotal) * 100 * 10) / 10 : 0;
+    const bRanked = brandBR.filter((br: any) => br.cited && br.rank != null);
+    const bAvgRank = bRanked.length > 0
+      ? Math.round((bRanked.reduce((s: number, br: any) => s + br.rank, 0) / bRanked.length) * 10) / 10
+      : null;
+
+    return {
+      brandId: brand.id,
+      brandName: brand.name,
+      citationRate: bRate,
+      avgRank: bAvgRank,
+      totalTests: bTotal,
+      citations: bCited,
+    };
+  }).filter((bp: any) => bp.totalTests > 0);
+
+  // 쿼리별 인용률
+  const queryMap = new Map<string, { query: string; cited: number; total: number }>();
+  for (const r of currentResults) {
+    const key = r.query_id || r.query;
+    const entry = queryMap.get(key) || { query: r.query, cited: 0, total: 0 };
+    entry.total++;
+    if (r.cited) entry.cited++;
+    queryMap.set(key, entry);
+  }
+  const queryStats = [...queryMap.values()]
+    .map((q) => ({ query: q.query, citationRate: q.total > 0 ? Math.round((q.cited / q.total) * 100) : 0 }));
+  queryStats.sort((a, b) => b.citationRate - a.citationRate);
+  const topQueries = queryStats.filter((q) => q.citationRate > 0).slice(0, 5);
+  const worstQueries = queryStats.filter((q) => q.citationRate < 100).reverse().slice(0, 5);
+
+  // 하이라이트
+  const highlights: string[] = [];
+  if (totalTests > 0) {
+    highlights.push(`총 ${totalTests}건의 테스트가 수행되었습니다.`);
+  }
+  if (citationRate > prevCitationRate) {
+    highlights.push(`인용률이 ${prevCitationRate}%에서 ${citationRate}%로 상승했습니다.`);
+  } else if (citationRate < prevCitationRate) {
+    highlights.push(`인용률이 ${prevCitationRate}%에서 ${citationRate}%로 하락했습니다.`);
+  }
+  if (enginePerformance.length > 0) {
+    const bestEngine = enginePerformance.reduce((a, b) => a.citationRate > b.citationRate ? a : b);
+    if (bestEngine.citationRate > 0) {
+      highlights.push(`${bestEngine.engine}에서 ${bestEngine.citationRate}%의 인용률을 기록했습니다.`);
+    }
+  }
+  if (brandPerformance.length > 0) {
+    const bestBrand = brandPerformance.reduce((a, b) => a.citationRate > b.citationRate ? a : b);
+    if (bestBrand.citationRate > 0) {
+      highlights.push(`${bestBrand.brandName} 브랜드가 ${bestBrand.citationRate}%로 가장 높은 인용률을 보입니다.`);
+    }
+  }
+
+  const metrics = {
+    citationRate,
+    citationRateChange: Math.round((citationRate - prevCitationRate) * 10) / 10,
+    shareOfVoice,
+    shareOfVoiceChange: Math.round((shareOfVoice - prevShareOfVoice) * 10) / 10,
+    avgRank,
+    avgRankChange: avgRank != null && prevAvgRank != null ? Math.round((avgRank - prevAvgRank) * 10) / 10 : 0,
+    totalTests,
+    totalTestsChange: totalTests - prevTotalTests,
+    enginePerformance,
+    brandPerformance,
+  };
+
+  return { metrics, highlights, topQueries, worstQueries, citationRate, prevCitationRate, shareOfVoice, avgRank, enginePerformance, brandPerformance };
+}
+
+async function generateReportAiAnalysis(
+  type: string,
+  period: string,
+  currentResultIds: string[],
+  currentBrandResults: any[],
+  metrics: any,
+  topQueries: any[],
+  worstQueries: any[]
+): Promise<any> {
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (!openaiKey || currentResultIds.length === 0) return null;
+
+  // 카테고리별 인용률 집계
+  const categoryMap = new Map<string, { total: number; cited: number }>();
+  const catPlaceholders = currentResultIds.map(() => '?').join(',');
+  const catResults = db.prepare(`
+    SELECT r.category, r.cited FROM results r WHERE r.id IN (${catPlaceholders})
+  `).all(...currentResultIds) as any[];
+  for (const cr of catResults) {
+    const entry = categoryMap.get(cr.category) || { total: 0, cited: 0 };
+    entry.total++;
+    if (cr.cited) entry.cited++;
+    categoryMap.set(cr.category, entry);
+  }
+  const categoryStats = [...categoryMap.entries()].map(([category, stats]) => ({
+    category,
+    total: stats.total,
+    cited: stats.cited,
+    citationRate: stats.total > 0 ? Math.round((stats.cited / stats.total) * 100 * 10) / 10 : 0,
+  }));
+
+  // 경쟁사 언급 빈도
+  const competitorFrequency = new Map<string, number>();
+  for (const br of currentBrandResults) {
+    const mentions: string[] = JSON.parse(br.competitor_mentions || '[]');
+    for (const comp of mentions) {
+      competitorFrequency.set(comp, (competitorFrequency.get(comp) || 0) + 1);
+    }
+  }
+  const competitorStats = [...competitorFrequency.entries()]
+    .map(([name, count]) => ({ name, mentionCount: count }))
+    .sort((a, b) => b.mentionCount - a.mentionCount);
+
+  // 응답 샘플링
+  const samplePlaceholders = currentResultIds.map(() => '?').join(',');
+  const citedRows = db.prepare(`
+    SELECT query, full_response FROM results
+    WHERE id IN (${samplePlaceholders}) AND cited = 1 AND full_response IS NOT NULL
+    ORDER BY RANDOM() LIMIT 3
+  `).all(...currentResultIds) as any[];
+  const citedSamples = citedRows.map((r: any) =>
+    `[쿼리: ${r.query}]\n${(r.full_response || '').slice(0, 500)}`
+  );
+
+  const uncitedRows = db.prepare(`
+    SELECT query, full_response FROM results
+    WHERE id IN (${samplePlaceholders}) AND cited = 0 AND full_response IS NOT NULL
+    ORDER BY RANDOM() LIMIT 3
+  `).all(...currentResultIds) as any[];
+  const uncitedSamples = uncitedRows.map((r: any) =>
+    `[쿼리: ${r.query}]\n${(r.full_response || '').slice(0, 500)}`
+  );
+
+  const { citationRate, citationRateChange, shareOfVoice, avgRank } = metrics;
+  const { enginePerformance, brandPerformance } = metrics;
+
+  const openai = getOpenAIClient();
+
+  const systemPrompt = `당신은 AI 검색 엔진 최적화(AEO/GEO) 전문 분석가입니다. 브랜드의 AI 검색 노출 데이터를 분석하여 실행 가능한 인사이트를 제공합니다.
+
+## 분석 프레임워크
+
+### summary (4-6문장)
+반드시 다음 순서로 작성:
+1. 해당 기간의 전체 추세 요약 (상승/하락/정체, 수치 근거)
+2. 가장 두드러진 성과 또는 강점 (구체적 수치 인용)
+3. 가장 우려되는 약점 또는 리스크
+4. 다음 기간에 주목해야 할 포인트와 전망
+
+### categoryAnalysis (카테고리당 각 2-3문장)
+각 카테고리에 대해:
+- 인용률의 원인 분석: 왜 높은지/낮은지 AI 응답 패턴 기반으로 추론
+- 실제 AI 응답에서 관찰된 인용/미인용 패턴 언급
+- 해당 카테고리에 특화된 구체적 개선 방향 1가지
+
+### competitorAnalysis (4-5문장)
+다음을 포함:
+- 가장 자주 언급되는 경쟁사와 그 맥락 (어떤 유형의 질문에서 언급되는지)
+- 자사 브랜드 대비 경쟁사의 포지셔닝 차이
+- 경쟁사 대비 차별화 가능 영역과 전략적 제안
+
+### actionItems (5-7개, 우선순위 순)
+각 항목은 다음 형식:
+- "[우선순위: 높음/중간] 무엇을 → 왜 → 어떻게" 형태로 구체적 작성
+- 실행 가능하고 측정 가능한 제안만 포함
+- AI 응답 패턴 분석에 기반한 콘텐츠 전략 포함
+
+### highlights (3-5개)
+- 데이터에서 발견된 의미 있는 패턴이나 인사이트
+- 단순 수치 반복이 아닌, 숫자 뒤의 의미를 해석
+
+## 출력 규칙
+- 반드시 한국어로 작성
+- 모든 주장에 데이터 수치를 근거로 인용
+- 추상적 표현 대신 구체적 행동 제안
+- JSON 형식으로 응답`;
+
+  const userPrompt = `## 리포트 기간
+${period} (${type === 'weekly' ? '주간' : '월간'})
+
+## 핵심 지표
+- 총 테스트: ${metrics.totalTests}건
+- 인용률: ${citationRate}% (이전 기간 대비 ${citationRateChange > 0 ? '+' : ''}${citationRateChange}%p)
+- 점유율: ${shareOfVoice}%
+- 평균 순위: ${avgRank != null ? '#' + avgRank : '없음'}
+
+## 카테고리별 성과
+${categoryStats.map(c => `- ${c.category}: ${c.citationRate}% (${c.cited}/${c.total}건)`).join('\n') || '데이터 없음'}
+
+## 엔진별 성과
+${enginePerformance.map((e: any) => `- ${e.engine}: 인용률 ${e.citationRate}%, 변화 ${e.change > 0 ? '+' : ''}${e.change}%p`).join('\n') || '데이터 없음'}
+
+## 브랜드별 성과
+${brandPerformance.map((b: any) => `- ${b.brandName}: 인용률 ${b.citationRate}%, 순위 ${b.avgRank != null ? '#' + b.avgRank : '없음'}`).join('\n') || '데이터 없음'}
+
+## 경쟁사 언급 현황
+${competitorStats.length > 0 ? competitorStats.map(c => `- ${c.name}: ${c.mentionCount}회 언급`).join('\n') : '데이터 없음'}
+
+## 인용률 높은 쿼리
+${topQueries.map(q => `- "${q.query}": ${q.citationRate}%`).join('\n') || '없음'}
+
+## 인용률 낮은 쿼리
+${worstQueries.map(q => `- "${q.query}": ${q.citationRate}%`).join('\n') || '없음'}
+
+## AI 응답 샘플 (브랜드가 인용된 응답)
+${citedSamples.length > 0 ? citedSamples.join('\n---\n') : '샘플 없음'}
+
+## AI 응답 샘플 (브랜드가 인용되지 않은 응답)
+${uncitedSamples.length > 0 ? uncitedSamples.join('\n---\n') : '샘플 없음'}
+
+위 데이터를 분석하여 다음 JSON 형식으로 응답하세요:
+{
+  "summary": "string",
+  "categoryAnalysis": [{"category": "string", "insight": "string", "citationRate": number}],
+  "competitorAnalysis": "string",
+  "actionItems": ["string"],
+  "highlights": ["string"]
+}`;
+
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-5-mini',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ],
+    max_completion_tokens: 3000,
+    temperature: 0.2,
+    response_format: { type: 'json_object' },
+  });
+
+  const aiContent = completion.choices[0]?.message?.content;
+  return aiContent ? JSON.parse(aiContent) : null;
+}
+
 // 모든 라우트에 인증 필요
 router.use(isAuthenticated);
 
@@ -145,7 +490,7 @@ router.post('/brands', (req, res) => {
   const { name, competitors = [], marketingPoints = [], keywords = [] } = req.body;
 
   if (!name) {
-    return res.status(400).json({ error: '브랜드 이름은 필수입니다.' });
+    return sendError(res, 400, 'VALIDATION_ERROR', '브랜드 이름은 필수입니다.');
   }
 
   const id = randomUUID();
@@ -343,10 +688,28 @@ router.delete('/queries/:id', (req, res) => {
   const userId = req.user!.id;
   const { id } = req.params;
 
-  const result = db.prepare('DELETE FROM queries WHERE id = ? AND user_id = ?').run(id, userId);
-  if (result.changes === 0) {
+  const query = db.prepare('SELECT id FROM queries WHERE id = ? AND user_id = ?').get(id, userId);
+  if (!query) {
     return sendError(res, 404, 'NOT_FOUND', 'Query not found');
   }
+
+  // 연관 데이터 일괄 삭제 (results → brand_results CASCADE)
+  const deleteAll = db.transaction(() => {
+    // 해당 쿼리의 results에 연결된 brand_results 삭제
+    db.prepare(`
+      DELETE FROM brand_results WHERE result_id IN (
+        SELECT id FROM results WHERE query_id = ? AND user_id = ?
+      )
+    `).run(id, userId);
+    // 해당 쿼리의 results 삭제
+    db.prepare('DELETE FROM results WHERE query_id = ? AND user_id = ?').run(id, userId);
+    // query_brands 삭제
+    db.prepare('DELETE FROM query_brands WHERE query_id = ?').run(id);
+    // 쿼리 삭제
+    db.prepare('DELETE FROM queries WHERE id = ? AND user_id = ?').run(id, userId);
+  });
+  deleteAll();
+
   res.json({ success: true });
 });
 
@@ -371,33 +734,25 @@ router.get('/stats', (req, res) => {
     ? Math.round((citedCount.count / totalTests.count) * 100)
     : 0;
 
-  // 브랜드별 통계
-  const brands = db.prepare(
-    'SELECT id, name FROM brands WHERE user_id = ? AND is_active = 1'
-  ).all(userId) as { id: string; name: string }[];
-
-  const brandStats = brands.map((brand) => {
-    const brandTotal = db.prepare(
-      'SELECT COUNT(*) as count FROM brand_results br JOIN results r ON br.result_id = r.id WHERE r.user_id = ? AND br.brand_id = ?'
-    ).get(userId, brand.id) as { count: number };
-
-    const brandCited = db.prepare(
-      'SELECT COUNT(*) as count FROM brand_results br JOIN results r ON br.result_id = r.id WHERE r.user_id = ? AND br.brand_id = ? AND br.cited = 1'
-    ).get(userId, brand.id) as { count: number };
-
-    const avgRankRow = db.prepare(
-      'SELECT AVG(br.rank) as avg FROM brand_results br JOIN results r ON br.result_id = r.id WHERE r.user_id = ? AND br.brand_id = ? AND br.cited = 1 AND br.rank IS NOT NULL'
-    ).get(userId, brand.id) as { avg: number | null };
-
-    return {
-      brandId: brand.id,
-      brandName: brand.name,
-      citedCount: brandCited.count,
-      totalTests: brandTotal.count,
-      citationRate: brandTotal.count > 0 ? Math.round((brandCited.count / brandTotal.count) * 1000) / 10 : 0,
-      avgRank: avgRankRow.avg ? Math.round(avgRankRow.avg * 10) / 10 : null,
-    };
-  });
+  // 브랜드별 통계 (단일 쿼리)
+  const brandStats = db.prepare(`
+    SELECT b.id as brand_id, b.name as brand_name,
+           COUNT(br.result_id) as total_tests,
+           SUM(CASE WHEN br.cited = 1 THEN 1 ELSE 0 END) as cited_count,
+           AVG(CASE WHEN br.cited = 1 AND br.rank IS NOT NULL THEN br.rank END) as avg_rank
+    FROM brands b
+    LEFT JOIN brand_results br ON b.id = br.brand_id
+    LEFT JOIN results r ON br.result_id = r.id AND r.user_id = ?
+    WHERE b.user_id = ? AND b.is_active = 1
+    GROUP BY b.id, b.name
+  `).all(userId, userId).map((row: any) => ({
+    brandId: row.brand_id,
+    brandName: row.brand_name,
+    citedCount: row.cited_count || 0,
+    totalTests: row.total_tests || 0,
+    citationRate: row.total_tests > 0 ? Math.round((row.cited_count / row.total_tests) * 1000) / 10 : 0,
+    avgRank: row.avg_rank ? Math.round(row.avg_rank * 10) / 10 : null,
+  }));
 
   // 엔진별 통계
   const engineRows = db.prepare(
@@ -442,6 +797,151 @@ router.get('/stats', (req, res) => {
     };
   });
 
+  // 브랜드별 경쟁사 언급률 (brand_results 기준)
+  const brandMentionRows = db.prepare(`
+    SELECT br.brand_id, br.brand_name, br.competitor_mentions
+    FROM brand_results br
+    JOIN results r ON r.id = br.result_id
+    WHERE r.user_id = ?
+  `).all(userId) as { brand_id: string; brand_name: string; competitor_mentions: string | null }[];
+
+  const competitorMap = new Map<string, {
+    brandId: string;
+    brandName: string;
+    totalTests: number;
+    competitorMentionCount: number;
+  }>();
+
+  for (const row of brandMentionRows) {
+    const key = row.brand_id;
+    const entry = competitorMap.get(key) || {
+      brandId: row.brand_id,
+      brandName: row.brand_name,
+      totalTests: 0,
+      competitorMentionCount: 0,
+    };
+    entry.totalTests += 1;
+    const mentions = parseStringArray(row.competitor_mentions);
+    if (mentions.length > 0) {
+      entry.competitorMentionCount += 1;
+    }
+    competitorMap.set(key, entry);
+  }
+
+  const competitorStatsByBrand = Array.from(competitorMap.values()).map((entry) => ({
+    ...entry,
+    competitorMentionRate: entry.totalTests > 0
+      ? Math.round((entry.competitorMentionCount / entry.totalTests) * 1000) / 10
+      : 0,
+  }));
+
+  const competitorRateByBrandId = new Map(
+    competitorStatsByBrand.map((item) => [item.brandId, item.competitorMentionRate])
+  );
+
+  const brandComparisonSeries = brandStats.map((item: any) => {
+    const competitorMentionRate = competitorRateByBrandId.get(item.brandId) || 0;
+    const gap = Math.round((item.citationRate - competitorMentionRate) * 10) / 10;
+    return {
+      brandId: item.brandId,
+      brandName: item.brandName,
+      citationRate: item.citationRate,
+      competitorMentionRate,
+      gap,
+    };
+  });
+
+  // 저성과 쿼리(전체 기준): 인용률 낮은 순 + 최근 7일 변화량
+  const queryRows = db.prepare(`
+    SELECT query_id, query, category, cited, tested_at
+    FROM results
+    WHERE user_id = ?
+  `).all(userId) as {
+    query_id: string | null;
+    query: string;
+    category: string;
+    cited: number;
+    tested_at: string;
+  }[];
+
+  const nowTs = Date.now();
+  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+  const recentBoundaryTs = nowTs - sevenDaysMs;
+  const prevBoundaryTs = nowTs - (sevenDaysMs * 2);
+
+  const queryAgg = new Map<string, {
+    queryId: string | null;
+    query: string;
+    category: string;
+    totalTests: number;
+    citedCount: number;
+    recentTotal: number;
+    recentCited: number;
+    prevTotal: number;
+    prevCited: number;
+  }>();
+
+  for (const row of queryRows) {
+    const key = row.query_id || row.query;
+    const entry = queryAgg.get(key) || {
+      queryId: row.query_id,
+      query: row.query,
+      category: row.category,
+      totalTests: 0,
+      citedCount: 0,
+      recentTotal: 0,
+      recentCited: 0,
+      prevTotal: 0,
+      prevCited: 0,
+    };
+    entry.totalTests += 1;
+    if (row.cited) {
+      entry.citedCount += 1;
+    }
+
+    const testedTs = new Date(row.tested_at).getTime();
+    if (testedTs >= recentBoundaryTs) {
+      entry.recentTotal += 1;
+      if (row.cited) entry.recentCited += 1;
+    } else if (testedTs >= prevBoundaryTs) {
+      entry.prevTotal += 1;
+      if (row.cited) entry.prevCited += 1;
+    }
+
+    queryAgg.set(key, entry);
+  }
+
+  const lowPerformingQueries = Array.from(queryAgg.values())
+    .filter((item) => item.totalTests > 0)
+    .map((item) => {
+      const citationRate = item.totalTests > 0
+        ? (item.citedCount / item.totalTests) * 100
+        : 0;
+      const recentRate = item.recentTotal > 0
+        ? (item.recentCited / item.recentTotal) * 100
+        : 0;
+      const prevRate = item.prevTotal > 0
+        ? (item.prevCited / item.prevTotal) * 100
+        : 0;
+      const delta7d = item.prevTotal > 0
+        ? (recentRate - prevRate)
+        : recentRate;
+
+      return {
+        queryId: item.queryId,
+        query: item.query,
+        category: item.category,
+        totalTests: item.totalTests,
+        citationRate: Math.round(citationRate * 10) / 10,
+        delta7d: Math.round(delta7d * 10) / 10,
+      };
+    })
+    .sort((a, b) => {
+      if (a.citationRate !== b.citationRate) return a.citationRate - b.citationRate;
+      return b.totalTests - a.totalTests;
+    })
+    .slice(0, 5);
+
   res.json({
     totalTests: totalTests.count,
     citedCount: citedCount.count,
@@ -449,6 +949,9 @@ router.get('/stats', (req, res) => {
     registeredBrands: brandsCount.count,
     brandStats,
     engineStats,
+    competitorStatsByBrand,
+    brandComparisonSeries,
+    lowPerformingQueries,
     recentResults,
   });
 });
@@ -624,7 +1127,7 @@ router.get('/results/:id', (req, res) => {
   `).get(id, userId) as any;
 
   if (!result) {
-    return res.status(404).json({ error: '결과를 찾을 수 없습니다.' });
+    return sendError(res, 404, 'NOT_FOUND', '결과를 찾을 수 없습니다.');
   }
 
   const brs = db.prepare(
@@ -660,7 +1163,8 @@ router.get('/reports', (req, res) => {
 
   const { total } = db.prepare(`SELECT COUNT(*) as total FROM reports WHERE user_id = ?`).get(userId) as { total: number };
 
-  let reports: any[];
+  let reports: any[] = [];
+  let cursorResolved = false;
   if (cursor) {
     const cursorRow = db.prepare(`SELECT generated_at FROM reports WHERE id = ? AND user_id = ?`).get(cursor, userId) as { generated_at: string } | undefined;
     if (cursorRow) {
@@ -670,10 +1174,10 @@ router.get('/reports', (req, res) => {
         ORDER BY generated_at DESC, id DESC
         LIMIT ?
       `).all(userId, cursorRow.generated_at, cursorRow.generated_at, cursor, limit);
-    } else {
-      reports = [];
+      cursorResolved = true;
     }
-  } else {
+  }
+  if (!cursorResolved) {
     reports = db.prepare(`
       SELECT id, title, type, period, start_date, end_date, generated_at, metrics, highlights, top_queries, worst_queries, ai_analysis
       FROM reports WHERE user_id = ?
@@ -719,345 +1223,22 @@ router.post('/reports', async (req, res) => {
   const title = `${type === 'weekly' ? '주간' : '월간'} 리포트`;
   const period = `${startDate.toISOString().split('T')[0]} ~ ${now.toISOString().split('T')[0]}`;
 
-  // 현재 기간 결과
-  const currentResults = db.prepare(`
-    SELECT r.id, r.query_id, r.query, r.engine, r.cited, r.tested_at
-    FROM results r
-    WHERE r.user_id = ? AND r.tested_at >= ? AND r.tested_at <= ?
-  `).all(userId, startDate.toISOString(), now.toISOString()) as any[];
+  // 데이터 조회
+  const data = fetchReportData(userId, startDate, prevStartDate, now);
 
-  // 이전 기간 결과 (변화량 계산용)
-  const prevResults = db.prepare(`
-    SELECT r.id, r.query_id, r.query, r.engine, r.cited, r.tested_at
-    FROM results r
-    WHERE r.user_id = ? AND r.tested_at >= ? AND r.tested_at < ?
-  `).all(userId, prevStartDate.toISOString(), startDate.toISOString()) as any[];
+  // 지표 계산
+  const { metrics, highlights, topQueries, worstQueries } = calculateReportMetrics(
+    userId, data.currentResults, data.prevResults, data.currentBrandResults, data.prevBrandResults
+  );
 
-  // 브랜드별 결과
-  const currentResultIds = currentResults.map((r: any) => r.id);
-  const prevResultIds = prevResults.map((r: any) => r.id);
-
-  let currentBrandResults: any[] = [];
-  if (currentResultIds.length > 0) {
-    const placeholders = currentResultIds.map(() => '?').join(',');
-    currentBrandResults = db.prepare(
-      `SELECT * FROM brand_results WHERE result_id IN (${placeholders})`
-    ).all(...currentResultIds) as any[];
-  }
-
-  let prevBrandResults: any[] = [];
-  if (prevResultIds.length > 0) {
-    const placeholders = prevResultIds.map(() => '?').join(',');
-    prevBrandResults = db.prepare(
-      `SELECT * FROM brand_results WHERE result_id IN (${placeholders})`
-    ).all(...prevResultIds) as any[];
-  }
-
-  // 기본 지표 계산
-  const totalTests = currentResults.length;
-  const citedCount = currentResults.filter((r: any) => r.cited).length;
-  const citationRate = totalTests > 0 ? Math.round((citedCount / totalTests) * 100 * 10) / 10 : 0;
-
-  const prevTotalTests = prevResults.length;
-  const prevCitedCount = prevResults.filter((r: any) => r.cited).length;
-  const prevCitationRate = prevTotalTests > 0 ? Math.round((prevCitedCount / prevTotalTests) * 100 * 10) / 10 : 0;
-
-  // 점유율 (브랜드 인용 비율)
-  const totalBrandChecks = currentBrandResults.length;
-  const brandCited = currentBrandResults.filter((br: any) => br.cited).length;
-  const shareOfVoice = totalBrandChecks > 0 ? Math.round((brandCited / totalBrandChecks) * 100 * 10) / 10 : 0;
-
-  const prevTotalBrandChecks = prevBrandResults.length;
-  const prevBrandCited = prevBrandResults.filter((br: any) => br.cited).length;
-  const prevShareOfVoice = prevTotalBrandChecks > 0 ? Math.round((prevBrandCited / prevTotalBrandChecks) * 100 * 10) / 10 : 0;
-
-  // 평균 순위
-  const rankedResults = currentBrandResults.filter((br: any) => br.cited && br.rank != null);
-  const avgRank = rankedResults.length > 0
-    ? Math.round((rankedResults.reduce((sum: number, br: any) => sum + br.rank, 0) / rankedResults.length) * 10) / 10
-    : null;
-
-  const prevRankedResults = prevBrandResults.filter((br: any) => br.cited && br.rank != null);
-  const prevAvgRank = prevRankedResults.length > 0
-    ? Math.round((prevRankedResults.reduce((sum: number, br: any) => sum + br.rank, 0) / prevRankedResults.length) * 10) / 10
-    : null;
-
-  // 엔진별 성능
-  const engines = [...new Set(currentResults.map((r: any) => r.engine))];
-  const enginePerformance = engines.map((engine: string) => {
-    const engineResults = currentResults.filter((r: any) => r.engine === engine);
-    const engineCited = engineResults.filter((r: any) => r.cited).length;
-    const engineTotal = engineResults.length;
-    const engineRate = engineTotal > 0 ? Math.round((engineCited / engineTotal) * 100 * 10) / 10 : 0;
-
-    const prevEngineResults = prevResults.filter((r: any) => r.engine === engine);
-    const prevEngineCited = prevEngineResults.filter((r: any) => r.cited).length;
-    const prevEngineTotal = prevEngineResults.length;
-    const prevEngineRate = prevEngineTotal > 0 ? Math.round((prevEngineCited / prevEngineTotal) * 100 * 10) / 10 : 0;
-
-    const engineBR = currentBrandResults.filter((br: any) => {
-      const r = currentResults.find((cr: any) => cr.id === br.result_id);
-      return r && r.engine === engine;
-    });
-    const engineRanked = engineBR.filter((br: any) => br.cited && br.rank != null);
-    const engineAvgRank = engineRanked.length > 0
-      ? Math.round((engineRanked.reduce((s: number, br: any) => s + br.rank, 0) / engineRanked.length) * 10) / 10
-      : null;
-
-    return {
-      engine: engine === 'gpt' ? 'ChatGPT' : engine === 'gemini' ? 'Gemini' : engine,
-      citationRate: engineRate,
-      avgRank: engineAvgRank,
-      totalTests: engineTotal,
-      citations: engineCited,
-      change: Math.round((engineRate - prevEngineRate) * 10) / 10,
-    };
-  });
-
-  // 브랜드별 성능
-  const brands = db.prepare(
-    'SELECT id, name FROM brands WHERE user_id = ? AND is_active = 1'
-  ).all(userId) as any[];
-
-  const brandPerformance = brands.map((brand: any) => {
-    const brandBR = currentBrandResults.filter((br: any) => br.brand_id === brand.id);
-    const bCited = brandBR.filter((br: any) => br.cited).length;
-    const bTotal = brandBR.length;
-    const bRate = bTotal > 0 ? Math.round((bCited / bTotal) * 100 * 10) / 10 : 0;
-    const bRanked = brandBR.filter((br: any) => br.cited && br.rank != null);
-    const bAvgRank = bRanked.length > 0
-      ? Math.round((bRanked.reduce((s: number, br: any) => s + br.rank, 0) / bRanked.length) * 10) / 10
-      : null;
-
-    return {
-      brandId: brand.id,
-      brandName: brand.name,
-      citationRate: bRate,
-      avgRank: bAvgRank,
-      totalTests: bTotal,
-      citations: bCited,
-    };
-  }).filter((bp: any) => bp.totalTests > 0);
-
-  // 쿼리별 인용률 (top / worst)
-  const queryMap = new Map<string, { query: string; cited: number; total: number }>();
-  for (const r of currentResults) {
-    const key = r.query_id || r.query;
-    const entry = queryMap.get(key) || { query: r.query, cited: 0, total: 0 };
-    entry.total++;
-    if (r.cited) entry.cited++;
-    queryMap.set(key, entry);
-  }
-  const queryStats = [...queryMap.values()]
-    .map((q) => ({ query: q.query, citationRate: q.total > 0 ? Math.round((q.cited / q.total) * 100) : 0 }));
-  queryStats.sort((a, b) => b.citationRate - a.citationRate);
-  const topQueries = queryStats.filter((q) => q.citationRate > 0).slice(0, 5);
-  const worstQueries = queryStats.filter((q) => q.citationRate < 100).reverse().slice(0, 5);
-
-  // 하이라이트 생성
-  const highlights: string[] = [];
-  if (totalTests > 0) {
-    highlights.push(`총 ${totalTests}건의 테스트가 수행되었습니다.`);
-  }
-  if (citationRate > prevCitationRate) {
-    highlights.push(`인용률이 ${prevCitationRate}%에서 ${citationRate}%로 상승했습니다.`);
-  } else if (citationRate < prevCitationRate) {
-    highlights.push(`인용률이 ${prevCitationRate}%에서 ${citationRate}%로 하락했습니다.`);
-  }
-  if (enginePerformance.length > 0) {
-    const bestEngine = enginePerformance.reduce((a, b) => a.citationRate > b.citationRate ? a : b);
-    if (bestEngine.citationRate > 0) {
-      highlights.push(`${bestEngine.engine}에서 ${bestEngine.citationRate}%의 인용률을 기록했습니다.`);
-    }
-  }
-  if (brandPerformance.length > 0) {
-    const bestBrand = brandPerformance.reduce((a, b) => a.citationRate > b.citationRate ? a : b);
-    if (bestBrand.citationRate > 0) {
-      highlights.push(`${bestBrand.brandName} 브랜드가 ${bestBrand.citationRate}%로 가장 높은 인용률을 보입니다.`);
-    }
-  }
-
-  const metrics = {
-    citationRate,
-    citationRateChange: Math.round((citationRate - prevCitationRate) * 10) / 10,
-    shareOfVoice,
-    shareOfVoiceChange: Math.round((shareOfVoice - prevShareOfVoice) * 10) / 10,
-    avgRank,
-    avgRankChange: avgRank != null && prevAvgRank != null ? Math.round((avgRank - prevAvgRank) * 10) / 10 : 0,
-    totalTests,
-    totalTestsChange: totalTests - prevTotalTests,
-    enginePerformance,
-    brandPerformance,
-  };
-
-  // === AI 분석 생성 ===
+  // AI 분석 생성
   let aiAnalysis: any = null;
-
   try {
-    const openaiKey = process.env.OPENAI_API_KEY;
-    if (openaiKey && totalTests > 0) {
-      // 카테고리별 인용률 집계
-      const categoryMap = new Map<string, { total: number; cited: number }>();
-      if (currentResultIds.length > 0) {
-        const catPlaceholders = currentResultIds.map(() => '?').join(',');
-        const catResults = db.prepare(`
-          SELECT r.category, r.cited
-          FROM results r
-          WHERE r.id IN (${catPlaceholders})
-        `).all(...currentResultIds) as any[];
-        for (const cr of catResults) {
-          const entry = categoryMap.get(cr.category) || { total: 0, cited: 0 };
-          entry.total++;
-          if (cr.cited) entry.cited++;
-          categoryMap.set(cr.category, entry);
-        }
-      }
-      const categoryStats = [...categoryMap.entries()].map(([category, stats]) => ({
-        category,
-        total: stats.total,
-        cited: stats.cited,
-        citationRate: stats.total > 0 ? Math.round((stats.cited / stats.total) * 100 * 10) / 10 : 0,
-      }));
-
-      // 경쟁사 언급 빈도 집계
-      const competitorFrequency = new Map<string, number>();
-      for (const br of currentBrandResults) {
-        const mentions: string[] = JSON.parse(br.competitor_mentions || '[]');
-        for (const comp of mentions) {
-          competitorFrequency.set(comp, (competitorFrequency.get(comp) || 0) + 1);
-        }
-      }
-      const competitorStats = [...competitorFrequency.entries()]
-        .map(([name, count]) => ({ name, mentionCount: count }))
-        .sort((a, b) => b.mentionCount - a.mentionCount);
-
-      // full_response 샘플링 (인용된 3건 + 인용 안 된 3건)
-      let citedSamples: string[] = [];
-      let uncitedSamples: string[] = [];
-      if (currentResultIds.length > 0) {
-        const samplePlaceholders = currentResultIds.map(() => '?').join(',');
-        const citedRows = db.prepare(`
-          SELECT query, full_response FROM results
-          WHERE id IN (${samplePlaceholders}) AND cited = 1 AND full_response IS NOT NULL
-          ORDER BY RANDOM() LIMIT 3
-        `).all(...currentResultIds) as any[];
-        citedSamples = citedRows.map((r: any) =>
-          `[쿼리: ${r.query}]\n${(r.full_response || '').slice(0, 500)}`
-        );
-
-        const uncitedRows = db.prepare(`
-          SELECT query, full_response FROM results
-          WHERE id IN (${samplePlaceholders}) AND cited = 0 AND full_response IS NOT NULL
-          ORDER BY RANDOM() LIMIT 3
-        `).all(...currentResultIds) as any[];
-        uncitedSamples = uncitedRows.map((r: any) =>
-          `[쿼리: ${r.query}]\n${(r.full_response || '').slice(0, 500)}`
-        );
-      }
-
-      // OpenAI 호출
-      const openai = getOpenAIClient();
-
-      const systemPrompt = `당신은 AI 검색 엔진 최적화(AEO/GEO) 전문 분석가입니다. 브랜드의 AI 검색 노출 데이터를 분석하여 실행 가능한 인사이트를 제공합니다.
-
-## 분석 프레임워크
-
-### summary (4-6문장)
-반드시 다음 순서로 작성:
-1. 해당 기간의 전체 추세 요약 (상승/하락/정체, 수치 근거)
-2. 가장 두드러진 성과 또는 강점 (구체적 수치 인용)
-3. 가장 우려되는 약점 또는 리스크
-4. 다음 기간에 주목해야 할 포인트와 전망
-
-### categoryAnalysis (카테고리당 각 2-3문장)
-각 카테고리에 대해:
-- 인용률의 원인 분석: 왜 높은지/낮은지 AI 응답 패턴 기반으로 추론
-- 실제 AI 응답에서 관찰된 인용/미인용 패턴 언급
-- 해당 카테고리에 특화된 구체적 개선 방향 1가지
-
-### competitorAnalysis (4-5문장)
-다음을 포함:
-- 가장 자주 언급되는 경쟁사와 그 맥락 (어떤 유형의 질문에서 언급되는지)
-- 자사 브랜드 대비 경쟁사의 포지셔닝 차이
-- 경쟁사 대비 차별화 가능 영역과 전략적 제안
-
-### actionItems (5-7개, 우선순위 순)
-각 항목은 다음 형식:
-- "[우선순위: 높음/중간] 무엇을 → 왜 → 어떻게" 형태로 구체적 작성
-- 실행 가능하고 측정 가능한 제안만 포함
-- AI 응답 패턴 분석에 기반한 콘텐츠 전략 포함
-
-### highlights (3-5개)
-- 데이터에서 발견된 의미 있는 패턴이나 인사이트
-- 단순 수치 반복이 아닌, 숫자 뒤의 의미를 해석
-
-## 출력 규칙
-- 반드시 한국어로 작성
-- 모든 주장에 데이터 수치를 근거로 인용
-- 추상적 표현 대신 구체적 행동 제안
-- JSON 형식으로 응답`;
-
-      const userPrompt = `## 리포트 기간
-${period} (${type === 'weekly' ? '주간' : '월간'})
-
-## 핵심 지표
-- 총 테스트: ${totalTests}건
-- 인용률: ${citationRate}% (이전 기간 대비 ${citationRate - prevCitationRate > 0 ? '+' : ''}${Math.round((citationRate - prevCitationRate) * 10) / 10}%p)
-- 점유율: ${shareOfVoice}%
-- 평균 순위: ${avgRank != null ? '#' + avgRank : '없음'}
-
-## 카테고리별 성과
-${categoryStats.map(c => `- ${c.category}: ${c.citationRate}% (${c.cited}/${c.total}건)`).join('\n') || '데이터 없음'}
-
-## 엔진별 성과
-${enginePerformance.map(e => `- ${e.engine}: 인용률 ${e.citationRate}%, 변화 ${e.change > 0 ? '+' : ''}${e.change}%p`).join('\n') || '데이터 없음'}
-
-## 브랜드별 성과
-${brandPerformance.map(b => `- ${b.brandName}: 인용률 ${b.citationRate}%, 순위 ${b.avgRank != null ? '#' + b.avgRank : '없음'}`).join('\n') || '데이터 없음'}
-
-## 경쟁사 언급 현황
-${competitorStats.length > 0 ? competitorStats.map(c => `- ${c.name}: ${c.mentionCount}회 언급`).join('\n') : '데이터 없음'}
-
-## 인용률 높은 쿼리
-${topQueries.map(q => `- "${q.query}": ${q.citationRate}%`).join('\n') || '없음'}
-
-## 인용률 낮은 쿼리
-${worstQueries.map(q => `- "${q.query}": ${q.citationRate}%`).join('\n') || '없음'}
-
-## AI 응답 샘플 (브랜드가 인용된 응답)
-${citedSamples.length > 0 ? citedSamples.join('\n---\n') : '샘플 없음'}
-
-## AI 응답 샘플 (브랜드가 인용되지 않은 응답)
-${uncitedSamples.length > 0 ? uncitedSamples.join('\n---\n') : '샘플 없음'}
-
-위 데이터를 분석하여 다음 JSON 형식으로 응답하세요:
-{
-  "summary": "string",
-  "categoryAnalysis": [{"category": "string", "insight": "string", "citationRate": number}],
-  "competitorAnalysis": "string",
-  "actionItems": ["string"],
-  "highlights": ["string"]
-}`;
-
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-5-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        max_completion_tokens: 3000,
-        temperature: 0.2,
-        response_format: { type: 'json_object' },
-      });
-
-      const aiContent = completion.choices[0]?.message?.content;
-      if (aiContent) {
-        aiAnalysis = JSON.parse(aiContent);
-      }
-    }
+    aiAnalysis = await generateReportAiAnalysis(
+      type, period, data.currentResultIds, data.currentBrandResults, metrics, topQueries, worstQueries
+    );
   } catch (err) {
     console.error('[reports] AI 분석 생성 실패 (리포트는 정상 생성됨):', err);
-    aiAnalysis = null;
   }
 
   db.prepare(`
@@ -1093,7 +1274,14 @@ router.delete('/reports', (req, res) => {
   const userId = req.user!.id;
   const { id } = req.query;
 
-  db.prepare('DELETE FROM reports WHERE id = ? AND user_id = ?').run(id, userId);
+  if (!id) {
+    return sendError(res, 400, 'VALIDATION_ERROR', 'Report ID is required');
+  }
+
+  const result = db.prepare('DELETE FROM reports WHERE id = ? AND user_id = ?').run(id, userId);
+  if (result.changes === 0) {
+    return sendError(res, 404, 'NOT_FOUND', 'Report not found');
+  }
   res.json({ success: true });
 });
 
@@ -1130,7 +1318,7 @@ router.post('/insights', async (req, res) => {
   const { brandId } = req.body;
 
   if (!brandId) {
-    return res.status(400).json({ error: '브랜드 ID는 필수입니다.' });
+    return sendError(res, 400, 'VALIDATION_ERROR', '브랜드 ID는 필수입니다.');
   }
 
   // 브랜드 정보 조회
@@ -1139,7 +1327,7 @@ router.post('/insights', async (req, res) => {
   ).get(brandId, userId) as { id: string; name: string; competitors: string } | undefined;
 
   if (!brand) {
-    return res.status(404).json({ error: '브랜드를 찾을 수 없습니다.' });
+    return sendError(res, 404, 'NOT_FOUND', '브랜드를 찾을 수 없습니다.');
   }
 
   const competitors = parseStringArray(brand.competitors);
@@ -1156,9 +1344,7 @@ router.post('/insights', async (req, res) => {
   `).all(brandId, userId) as any[];
 
   if (brandResultRows.length < 3) {
-    return res.status(400).json({
-      error: `'${brand.name}' 브랜드의 테스트 결과가 3개 이상 필요합니다 (현재 ${brandResultRows.length}개)`
-    });
+    return sendError(res, 400, 'VALIDATION_ERROR', `'${brand.name}' 브랜드의 테스트 결과가 3개 이상 필요합니다 (현재 ${brandResultRows.length}개)`);
   }
 
   // 최근 50개 응답 분석
@@ -1172,7 +1358,7 @@ router.post('/insights', async (req, res) => {
     }));
 
   if (responses.length === 0) {
-    return res.status(400).json({ error: '분석할 응답 데이터가 없습니다' });
+    return sendError(res, 400, 'VALIDATION_ERROR', '분석할 응답 데이터가 없습니다');
   }
 
   // LLM 분석
@@ -1217,7 +1403,7 @@ ${JSON.stringify(responses.slice(0, 15))}
 
   try {
     if (!process.env.OPENAI_API_KEY) {
-      return res.status(500).json({ error: 'OpenAI API 키가 설정되지 않았습니다.' });
+      return sendError(res, 500, 'INTERNAL_ERROR', 'OpenAI API 키가 설정되지 않았습니다.');
     }
 
     const openai = getOpenAIClient();
@@ -1238,7 +1424,7 @@ ${JSON.stringify(responses.slice(0, 15))}
   } catch (llmError) {
     console.error('LLM analysis error:', llmError);
     const message = llmError instanceof Error ? llmError.message : 'unknown';
-    return res.status(500).json({ error: `AI 분석 중 오류가 발생했습니다. (${message})` });
+    return sendError(res, 500, 'INTERNAL_ERROR', `AI 분석 중 오류가 발생했습니다. (${message})`);
   }
 
   // 인사이트 저장
@@ -1285,7 +1471,14 @@ router.delete('/insights', (req, res) => {
   const userId = req.user!.id;
   const { id } = req.query;
 
-  db.prepare('DELETE FROM insights WHERE id = ? AND user_id = ?').run(id, userId);
+  if (!id) {
+    return sendError(res, 400, 'VALIDATION_ERROR', 'Insight ID is required');
+  }
+
+  const result = db.prepare('DELETE FROM insights WHERE id = ? AND user_id = ?').run(id, userId);
+  if (result.changes === 0) {
+    return sendError(res, 404, 'NOT_FOUND', 'Insight not found');
+  }
   res.json({ success: true });
 });
 
@@ -1321,7 +1514,7 @@ router.post('/geo-scores', (req, res) => {
   const { url, totalScore, grade, categories, pages, recommendations, analyzedAt } = req.body;
 
   if (!url || totalScore === undefined || !grade) {
-    return res.status(400).json({ error: 'URL, totalScore, grade는 필수입니다.' });
+    return sendError(res, 400, 'VALIDATION_ERROR', 'URL, totalScore, grade는 필수입니다.');
   }
 
   // 같은 URL의 기존 데이터 삭제 (최신 것만 유지)
@@ -1377,7 +1570,7 @@ router.post('/test-query', async (req, res) => {
   const { query, queryId, category = 'general', engine = 'gpt' } = req.body;
 
   if (!query) {
-    return res.status(400).json({ error: '쿼리는 필수입니다.' });
+    return sendError(res, 400, 'VALIDATION_ERROR', '쿼리는 필수입니다.');
   }
 
   try {
@@ -1386,7 +1579,7 @@ router.post('/test-query', async (req, res) => {
 
     if (engine === 'gpt') {
       if (!process.env.OPENAI_API_KEY) {
-        return res.status(500).json({ error: 'OpenAI API 키가 설정되지 않았습니다.' });
+        return sendError(res, 500, 'INTERNAL_ERROR', 'OpenAI API 키가 설정되지 않았습니다.');
       }
       const openai = getOpenAIClient();
       const response = await openai.responses.create({
@@ -1395,11 +1588,11 @@ router.post('/test-query', async (req, res) => {
         input: query,
         tools: [{ type: 'web_search' }],
         reasoning: { effort: 'low' },
-        max_output_tokens: 600,
+        max_output_tokens: 3000,
       });
       fullResponse = response.output_text || '';
     } else {
-      return res.status(400).json({ error: 'Gemini 엔진은 아직 지원되지 않습니다.' });
+      return sendError(res, 400, 'VALIDATION_ERROR', 'Gemini 엔진은 아직 지원되지 않습니다.');
     }
 
     // 인용 마커 제거한 클린 텍스트로 브랜드 매칭
@@ -1433,9 +1626,18 @@ router.post('/test-query', async (req, res) => {
       if (cited) {
         for (let i = 0; i < lines.length; i++) {
           if (linesLower[i].includes(brand.nameLower)) {
-            const match = lines[i].match(/^[\s]*(\d+)[.)\]]/);
+            const line = lines[i];
+            // 다양한 목록 형식 감지: "1.", "1)", "1]", "#1", "- 1.", "**1.**", "**1)","1 -", "1:"
+            const match = line.match(/^[\s]*(?:[-*]\s*)?(?:\*\*)?#?(\d+)(?:\*\*)?[\s]*[.)\]:\-]/);
             if (match) {
               rank = parseInt(match[1]);
+            } else {
+              // 번호 없는 목록에서 순서 기반 순위 (- item 형식)
+              const listLines = lines.filter((l) => /^[\s]*[-*•]\s+/.test(l));
+              if (listLines.length > 0) {
+                const idx = listLines.findIndex((l) => l.toLowerCase().includes(brand.nameLower));
+                if (idx !== -1) rank = idx + 1;
+              }
             }
             break;
           }
@@ -1490,7 +1692,7 @@ router.post('/test-query', async (req, res) => {
     });
   } catch (err: any) {
     console.error('[test-query] AI API 호출 실패:', err);
-    res.status(500).json({ error: err.message || 'AI API 호출에 실패했습니다.' });
+    return sendError(res, 500, 'INTERNAL_ERROR', err.message || 'AI API 호출에 실패했습니다.');
   }
 });
 

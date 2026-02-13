@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+﻿import { useState, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -15,7 +15,7 @@ import {
   ThemeIcon,
   Title,
   Badge,
-  Highlight,
+  Anchor,
   Code,
   ScrollArea,
   Image,
@@ -45,6 +45,29 @@ interface CreatedBrand {
   id: string;
   name: string;
   competitors: string[];
+}
+
+function renderLinkifiedText(text: string) {
+  const urlRegex = /(https?:\/\/[^\s<>"']+)/g;
+  const parts = text.split(urlRegex);
+
+  return parts.map((part, index) => {
+    if (!part) return null;
+    if (/^https?:\/\//.test(part)) {
+      const match = part.match(/^(https?:\/\/[^\s<>"']*?)([),.;!?]*)$/);
+      const url = match?.[1] || part;
+      const trailing = match?.[2] || '';
+      return (
+        <span key={`url-${index}`}>
+          <Anchor href={url} target="_blank" rel="noreferrer" style={{ fontSize: 'inherit', fontFamily: 'inherit', lineHeight: 'inherit' }}>
+            {url}
+          </Anchor>
+          {trailing}
+        </span>
+      );
+    }
+    return <span key={`txt-${index}`}>{part}</span>;
+  });
 }
 
 export function OnboardingWizard() {
@@ -284,7 +307,7 @@ export function OnboardingWizard() {
 
               <TextInput
                 label="브랜드명"
-                placeholder="예: 율립, 삼성전자"
+                placeholder="예: OpenAI, Claude"
                 value={brandName}
                 onChange={(e) => setBrandName(e.target.value)}
                 required
@@ -511,16 +534,7 @@ export function OnboardingWizard() {
                     <Text size="xs" c="dimmed" mb="xs">ChatGPT 응답</Text>
                     <ScrollArea h={200}>
                       <Code block style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>
-                        {createdBrand ? (
-                          <Highlight
-                            highlight={[createdBrand.name, ...createdBrand.competitors]}
-                            highlightStyles={{ backgroundColor: 'light-dark(var(--mantine-color-yellow-2), var(--mantine-color-yellow-9))', fontWeight: 400 }}
-                          >
-                            {testResult.fullResponse}
-                          </Highlight>
-                        ) : (
-                          testResult.fullResponse
-                        )}
+                        {renderLinkifiedText(testResult.fullResponse)}
                       </Code>
                     </ScrollArea>
                   </Box>
@@ -614,3 +628,6 @@ export function OnboardingWizard() {
     </Center>
   );
 }
+
+
+

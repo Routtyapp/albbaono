@@ -558,7 +558,7 @@ export class QueryScheduler {
           input: query.query,
           tools: [{ type: 'web_search' }],
           reasoning: { effort: 'low' },
-          max_output_tokens: 600,
+          max_output_tokens: 3000,
         });
         response = result.output_text || '';
       }

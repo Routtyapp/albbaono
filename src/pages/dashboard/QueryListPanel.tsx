@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+﻿import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import {
   Stack,
@@ -24,6 +24,7 @@ import {
   Textarea,
   Pagination,
   UnstyledButton,
+  Anchor,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
@@ -74,6 +75,29 @@ const frequencyColors: Record<MonitoredQuery['frequency'], string> = {
   weekly: 'teal',
   monthly: 'gray',
 };
+
+function renderLinkifiedText(text: string) {
+  const urlRegex = /(https?:\/\/[^\s<>"']+)/g;
+  const parts = text.split(urlRegex);
+
+  return parts.map((part, index) => {
+    if (!part) return null;
+    if (/^https?:\/\//.test(part)) {
+      const match = part.match(/^(https?:\/\/[^\s<>"']*?)([),.;!?]*)$/);
+      const url = match?.[1] || part;
+      const trailing = match?.[2] || '';
+      return (
+        <span key={`url-${index}`}>
+          <Anchor href={url} target="_blank" rel="noreferrer" style={{ fontSize: 'inherit', fontFamily: 'inherit', lineHeight: 'inherit' }}>
+            {url}
+          </Anchor>
+          {trailing}
+        </span>
+      );
+    }
+    return <span key={`txt-${index}`}>{part}</span>;
+  });
+}
 
 export function QueryListPanel() {
   const [opened, { open, close }] = useDisclosure(false);
@@ -192,7 +216,7 @@ export function QueryListPanel() {
 
   // Filtered & sorted queries
   const filteredQueries = useMemo(() => {
-    let filtered = queries.filter((q) => {
+    const filtered = queries.filter((q) => {
       const matchesSearch = q.query.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesBrand = !filterBrandId || q.brandIds?.includes(filterBrandId);
       return matchesSearch && matchesBrand;
@@ -810,7 +834,9 @@ export function QueryListPanel() {
                 {AI_ENGINES.find((e) => e.value === latestResult.engine)?.label || latestResult.engine} 응답
               </Text>
               <ScrollArea h={250}>
-                <Code block style={{ whiteSpace: 'pre-wrap' }}>{latestResult.fullResponse || latestResult.response}</Code>
+                <Code block style={{ whiteSpace: 'pre-wrap' }}>
+                  {renderLinkifiedText(latestResult.fullResponse || latestResult.response)}
+                </Code>
               </ScrollArea>
             </div>
             <Group justify="flex-end">
@@ -863,7 +889,7 @@ export function QueryListPanel() {
               </Text>
               <ScrollArea h={250}>
                 <Code block style={{ whiteSpace: 'pre-wrap' }}>
-                  {selectedResult.fullResponse || selectedResult.response}
+                  {renderLinkifiedText(selectedResult.fullResponse || selectedResult.response)}
                 </Code>
               </ScrollArea>
             </div>
@@ -946,3 +972,4 @@ export function QueryListPanel() {
     </Stack>
   );
 }
+

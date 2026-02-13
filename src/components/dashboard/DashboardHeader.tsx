@@ -1,4 +1,4 @@
-import {
+﻿import {
   Group,
   Avatar,
   Menu,
@@ -72,6 +72,12 @@ export function DashboardHeader({ opened, toggle, onSettingsOpen }: DashboardHea
               fit="contain"
             />
           </UnstyledButton>
+          <UnstyledButton
+            onClick={() => navigate('/feed')}
+            style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', borderRadius: 8 }}
+          >
+            <Text size="sm">피드</Text>
+          </UnstyledButton>
           <Menu shadow="md" width={180}>
             <Menu.Target>
               <UnstyledButton style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 8 }}>
@@ -130,3 +136,5 @@ export function DashboardHeader({ opened, toggle, onSettingsOpen }: DashboardHea
     </>
   );
 }
+
+

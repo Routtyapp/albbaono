@@ -34,7 +34,7 @@ export function SetupGuide({ brandsCount, queriesCount, resultsCount }: SetupGui
     {
       label: '브랜드 등록',
       desc: 'AI 검색에서 추적할 브랜드와 경쟁사를 등록하세요.',
-      example: '예: "삼성전자", "율립" 등 제품/서비스 브랜드명',
+      example: '예: "OpenAI", "Claude" 등 제품/서비스 브랜드명',
       action: () => navigate('/dashboard/brands'),
       actionLabel: '브랜드 등록하기',
       icon: IconTags,

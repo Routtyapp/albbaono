@@ -8,6 +8,8 @@ import reportsRouter from './routes/reports.js';
 import schedulerRouter from './routes/scheduler.js';
 import authRouter from './routes/auth.js';
 import dataRouter from './routes/data.js';
+import feedRouter from './routes/feed.js';
+import uploadRouter from './routes/upload.js';
 import { isAuthenticated } from './middleware/auth.js';
 import { closeBrowser } from './services/crawler.js';
 import { scheduler } from './services/scheduler.js';
@@ -43,6 +45,13 @@ app.use(cors({
 
 app.use(express.json({ limit: '10mb' }));
 
+// 업로드 파일 정적 서빙
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+app.use('/uploads', express.static(resolve(__dirname, '../../uploads')));
+
 // 세션 미들웨어
 app.use(session({
   secret: SESSION_SECRET,
@@ -66,10 +75,14 @@ app.use('/api/auth', authRouter);
 // 데이터 라우터 (인증 필요, 자체 인증 미들웨어 포함)
 app.use('/api', dataRouter);
 
+// 피드 라우터 (GET은 공개, POST/PUT/DELETE는 라우터 내부에서 isAdmin 보호)
+app.use('/api/feeds', feedRouter);
+
 // 보호된 라우터 (인증 필요)
 app.use('/api/geo-score', isAuthenticated, geoScoreRouter);
 app.use('/api/reports', isAuthenticated, reportsRouter);
 app.use('/api/scheduler', isAuthenticated, schedulerRouter);
+app.use('/api/upload', isAuthenticated, uploadRouter);
 
 // 기본 라우트
 app.get('/', (_req, res) => {

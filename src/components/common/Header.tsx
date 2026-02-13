@@ -1,4 +1,4 @@
-import {
+﻿import {
   Box,
   Burger,
   Button,
@@ -8,18 +8,16 @@ import {
   Image,
   Stack,
   Anchor,
+  UnstyledButton,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useNavigate } from 'react-router-dom';
 
 const navLinks = [
-  { label: '문제', href: '#problem' },
-  { label: '솔루션', href: '#solution' },
-  { label: '사례', href: '#case-study' },
-  { label: '요금', href: '#pricing' },
+  { label: '피드', href: '/feed' },
 ];
 
-export function Header() {
+export function Header({ maxWidth }: { maxWidth?: number }) {
   const [opened, { toggle, close }] = useDisclosure(false);
   const navigate = useNavigate();
 
@@ -32,7 +30,13 @@ export function Header() {
       fw={500}
       underline="never"
       style={{ letterSpacing: '-0.01em' }}
-      onClick={close}
+      onClick={(e) => {
+        close();
+        if (link.href.startsWith('/')) {
+          e.preventDefault();
+          navigate(link.href);
+        }
+      }}
     >
       {link.label}
     </Anchor>
@@ -52,24 +56,27 @@ export function Header() {
         WebkitBackdropFilter: 'blur(16px)',
       }}
     >
-      <Container fluid px={{ base: 'sm', sm: 36 }} h={52}>
+      <Container size={maxWidth ?? undefined} fluid={!maxWidth} px={{ base: 'sm', sm: 36 }} h={52}>
         <Group h="100%" justify="space-between">
           <Group gap={36} visibleFrom="sm">
+            <UnstyledButton onClick={() => navigate('/')}>
+              <Image
+                src="/YeogiJeogiFontLogo (1).png"
+                alt="여기저기"
+                h={20}
+                w="auto"
+              />
+            </UnstyledButton>
+            {links}
+          </Group>
+          <UnstyledButton onClick={() => navigate('/')} hiddenFrom="sm">
             <Image
               src="/YeogiJeogiFontLogo (1).png"
               alt="여기저기"
               h={20}
               w="auto"
             />
-            {links}
-          </Group>
-          <Image
-            src="/YeogiJeogiFontLogo (1).png"
-            alt="여기저기"
-            h={20}
-            w="auto"
-            hiddenFrom="sm"
-          />
+          </UnstyledButton>
 
           <Group gap="md" visibleFrom="sm">
             <Button
@@ -130,3 +137,5 @@ export function Header() {
     </Box>
   );
 }
+
+

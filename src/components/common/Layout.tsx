@@ -5,16 +5,18 @@ import { Footer } from './Footer';
 
 interface LayoutProps {
   children: ReactNode;
+  maxWidth?: number;
+  bg?: string;
 }
 
-export function Layout({ children }: LayoutProps) {
+export function Layout({ children, maxWidth, bg }: LayoutProps) {
   return (
-    <Box bg="#f0efed" mih="100vh">
-      <Header />
-      <Box component="main" pt={68} maw={1440} mx="auto" px={32}>
+    <Box bg={bg ?? '#f0efed'} mih="100vh">
+      <Header maxWidth={maxWidth} />
+      <Box component="main" pt={68} maw={maxWidth ?? 1440} mx="auto" px={32}>
         {children}
       </Box>
-      <Footer />
+      <Footer maxWidth={maxWidth} />
     </Box>
   );
 }

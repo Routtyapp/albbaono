@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+﻿import { useState, useEffect, useMemo } from 'react';
 import {
   Stack,
   Title,
@@ -11,7 +11,7 @@ import {
   Center,
   ThemeIcon,
   ActionIcon,
-  Highlight,
+  Anchor,
   Tooltip,
   Collapse,
   TextInput,
@@ -75,6 +75,29 @@ function EngineIcon({ engine }: { engine: string }) {
     return <IconBrandOpenai size={14} />;
   }
   return <IconSparkles size={14} />;
+}
+
+function renderLinkifiedText(text: string) {
+  const urlRegex = /(https?:\/\/[^\s<>"']+)/g;
+  const parts = text.split(urlRegex);
+
+  return parts.map((part, index) => {
+    if (!part) return null;
+    if (/^https?:\/\//.test(part)) {
+      const match = part.match(/^(https?:\/\/[^\s<>"']*?)([),.;!?]*)$/);
+      const url = match?.[1] || part;
+      const trailing = match?.[2] || '';
+      return (
+        <span key={`url-${index}`}>
+          <Anchor href={url} target="_blank" rel="noreferrer" style={{ fontSize: 'inherit', fontFamily: 'inherit', lineHeight: 'inherit' }}>
+            {url}
+          </Anchor>
+          {trailing}
+        </span>
+      );
+    }
+    return <span key={`txt-${index}`}>{part}</span>;
+  });
 }
 
 export function Visibility() {
@@ -429,34 +452,17 @@ export function Visibility() {
 
                       <Collapse in={!isResponseExpanded}>
                         <Paper p="md" radius="sm" bg="light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))">
-                          <Highlight
-                            highlight={brandKeywords}
-                            highlightStyles={{
-                              backgroundColor: 'light-dark(var(--mantine-color-teal-1), var(--mantine-color-teal-9))',
-                              padding: '2px 4px',
-                              borderRadius: '4px',
-                              fontWeight: 400,
-                            }}
-                          >
-                            {selectedResult.response || '응답 요약이 없습니다.'}
-                          </Highlight>
+                          <Text style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+                            {renderLinkifiedText(selectedResult.response || '응답 요약이 없습니다.')}
+                          </Text>
                         </Paper>
                       </Collapse>
 
                       <Collapse in={isResponseExpanded}>
                         <Paper p="md" radius="sm" bg="light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))">
-                          <Highlight
-                            highlight={brandKeywords}
-                            highlightStyles={{
-                              backgroundColor: 'light-dark(var(--mantine-color-teal-1), var(--mantine-color-teal-9))',
-                              padding: '2px 4px',
-                              borderRadius: '4px',
-                              fontWeight: 400,
-                            }}
-                            style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}
-                          >
-                            {selectedResult.fullResponse || selectedResult.response || '응답 내용이 없습니다.'}
-                          </Highlight>
+                          <Text style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+                            {renderLinkifiedText(selectedResult.fullResponse || selectedResult.response || '응답 내용이 없습니다.')}
+                          </Text>
                         </Paper>
                       </Collapse>
                     </Stack>
@@ -482,3 +488,4 @@ export function Visibility() {
     </Stack>
   );
 }
+

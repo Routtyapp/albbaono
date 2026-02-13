@@ -1,4 +1,4 @@
-import { IconArrowRight } from '@tabler/icons-react';
+﻿import { IconArrowRight } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -16,10 +16,10 @@ export function Hero() {
 
   return (
     <Box component="section" className="hero">
-      <Container fluid px={0} py={{ base: 60, md: 100 }} pos="relative" style={{ zIndex: 1 }}>
-        <Group align="center" wrap="wrap" gap={40} style={{ minHeight: 400 }}>
+      <Container fluid px={0} py={{ base: 22, md: 36 }} pos="relative" style={{ zIndex: 1 }}>
+        <Group align="center" wrap="wrap" gap={48} style={{ minHeight: 420 }}>
         {/* 왼쪽: 텍스트 */}
-        <Stack align="flex-start" gap="lg" style={{ flex: 1, minWidth: 320 }}>
+        <Stack align="flex-start" gap="lg" style={{ flex: '0 1 520px', minWidth: 320 }}>
           <Title
             order={1}
             fz={{ base: 'calc(1.8rem + 1vw)', md: '2.8rem' }}
@@ -76,13 +76,36 @@ export function Hero() {
           </Group>
         </Stack>
 
-        {/* 오른쪽: 데모 영상 영역 (추후 추가) */}
+        {/* 오른쪽: 데모 이미지 */}
         <Box
-          style={{ flex: 1, minWidth: 320, borderRadius: 'var(--mantine-radius-md)' }}
-          visibleFrom="md"
-        />
+          className="reveal"
+          style={{
+            flex: '1.35 1 700px',
+            minWidth: 420,
+            borderRadius: 'var(--mantine-radius-md)',
+            overflow: 'hidden',
+            border: '1px solid var(--mantine-color-gray-3)',
+            boxShadow: '0 16px 36px rgba(0, 0, 0, 0.14)',
+          }}
+        >
+          <Box
+            component="img"
+            src="/images/landing_achievment.png"
+            alt="서비스 대시보드 미리보기"
+            style={{
+              width: '100%',
+              height: '100%',
+              minHeight: 380,
+              maxHeight: 620,
+              display: 'block',
+              objectFit: 'cover',
+            }}
+          />
+        </Box>
         </Group>
       </Container>
     </Box>
   );
 }
+
+

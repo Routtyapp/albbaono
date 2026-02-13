@@ -10,3 +10,6 @@ export { SchedulerPage } from './SchedulerPage';
 export { ScorePage } from './ScorePage';
 export { ReportsInsightsPage } from './ReportsInsightsPage';
 export { Trend } from './Trend';
+export { Feed } from './Feed';
+export { FeedEditor } from './FeedEditor';
+export { FeedDetail } from './FeedDetail';

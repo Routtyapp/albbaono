@@ -303,8 +303,8 @@ export function Brands() {
                 </Text>
               </div>
               <Text size="xs" c="dimmed" ta="center">
-                예: "삼성전자" 브랜드를 등록하고 "최고의 TV 추천해줘"라고 테스트하면,
-                AI가 삼성전자를 추천하는지 확인할 수 있습니다.
+                예: "OpenAI" 브랜드를 등록하고 "최고의 AI 추천해줘"라고 테스트하면,
+                AI가 OpenAI를 추천하는지 확인할 수 있습니다.
               </Text>
               <Button size="md" leftSection={<IconPlus size={16} />} onClick={handleOpenAdd}>
                 첫 브랜드 추가하기 (30초)
@@ -387,7 +387,7 @@ export function Brands() {
         <Stack gap="md">
           <TextInput
             label="브랜드명"
-            placeholder="예: 율립"
+            placeholder="예: Claude"
             value={brandName}
             onChange={(e) => setBrandName(e.target.value)}
             required

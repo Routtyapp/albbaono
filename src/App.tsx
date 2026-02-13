@@ -4,6 +4,7 @@ import '@mantine/core/styles.css';
 import '@mantine/charts/styles.css';
 import '@mantine/dates/styles.css';
 import '@mantine/carousel/styles.css';
+import '@mantine/tiptap/styles.css';
 
 import { MantineProvider } from '@mantine/core';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -11,7 +12,7 @@ import { theme } from './theme';
 import { Layout } from './components/common';
 import { DashboardLayout } from './components/dashboard';
 import { Landing } from './pages';
-import { Brands, PerformancePage, QueryOpsPage, ReportsInsightsPage, ScorePage } from './pages/dashboard';
+import { Brands, PerformancePage, QueryOpsPage, ReportsInsightsPage, ScorePage, Feed, FeedEditor, FeedDetail } from './pages/dashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -39,6 +40,52 @@ export default function App() {
             <Route path="/login" element={<MantineProvider theme={theme} forceColorScheme="light"><Login /></MantineProvider>} />
             <Route path="/register" element={<MantineProvider theme={theme} forceColorScheme="light"><Register /></MantineProvider>} />
 
+            {/* Feed — 목록/상세는 공개, 작성/수정은 인증 필요 */}
+            <Route
+              path="/feed"
+              element={
+                <MantineProvider theme={theme} forceColorScheme="light">
+                  <Layout maxWidth={1240} bg="#fff">
+                    <Feed />
+                  </Layout>
+                </MantineProvider>
+              }
+            />
+            <Route
+              path="/feed/:id"
+              element={
+                <MantineProvider theme={theme} forceColorScheme="light">
+                  <Layout maxWidth={1240} bg="#fff">
+                    <FeedDetail />
+                  </Layout>
+                </MantineProvider>
+              }
+            />
+            <Route
+              path="/feed/write"
+              element={
+                <ProtectedRoute>
+                  <MantineProvider theme={theme} forceColorScheme="light">
+                    <Layout maxWidth={1240} bg="#fff">
+                      <FeedEditor />
+                    </Layout>
+                  </MantineProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/feed/edit/:id"
+              element={
+                <ProtectedRoute>
+                  <MantineProvider theme={theme} forceColorScheme="light">
+                    <Layout maxWidth={1240} bg="#fff">
+                      <FeedEditor />
+                    </Layout>
+                  </MantineProvider>
+                </ProtectedRoute>
+              }
+            />
+
             {/* Dashboard routes with dashboard layout (protected) */}
             <Route
               path="/dashboard"
@@ -56,6 +103,7 @@ export default function App() {
               <Route path="brands" element={<Brands />} />
               <Route path="reports" element={<ReportsInsightsPage />} />
               <Route path="score" element={<ScorePage />} />
+              <Route path="feed" element={<Navigate to="/feed" replace />} />
 
               {/* Legacy route redirects */}
               <Route path="visibility" element={<Navigate to="/dashboard/performance?tab=visibility" replace />} />

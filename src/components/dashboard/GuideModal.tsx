@@ -108,7 +108,7 @@ function GuideContent({ active }: { active: string }) {
           </List>
         </Section>
         <Tip>
-          브랜드명은 AI가 실제로 언급하는 형태와 동일하게 입력하세요. 예를 들어 "삼성전자"와 "Samsung" 등 여러 변형이 있다면 가장 대표적인 형태를 사용하세요.
+          브랜드명은 AI가 실제로 언급하는 형태와 동일하게 입력하세요. 예를 들어 "OpenAI"와 "오픈에이아이" 등 여러 변형이 있다면 가장 대표적인 형태를 사용하세요.
         </Tip>
       </Stack>
     ),

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import {
   Stack,
@@ -17,6 +17,7 @@ import {
   Divider,
   Pagination,
   Loader,
+  Anchor,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
@@ -28,6 +29,29 @@ import {
 import { AI_ENGINES, type TestResult } from '../../types';
 import { getResultsPaginated, type PaginatedResults } from '../../services/results';
 import { TableSkeleton } from '../../components/ui';
+
+function renderLinkifiedText(text: string) {
+  const urlRegex = /(https?:\/\/[^\s<>"']+)/g;
+  const parts = text.split(urlRegex);
+
+  return parts.map((part, index) => {
+    if (!part) return null;
+    if (/^https?:\/\//.test(part)) {
+      const match = part.match(/^(https?:\/\/[^\s<>"']*?)([),.;!?]*)$/);
+      const url = match?.[1] || part;
+      const trailing = match?.[2] || '';
+      return (
+        <span key={`url-${index}`}>
+          <Anchor href={url} target="_blank" rel="noreferrer" style={{ fontSize: 'inherit', fontFamily: 'inherit', lineHeight: 'inherit' }}>
+            {url}
+          </Anchor>
+          {trailing}
+        </span>
+      );
+    }
+    return <span key={`txt-${index}`}>{part}</span>;
+  });
+}
 
 export function QueryHistoryPanel() {
   const [data, setData] = useState<PaginatedResults | null>(null);
@@ -223,7 +247,7 @@ export function QueryHistoryPanel() {
               </Text>
               <ScrollArea h={250}>
                 <Code block style={{ whiteSpace: 'pre-wrap' }}>
-                  {selectedResult.fullResponse || selectedResult.response}
+                  {renderLinkifiedText(selectedResult.fullResponse || selectedResult.response)}
                 </Code>
               </ScrollArea>
             </div>
@@ -237,3 +261,4 @@ export function QueryHistoryPanel() {
     </Stack>
   );
 }
+

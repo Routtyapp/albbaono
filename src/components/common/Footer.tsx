@@ -1,4 +1,4 @@
-import {
+﻿import {
   Box,
   Container,
   Grid,
@@ -16,10 +16,10 @@ const footerLinks = {
   회사: ['소개', '연락처'],
 };
 
-export function Footer() {
+export function Footer({ maxWidth }: { maxWidth?: number }) {
   return (
-    <Box component="footer" py={60} bg="light-dark(#f0efed, var(--mantine-color-dark-7))" style={{ borderTop: '1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4))' }}>
-      <Container size={1440} px={{ base: 20, md: 40 }}>
+    <Box component="footer" py={60} mt={80} bg="light-dark(#f0efed, var(--mantine-color-dark-7))" style={{ borderTop: '1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4))' }}>
+      <Container size={maxWidth ?? 1440} px={{ base: 20, md: 40 }}>
         <Grid gutter={{ base: 32, md: 48 }}>
           <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
             <Image
@@ -74,3 +74,5 @@ export function Footer() {
     </Box>
   );
 }
+
+

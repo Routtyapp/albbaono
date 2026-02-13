@@ -108,6 +108,31 @@ export interface EngineStats {
   citationRate: number;
 }
 
+export interface CompetitorStatsByBrand {
+  brandId: string;
+  brandName: string;
+  totalTests: number;
+  competitorMentionCount: number;
+  competitorMentionRate: number;
+}
+
+export interface BrandComparisonPoint {
+  brandId: string;
+  brandName: string;
+  citationRate: number;
+  competitorMentionRate: number;
+  gap: number;
+}
+
+export interface LowPerformingQuery {
+  queryId: string | null;
+  query: string;
+  category: string;
+  totalTests: number;
+  citationRate: number;
+  delta7d: number;
+}
+
 export interface Stats {
   totalTests: number;
   citationRate: number;
@@ -115,6 +140,9 @@ export interface Stats {
   avgRank?: number | null;
   brandStats: BrandStats[];
   engineStats?: EngineStats[];
+  competitorStatsByBrand?: CompetitorStatsByBrand[];
+  brandComparisonSeries?: BrandComparisonPoint[];
+  lowPerformingQueries?: LowPerformingQuery[];
   recentResults: TestResult[];
 }
 

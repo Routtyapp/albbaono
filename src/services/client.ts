@@ -55,6 +55,21 @@ export async function apiMutate<T>(
   return response.json();
 }
 
+export async function apiUpload(path: string, file: File): Promise<{ success: boolean; url: string }> {
+  const formData = new FormData();
+  formData.append('image', file);
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...fetchOptions,
+    method: 'POST',
+    body: formData,
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null) as ApiErrorPayload | null;
+    throw new Error(payload?.message || '파일 업로드에 실패했습니다.');
+  }
+  return response.json();
+}
+
 export async function apiBlob(path: string, body: unknown, options: RequestOptions = {}): Promise<Blob> {
   const { redirectOnUnauthorized = true } = options;
   const response = await fetch(`${API_BASE}${path}`, {

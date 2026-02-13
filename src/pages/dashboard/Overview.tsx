@@ -91,6 +91,44 @@ export function Overview() {
     return brands.find((b) => b.id === selectedBrandId) || null;
   }, [brands, selectedBrandId]);
 
+  const comparisonSeries = useMemo(() => {
+    const raw = stats?.brandComparisonSeries || [];
+    const filtered = selectedBrandId && selectedBrandId !== 'all'
+      ? raw.filter((item) => item.brandId === selectedBrandId)
+      : raw;
+
+    return filtered.map((item) => ({
+      brandName: item.brandName,
+      '인용률(%)': item.citationRate,
+      '경쟁사 언급률(%)': item.competitorMentionRate,
+      gap: item.gap,
+    }));
+  }, [stats, selectedBrandId]);
+
+  const selectedComparison = useMemo(() => {
+    if (!selectedBrandId || selectedBrandId === 'all') return null;
+    return stats?.brandComparisonSeries?.find((item) => item.brandId === selectedBrandId) || null;
+  }, [stats, selectedBrandId]);
+
+  const overallCompetitorMentionRate = useMemo(() => {
+    const rows = stats?.competitorStatsByBrand || [];
+    const totalTests = rows.reduce((acc, cur) => acc + cur.totalTests, 0);
+    const mentionCount = rows.reduce((acc, cur) => acc + cur.competitorMentionCount, 0);
+    if (!totalTests) return 0;
+    return Math.round((mentionCount / totalTests) * 1000) / 10;
+  }, [stats]);
+
+  const competitorMentionRate = selectedComparison?.competitorMentionRate ?? overallCompetitorMentionRate;
+  const comparisonGap = selectedComparison
+    ? selectedComparison.gap
+    : Math.round(((filteredStats?.citationRate || 0) - overallCompetitorMentionRate) * 10) / 10;
+  const lowPerformingQueries = stats?.lowPerformingQueries || [];
+  const recentResults = filteredStats?.recentResults || [];
+  const activeQueriesCount = queries.filter((q) => q.isActive).length;
+  const selectedBrandAvgRank = selectedBrandId && selectedBrandId !== 'all'
+    ? stats?.brandStats?.find((bs) => bs.brandId === selectedBrandId)?.avgRank
+    : null;
+
   if (isLoading) {
     return <OverviewSkeleton />;
   }
@@ -102,28 +140,6 @@ export function Overview() {
       </Alert>
     );
   }
-
-  const recentResults = filteredStats?.recentResults || [];
-  const activeQueriesCount = queries.filter((q) => q.isActive).length;
-  const selectedBrandAvgRank = selectedBrandId && selectedBrandId !== 'all'
-    ? stats?.brandStats?.find((bs) => bs.brandId === selectedBrandId)?.avgRank
-    : null;
-
-  // 최근 결과로 차트 데이터 생성 (브랜드 필터링 적용)
-  const chartData = recentResults.slice(0, 10).reverse().map((r: TestResult, i: number) => {
-    // 브랜드가 선택된 경우 해당 브랜드의 인용 여부 확인
-    if (selectedBrandId && selectedBrandId !== 'all') {
-      const brandResult = r.brandResults?.find((br) => br.brandId === selectedBrandId);
-      return {
-        name: `#${i + 1}`,
-        인용: brandResult?.cited ? 1 : 0,
-      };
-    }
-    return {
-      name: `#${i + 1}`,
-      인용: r.cited ? 1 : 0,
-    };
-  });
 
   return (
     <Stack gap="lg">
@@ -259,14 +275,25 @@ export function Overview() {
           )}
           <Grid.Col span={{ base: 12, lg: 7 }} miw={0}>
             <ChartCard
-              title="최근 테스트 결과"
-              subtitle={`최근 ${Math.min(10, recentResults.length)}개 테스트`}
+              title="브랜드 인용률 vs 경쟁사 언급률"
+              subtitle={selectedBrand ? `${selectedBrand.name} 기준` : "브랜드별 비교"}
             >
+              <Group gap="xs" mb="sm">
+                <Badge color="teal" variant="light">내 브랜드 인용률 {filteredStats?.citationRate || 0}%</Badge>
+                <Badge color="orange" variant="light">경쟁사 언급률 {competitorMentionRate}%</Badge>
+                <Badge color={comparisonGap >= 0 ? 'green' : 'red'} variant="light">
+                  격차 {comparisonGap > 0 ? '+' : ''}{comparisonGap}%p
+                </Badge>
+              </Group>
               <BarChart
                 h={300}
-                data={chartData}
-                dataKey="name"
-                series={[{ name: '인용', color: 'teal.6' }]}
+                data={comparisonSeries}
+                dataKey="brandName"
+                series={[
+                  { name: '인용률(%)', color: 'teal.6' },
+                  { name: '경쟁사 언급률(%)', color: 'orange.5' },
+                ]}
+                withLegend
                 tickLine="y"
               />
             </ChartCard>
@@ -391,6 +418,50 @@ export function Overview() {
       )}
 
       {/* 최근 테스트 결과 */}
+      {lowPerformingQueries.length > 0 && (
+        <ChartCard
+          title="저성과 쿼리 Top 5"
+          subtitle="인용률이 낮은 순 (최근 7일 변화 포함)"
+        >
+          <Stack gap="xs">
+            {lowPerformingQueries.map((item) => (
+              <Group
+                key={`${item.queryId || 'query'}-${item.query}`}
+                justify="space-between"
+                p="xs"
+                style={{ borderRadius: 8, background: 'light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))' }}
+              >
+                <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
+                  <Text size="sm" lineClamp={1}>{item.query}</Text>
+                  <Group gap="xs">
+                    <Badge size="xs" variant="outline">{item.category}</Badge>
+                    <Text size="xs" c="dimmed">테스트 {item.totalTests}회</Text>
+                  </Group>
+                </Stack>
+                <Group gap="xs">
+                  <Badge color={item.citationRate < 20 ? 'red' : item.citationRate < 50 ? 'yellow' : 'teal'} variant="light">
+                    인용률 {item.citationRate}%
+                  </Badge>
+                  <Badge color={item.delta7d >= 0 ? 'green' : 'red'} variant="light">
+                    7일 {item.delta7d > 0 ? '+' : ''}{item.delta7d}%p
+                  </Badge>
+                </Group>
+              </Group>
+            ))}
+            <Group justify="flex-end" mt="xs">
+              <Button
+                size="xs"
+                variant="light"
+                leftSection={<IconMessageQuestion size={14} />}
+                onClick={() => navigate('/dashboard/query-ops')}
+              >
+                질문 관리에서 개선하기
+              </Button>
+            </Group>
+          </Stack>
+        </ChartCard>
+      )}
+
       {recentResults.length > 0 && (
         <ChartCard
           title={selectedBrand ? `${selectedBrand.name} 최근 결과` : "최근 테스트 결과"}
