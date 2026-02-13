@@ -31,11 +31,11 @@ export interface FeedInput {
 export function getFeeds(page = 1, category?: string, limit = 5): Promise<FeedListResponse> {
   const params = new URLSearchParams({ page: String(page), limit: String(limit) });
   if (category && category !== 'all') params.set('category', category);
-  return apiGet<FeedListResponse>(`/api/feeds?${params}`);
+  return apiGet<FeedListResponse>(`/api/feeds?${params}`, { redirectOnUnauthorized: false });
 }
 
 export function getFeed(id: string): Promise<Feed> {
-  return apiGet<Feed>(`/api/feeds/${id}`);
+  return apiGet<Feed>(`/api/feeds/${id}`, { redirectOnUnauthorized: false });
 }
 
 export function createFeed(data: FeedInput): Promise<Feed> {

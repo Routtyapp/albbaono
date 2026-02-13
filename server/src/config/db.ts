@@ -181,9 +181,10 @@ db.exec(`
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     content TEXT NOT NULL,
-    source_url TEXT,
     category TEXT DEFAULT 'general',
     is_published INTEGER DEFAULT 1,
+    thumbnail_url TEXT,
+    is_featured INTEGER DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
   );
