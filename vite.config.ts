@@ -53,6 +53,16 @@ export default defineConfig({
         target: 'http://localhost:3001',
         changeOrigin: true,
       },
+      // 피드 API 프록시
+      '/api/feeds': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+      // 업로드 API 프록시
+      '/api/upload': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
     },
   },
   plugins: [
