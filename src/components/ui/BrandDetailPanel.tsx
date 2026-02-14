@@ -205,12 +205,13 @@ export function BrandDetailPanel({ brand, onSave, onDelete, serviceGuides }: Bra
                   key={guide.title}
                   gap="sm"
                   wrap="nowrap"
-                  py="xs"
+                  py="sm"
                   px="sm"
                   style={{
                     cursor: 'pointer',
                     borderRadius: 'var(--mantine-radius-sm)',
-                    transition: 'background-color 0.15s ease',
+                    backgroundColor: 'var(--mantine-color-default-hover)',
+                    transition: 'filter 0.15s ease',
                   }}
                   className="guide-row"
                   onClick={guide.onClick}
@@ -220,7 +221,7 @@ export function BrandDetailPanel({ brand, onSave, onDelete, serviceGuides }: Bra
                     <Text size="sm" fw={500}>{guide.title}</Text>
                     <Text size="xs" c="dimmed">{guide.description}</Text>
                   </div>
-                  <Button variant="outline" color="gray" size="compact-xs" onClick={guide.onClick}>
+                  <Button variant="light" color="gray" size="compact-xs" onClick={guide.onClick}>
                     바로가기
                   </Button>
                 </Group>

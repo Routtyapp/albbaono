@@ -4,6 +4,7 @@ import type {
   CategoryScore,
   PageAnalysis,
   ScoreItem,
+  SiteType,
 } from '../../types/geoScore.js';
 
 import { analyzeStructure, getStructureScore } from './structure.js';
@@ -21,7 +22,7 @@ export interface AnalysisResult {
 /**
  * 여러 페이지를 분석하고 종합 점수 계산
  */
-export function analyzePages(pages: PageData[]): AnalysisResult {
+export function analyzePages(pages: PageData[], siteType: SiteType = 'general'): AnalysisResult {
   const pageAnalyses: PageAnalysis[] = [];
   const aggregatedScores = {
     structure: 0,
@@ -40,7 +41,7 @@ export function analyzePages(pages: PageData[]): AnalysisResult {
 
   for (const page of pages) {
     const structureAnalysis = analyzeStructure(page.html);
-    const schemaAnalysis = analyzeSchema(page.html);
+    const schemaAnalysis = analyzeSchema(page.html, siteType);
     const urlAnalysis = analyzeUrl(page.url);
     const metaAnalysis = analyzeMeta(page.html, page.url);
     const contentAnalysis = analyzeContent(page.html);

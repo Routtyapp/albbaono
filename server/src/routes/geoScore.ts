@@ -50,7 +50,8 @@ router.post('/analyze', async (req: Request, res: Response) => {
     console.log(`[GEO Score] 크롤링 완료: ${crawlResult.pages.length}개 페이지`);
 
     // 2. 분석
-    const analysisResult = analyzePages(crawlResult.pages);
+    const siteType = options?.siteType ?? 'general';
+    const analysisResult = analyzePages(crawlResult.pages, siteType);
 
     // 3. 등급 계산
     const grade = calculateGrade(analysisResult.totalScore);

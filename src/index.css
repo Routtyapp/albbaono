@@ -21,8 +21,8 @@ body {
 }
 
 ::selection {
-  background-color: #B6E63A;
-  color: #0a0a0a;
+  background-color: #339af0;
+  color: #fff;
 }
 
 /* ── Scrollbar ── */

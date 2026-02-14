@@ -21,7 +21,6 @@ import {
   Title,
   Tabs,
   Table,
-  Tooltip,
   Select,
 } from '@mantine/core';
 import {
@@ -34,21 +33,16 @@ import {
   IconChartBar,
   IconExternalLink,
   IconFileTypePdf,
-  IconArrowRight,
   IconListDetails,
-  IconHistory,
-  IconTrash,
+  IconClipboard,
 } from '@tabler/icons-react';
 import {
   analyzeGeoScore,
   checkGeoScoreHealth,
   downloadGeoScorePdf,
-  getGeoScoreHistory,
-  saveGeoScoreHistory,
-  clearGeoScoreHistory,
   type GeoScoreResult,
-  type GeoScoreHistoryItem,
   type Recommendation,
+  type SiteType,
 } from '../../services/api';
 
 const GRADE_COLORS: Record<string, string> = {
@@ -61,6 +55,14 @@ const GRADE_COLORS: Record<string, string> = {
   D: 'red',
   F: 'red',
 };
+
+const SITE_TYPE_OPTIONS = [
+  { value: 'general', label: '일반 (모든 스키마 평가)' },
+  { value: 'ecommerce', label: '쇼핑몰 (Product, FAQ, Review)' },
+  { value: 'blog', label: '블로그 (FAQ, HowTo)' },
+  { value: 'corporate', label: '기업/서비스 (FAQ)' },
+  { value: 'portfolio', label: '포트폴리오 (스키마 면제)' },
+];
 
 const CATEGORY_LABELS: Record<string, string> = {
   structure: '구조',
@@ -79,67 +81,32 @@ export function ScoreOverview() {
   const [result, setResult] = useState<GeoScoreResult | null>(null);
   const [serviceAvailable, setServiceAvailable] = useState<boolean | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [history, setHistory] = useState<GeoScoreHistoryItem[]>([]);
-  // 히스토리에서 선택한 결과를 보여주는 모드
-  const [selectedHistoryUrl, setSelectedHistoryUrl] = useState<string | null>(null);
+  const [siteType, setSiteType] = useState<SiteType>('general');
+  const [copiedBrief, setCopiedBrief] = useState<'developer' | 'marketer' | null>(null);
 
   useEffect(() => {
     checkGeoScoreHealth()
       .then(() => setServiceAvailable(true))
       .catch(() => setServiceAvailable(false));
-
-    loadHistory();
   }, []);
 
-  const loadHistory = async () => {
-    try {
-      const { scores } = await getGeoScoreHistory();
-      setHistory(scores);
-    } catch (err) {
-      console.error('Failed to load history:', err);
-    }
-  };
-
-  // 현재 표시할 결과 (새 분석 결과 or 히스토리에서 선택한 결과)
-  const displayResult = useMemo(() => {
-    if (result) return result;
-    if (selectedHistoryUrl) {
-      return history.find((h) => h.url === selectedHistoryUrl) || null;
-    }
-    return null;
-  }, [result, selectedHistoryUrl, history]);
-
-  const handleLoadFromHistory = (item: GeoScoreHistoryItem) => {
-    setResult(null);
-    setSelectedHistoryUrl(item.url);
-  };
-
-  const handleClearHistory = async () => {
-    try {
-      await clearGeoScoreHistory();
-      setHistory([]);
-    } catch (err) {
-      console.error('Failed to clear history:', err);
-    }
-  };
-
   const handleDownloadPdf = async () => {
-    if (!displayResult) return;
+    if (!result) return;
 
     setIsDownloading(true);
     try {
-      const blob = await downloadGeoScorePdf(displayResult);
+      const blob = await downloadGeoScorePdf(result);
 
       let domain = 'site';
       try {
-        const urlObj = new URL(displayResult.url);
+        const urlObj = new URL(result.url);
         domain = urlObj.hostname.replace(/\./g, '_');
       } catch {}
 
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = `GEO_Score_${domain}_${displayResult.grade}_${displayResult.totalScore}.pdf`;
+      link.download = `GEO_Score_${domain}_${result.grade}_${result.totalScore}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -160,7 +127,6 @@ export function ScoreOverview() {
     setLoading(true);
     setError(null);
     setResult(null);
-    setSelectedHistoryUrl(null);
 
     try {
       const data = await analyzeGeoScore({
@@ -168,12 +134,10 @@ export function ScoreOverview() {
         options: {
           includeSubpages,
           maxSubpages: typeof maxSubpages === 'number' ? maxSubpages : 10,
+          siteType,
         },
       });
       setResult(data);
-
-      const savedItem = await saveGeoScoreHistory(data);
-      setHistory((prev) => [savedItem, ...prev.filter((h) => h.url !== data.url)].slice(0, 10));
     } catch (err) {
       setError(err instanceof Error ? err.message : '분석 중 오류가 발생했습니다.');
     } finally {
@@ -183,8 +147,8 @@ export function ScoreOverview() {
 
   // 카테고리별 통계
   const categoryStats = useMemo(() => {
-    if (!displayResult) return [];
-    return Object.entries(displayResult.categories).map(([key, cat]) => ({
+    if (!result) return [];
+    return Object.entries(result.categories).map(([key, cat]) => ({
       key,
       label: CATEGORY_LABELS[key] || key,
       score: cat.score,
@@ -193,35 +157,81 @@ export function ScoreOverview() {
       passedItems: cat.items.filter((i) => i.passed).length,
       totalItems: cat.items.length,
     }));
-  }, [displayResult]);
+  }, [result]);
 
   // 권장사항 우선순위별 그룹화
   const recommendationsByPriority = useMemo(() => {
-    if (!displayResult) return { high: [], medium: [], low: [] };
-    const recs = displayResult.recommendations;
+    if (!result) return { high: [], medium: [], low: [] };
+    const recs = result.recommendations;
     return {
       high: recs.filter((r) => r.priority === 'high'),
       medium: recs.filter((r) => r.priority === 'medium'),
       low: recs.filter((r) => r.priority === 'low'),
     };
-  }, [displayResult]);
+  }, [result]);
 
-  // 히스토리 셀렉트 옵션
-  const historySelectOptions = useMemo(() => {
-    return history.map((h) => {
-      let domain = h.url;
-      try {
-        domain = new URL(h.url).hostname;
-      } catch {}
-      return {
-        value: h.url,
-        label: `${domain} (${h.grade} - ${h.totalScore}점)`,
-      };
-    });
-  }, [history]);
+  const ROLE_CATEGORIES: Record<'developer' | 'marketer', string[]> = {
+    developer: ['structure', 'schema', 'url'],
+    marketer: ['meta', 'content'],
+  };
+
+  const ROLE_LABELS: Record<'developer' | 'marketer', string> = {
+    developer: '개발자',
+    marketer: '마케터',
+  };
+
+  const PRIORITY_LABELS: Record<string, { emoji: string; label: string }> = {
+    high: { emoji: '🔴', label: '높은 우선순위' },
+    medium: { emoji: '🟡', label: '중간 우선순위' },
+    low: { emoji: '🟢', label: '낮은 우선순위' },
+  };
+
+  const generateBrief = async (role: 'developer' | 'marketer') => {
+    if (!result) return;
+
+    const categories = ROLE_CATEGORIES[role];
+    const recs = result.recommendations.filter((r) =>
+      categories.includes(r.category)
+    );
+
+    const date = new Date(result.analyzedAt).toLocaleDateString('ko-KR');
+    const lines: string[] = [
+      `📋 GEO 스코어 개선 요청서 (${ROLE_LABELS[role]}용)`,
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      `🔗 분석 URL: ${result.url}`,
+      `📊 현재 점수: ${result.totalScore}점 (${result.grade}등급)`,
+      `📅 분석일: ${date}`,
+      '',
+    ];
+
+    if (recs.length === 0) {
+      lines.push('✅ 모든 항목이 양호합니다. 추가 개선이 필요하지 않습니다.');
+    } else {
+      const priorities: Array<'high' | 'medium' | 'low'> = ['high', 'medium', 'low'];
+      for (const priority of priorities) {
+        const group = recs.filter((r) => r.priority === priority);
+        if (group.length === 0) continue;
+
+        const { emoji, label } = PRIORITY_LABELS[priority];
+        lines.push(`${emoji} ${label}`);
+        lines.push('──────────────');
+        group.forEach((rec, idx) => {
+          const catLabel = CATEGORY_LABELS[rec.category] || rec.category;
+          lines.push(`${idx + 1}. [${catLabel}] ${rec.issue}`);
+          lines.push(`   → ${rec.suggestion}`);
+          lines.push(`   💡 예상 효과: ${rec.impact}`);
+          lines.push('');
+        });
+      }
+    }
+
+    await navigator.clipboard.writeText(lines.join('\n'));
+    setCopiedBrief(role);
+    setTimeout(() => setCopiedBrief(null), 2000);
+  };
 
   // 결과 없고 로딩 아닐 때: 중앙 배치 히어로 스타일
-  if (!displayResult && !loading) {
+  if (!result && !loading) {
     return (
       <Stack gap="lg">
         {serviceAvailable === false && (
@@ -236,7 +246,7 @@ export function ScoreOverview() {
           </Alert>
         )}
 
-        <Center style={{ minHeight: 'calc(100vh - 300px)' }}>
+        <Center style={{ minHeight: 'calc(100vh - 120px)' }}>
           <Stack align="center" gap="xl" w="100%" maw={640} px="md">
             <Text size="xl" ta="center" c="dimmed">
               웹사이트의 AI 최적화 점수를 분석하세요
@@ -294,55 +304,18 @@ export function ScoreOverview() {
                   />
                 )}
               </Group>
+              <Select
+                value={siteType}
+                onChange={(val) => setSiteType((val as SiteType) || 'general')}
+                data={SITE_TYPE_OPTIONS}
+                size="xs"
+                w={260}
+                mt={4}
+                label="사이트 유형"
+                styles={{ label: { fontSize: 11, color: 'var(--mantine-color-dimmed)' } }}
+              />
             </Box>
 
-            {/* 최근 분석 히스토리 */}
-            {history.length > 0 && (
-              <Box w="100%">
-                <Group justify="space-between" mb="xs">
-                  <Text size="xs" c="dimmed">최근 분석</Text>
-                  <Button
-                    variant="subtle"
-                    color="red"
-                    size="compact-xs"
-                    onClick={handleClearHistory}
-                  >
-                    전체 삭제
-                  </Button>
-                </Group>
-                <Stack gap={6}>
-                  {history.slice(0, 5).map((item, idx) => (
-                    <Paper
-                      key={idx}
-                      p="xs"
-                      withBorder
-                      radius="sm"
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => handleLoadFromHistory(item)}
-                    >
-                      <Group justify="space-between" wrap="nowrap">
-                        <Box style={{ overflow: 'hidden', flex: 1 }}>
-                          <Text size="sm" truncate>
-                            {(() => {
-                              try { return new URL(item.url).hostname; } catch { return item.url; }
-                            })()}
-                          </Text>
-                        </Box>
-                        <Group gap="xs" wrap="nowrap">
-                          <Badge color={GRADE_COLORS[item.grade]} size="xs">
-                            {item.grade}
-                          </Badge>
-                          <Badge variant="light" size="xs">
-                            {item.totalScore}점
-                          </Badge>
-                          <IconArrowRight size={12} color="gray" />
-                        </Group>
-                      </Group>
-                    </Paper>
-                  ))}
-                </Stack>
-              </Box>
-            )}
           </Stack>
         </Center>
       </Stack>
@@ -393,40 +366,40 @@ export function ScoreOverview() {
       )}
 
       {/* 분석 결과 */}
-      {displayResult && (
+      {result && (
         <Stack gap="lg">
           {/* 요약 카드 */}
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
             <Paper p="lg" radius="md" withBorder>
               <Group justify="space-between" mb="xs">
                 <Text size="sm" c="dimmed">종합 점수</Text>
-                <Badge color={GRADE_COLORS[displayResult.grade]} size="lg">
-                  {displayResult.grade}
+                <Badge color={GRADE_COLORS[result.grade]} size="lg">
+                  {result.grade}
                 </Badge>
               </Group>
-              <Text size="xl">{displayResult.totalScore}</Text>
+              <Text size="xl">{result.totalScore}</Text>
               <Text size="xs" c="dimmed">/ 100점</Text>
             </Paper>
 
             <Paper p="lg" radius="md" withBorder>
               <Text size="sm" c="dimmed" mb="xs">분석 페이지</Text>
-              <Text size="xl">{displayResult.pages.length}</Text>
+              <Text size="xl">{result.pages.length}</Text>
               <Text size="xs" c="dimmed">개 페이지</Text>
             </Paper>
 
             <Paper p="lg" radius="md" withBorder>
               <Text size="sm" c="dimmed" mb="xs">개선 필요 항목</Text>
-              <Text size="xl" c="red">{displayResult.recommendations.length}</Text>
+              <Text size="xl" c="red">{result.recommendations.length}</Text>
               <Text size="xs" c="dimmed">개 항목</Text>
             </Paper>
 
             <Paper p="lg" radius="md" withBorder>
               <Text size="sm" c="dimmed" mb="xs">분석 일시</Text>
               <Text size="md">
-                {new Date(displayResult.analyzedAt).toLocaleDateString('ko-KR')}
+                {new Date(result.analyzedAt).toLocaleDateString('ko-KR')}
               </Text>
               <Text size="xs" c="dimmed">
-                {new Date(displayResult.analyzedAt).toLocaleTimeString('ko-KR')}
+                {new Date(result.analyzedAt).toLocaleTimeString('ko-KR')}
               </Text>
             </Paper>
           </SimpleGrid>
@@ -436,41 +409,18 @@ export function ScoreOverview() {
             <Group justify="space-between" wrap="nowrap">
               <Group gap="xs" style={{ overflow: 'hidden', flex: 1 }}>
                 <IconExternalLink size={16} />
-                <Text size="sm" truncate>{displayResult.url}</Text>
+                <Text size="sm" truncate>{result.url}</Text>
               </Group>
-              <Group gap="sm" wrap="nowrap">
-                {history.length > 1 && (
-                  <Select
-                    placeholder="다른 분석 결과 보기"
-                    data={historySelectOptions}
-                    value={selectedHistoryUrl || displayResult.url}
-                    onChange={(val) => {
-                      if (val) {
-                        setResult(null);
-                        setSelectedHistoryUrl(val);
-                      }
-                    }}
-                    w={240}
-                    size="xs"
-                    leftSection={<IconHistory size={14} />}
-                  />
-                )}
-                <Button
-                  variant="light"
-                  color="red"
-                  size="xs"
-                  leftSection={<IconFileTypePdf size={14} />}
-                  onClick={handleDownloadPdf}
-                  loading={isDownloading}
-                >
-                  PDF
-                </Button>
-                <Tooltip label="히스토리 삭제">
-                  <ActionIcon variant="light" color="gray" size="sm" onClick={handleClearHistory}>
-                    <IconTrash size={14} />
-                  </ActionIcon>
-                </Tooltip>
-              </Group>
+              <Button
+                variant="light"
+                color="red"
+                size="xs"
+                leftSection={<IconFileTypePdf size={14} />}
+                onClick={handleDownloadPdf}
+                loading={isDownloading}
+              >
+                PDF
+              </Button>
             </Group>
           </Paper>
 
@@ -484,7 +434,7 @@ export function ScoreOverview() {
                 상세 분석
               </Tabs.Tab>
               <Tabs.Tab value="recommendations" leftSection={<IconBulb size={16} />}>
-                권장사항 ({displayResult.recommendations.length})
+                권장사항 ({result.recommendations.length})
               </Tabs.Tab>
             </Tabs.List>
 
@@ -554,7 +504,7 @@ export function ScoreOverview() {
                 </Paper>
 
                 {/* 페이지별 점수 */}
-                {displayResult.pages.length > 1 && (
+                {result.pages.length > 1 && (
                   <Paper p="lg" radius="md" withBorder>
                     <Title order={4} mb="md">페이지별 점수</Title>
                     <Table striped highlightOnHover>
@@ -570,7 +520,7 @@ export function ScoreOverview() {
                         </Table.Tr>
                       </Table.Thead>
                       <Table.Tbody>
-                        {displayResult.pages.map((page, idx) => (
+                        {result.pages.map((page, idx) => (
                           <Table.Tr key={idx}>
                             <Table.Td maw={200}>
                               <Text size="sm" lineClamp={1}>
@@ -601,7 +551,7 @@ export function ScoreOverview() {
             {/* 상세 분석 탭 */}
             <Tabs.Panel value="details" pt="md">
               <Stack gap="md">
-                {Object.entries(displayResult.categories).map(([key, category]) => (
+                {Object.entries(result.categories).map(([key, category]) => (
                   <Paper key={key} p="lg" radius="md" withBorder>
                     <Group justify="space-between" mb="md">
                       <Group gap="xs">
@@ -658,6 +608,27 @@ export function ScoreOverview() {
             {/* 권장사항 탭 */}
             <Tabs.Panel value="recommendations" pt="md">
               <Stack gap="md">
+                <Group gap="sm">
+                  <Button
+                    variant="light"
+                    size="xs"
+                    leftSection={copiedBrief === 'developer' ? <IconCheck size={14} /> : <IconClipboard size={14} />}
+                    color={copiedBrief === 'developer' ? 'green' : 'blue'}
+                    onClick={() => generateBrief('developer')}
+                  >
+                    {copiedBrief === 'developer' ? '복사됨!' : '개발자용 요청서 복사'}
+                  </Button>
+                  <Button
+                    variant="light"
+                    size="xs"
+                    leftSection={copiedBrief === 'marketer' ? <IconCheck size={14} /> : <IconClipboard size={14} />}
+                    color={copiedBrief === 'marketer' ? 'green' : 'violet'}
+                    onClick={() => generateBrief('marketer')}
+                  >
+                    {copiedBrief === 'marketer' ? '복사됨!' : '마케터용 요청서 복사'}
+                  </Button>
+                </Group>
+
                 {recommendationsByPriority.high.length > 0 && (
                   <Paper p="lg" radius="md" withBorder>
                     <Group gap="xs" mb="md">
@@ -700,7 +671,7 @@ export function ScoreOverview() {
                   </Paper>
                 )}
 
-                {displayResult.recommendations.length === 0 && (
+                {result.recommendations.length === 0 && (
                   <Paper p="xl" radius="md" withBorder>
                     <Center py={40}>
                       <Stack align="center" gap="md">

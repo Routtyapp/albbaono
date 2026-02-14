@@ -166,6 +166,179 @@ async function extractInternalLinks(
   return Array.from(uniqueLinks);
 }
 
+/**
+ * sitemap.xml에서 URL 추출
+ */
+async function extractFromSitemap(baseUrl: string, maxLinks: number): Promise<string[]> {
+  try {
+    const parsedBase = new URL(baseUrl);
+    const sitemapUrl = `${parsedBase.origin}/sitemap.xml`;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    const res = await fetch(sitemapUrl, { signal: controller.signal });
+    clearTimeout(timeout);
+
+    if (!res.ok) return [];
+
+    const xml = await res.text();
+    const urls: string[] = [];
+    const locRegex = /<loc>(.*?)<\/loc>/g;
+    let match: RegExpExecArray | null;
+
+    while ((match = locRegex.exec(xml)) !== null) {
+      try {
+        const locUrl = new URL(match[1].trim());
+        if (locUrl.hostname !== parsedBase.hostname) continue;
+        if (/\.(pdf|jpg|jpeg|png|gif|svg|css|js|ico|woff|woff2)$/i.test(locUrl.href)) continue;
+
+        const clean = locUrl.href.replace(/#.*$/, '');
+        if (clean === baseUrl || clean === baseUrl + '/') continue;
+
+        urls.push(clean);
+        if (urls.length >= maxLinks) break;
+      } catch {
+        // 잘못된 URL 무시
+      }
+    }
+
+    return [...new Set(urls)];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * SPA 라우트 발견 (클릭 기반)
+ */
+async function discoverSpaRoutes(page: Page, baseUrl: string, maxLinks: number): Promise<string[]> {
+  const baseHostname = new URL(baseUrl).hostname;
+  const discoveredUrls = new Set<string>();
+  const startUrl = page.url();
+
+  try {
+    // pushState/replaceState 인터셉트 설치
+    await page.evaluate(() => {
+      (window as any).__discoveredRoutes = [];
+      const origPush = history.pushState.bind(history);
+      const origReplace = history.replaceState.bind(history);
+
+      history.pushState = function (data: any, unused: string, url?: string | URL | null) {
+        if (url) (window as any).__discoveredRoutes.push(String(url));
+        return origPush(data, unused, url);
+      };
+      history.replaceState = function (data: any, unused: string, url?: string | URL | null) {
+        if (url) (window as any).__discoveredRoutes.push(String(url));
+        return origReplace(data, unused, url);
+      };
+    });
+
+    // 클릭 가능 요소 수집
+    const dangerPatterns = /delete|삭제|logout|로그아웃|remove|sign\s*out|탈퇴/i;
+
+    const elements = await page.$$(
+      'button, [role="link"], [role="button"], [onclick], a:not([href]), [data-href], nav a, [class*="nav"] a, [class*="menu"] a'
+    );
+
+    const overallTimeout = Date.now() + 15000;
+
+    for (const el of elements) {
+      if (Date.now() > overallTimeout) break;
+      if (discoveredUrls.size >= maxLinks) break;
+
+      try {
+        // 위험 요소 필터링
+        const text = await el.evaluate((e: Element) => e.textContent || '');
+        if (dangerPatterns.test(text)) continue;
+
+        // 요소가 보이는지 확인
+        const isVisible = await el.evaluate((e: Element) => {
+          const rect = e.getBoundingClientRect();
+          const style = window.getComputedStyle(e);
+          return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden';
+        });
+        if (!isVisible) continue;
+
+        const beforeUrl = page.url();
+
+        // 클릭 시도 (2초 타임아웃)
+        await Promise.race([
+          el.click(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('click timeout')), 2000)),
+        ]);
+
+        // URL 변경 대기 (짧은 딜레이)
+        await new Promise((r) => setTimeout(r, 500));
+
+        const afterUrl = page.url();
+
+        if (afterUrl !== beforeUrl && afterUrl !== startUrl) {
+          try {
+            const parsed = new URL(afterUrl);
+            if (parsed.hostname === baseHostname) {
+              parsed.hash = '';
+              const clean = parsed.href;
+              if (clean !== baseUrl && clean !== baseUrl + '/') {
+                if (!/\.(pdf|jpg|jpeg|png|gif|svg|css|js|ico|woff|woff2)$/i.test(clean)) {
+                  discoveredUrls.add(clean);
+                }
+              }
+            }
+          } catch {
+            // 잘못된 URL 무시
+          }
+        }
+
+        // pushState로 캡처된 라우트도 수거
+        const captured: string[] = await page.evaluate(() => {
+          const routes = [...((window as any).__discoveredRoutes || [])];
+          (window as any).__discoveredRoutes = [];
+          return routes;
+        });
+
+        for (const route of captured) {
+          try {
+            const parsed = new URL(route, baseUrl);
+            if (parsed.hostname !== baseHostname) continue;
+            parsed.hash = '';
+            const clean = parsed.href;
+            if (clean !== baseUrl && clean !== baseUrl + '/') {
+              if (!/\.(pdf|jpg|jpeg|png|gif|svg|css|js|ico|woff|woff2)$/i.test(clean)) {
+                discoveredUrls.add(clean);
+              }
+            }
+          } catch {
+            // 잘못된 URL 무시
+          }
+        }
+
+        // 원래 URL로 복귀
+        if (page.url() !== startUrl) {
+          try {
+            await page.goBack({ waitUntil: 'networkidle0', timeout: 5000 });
+          } catch {
+            await page.goto(startUrl, { waitUntil: 'networkidle0', timeout: 10000 });
+          }
+        }
+      } catch {
+        // 개별 요소 클릭 실패 무시
+        if (page.url() !== startUrl) {
+          try {
+            await page.goto(startUrl, { waitUntil: 'networkidle0', timeout: 10000 });
+          } catch {
+            break;
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.log(`[Crawler] SPA 라우트 발견 중 오류: ${err instanceof Error ? err.message : 'Unknown'}`);
+  }
+
+  return Array.from(discoveredUrls);
+}
+
 export interface CrawlOptions {
   includeSubpages?: boolean;
   maxSubpages?: number;
@@ -206,7 +379,17 @@ export async function crawlSite(
 
     // 서브페이지 크롤링
     if (includeSubpages) {
-      const subLinks = await extractInternalLinks(page, url, maxSubpages);
+      const sitemapLinks = await extractFromSitemap(url, maxSubpages);
+      const anchorLinks = await extractInternalLinks(page, url, maxSubpages);
+      const spaLinks = await discoverSpaRoutes(page, url, maxSubpages);
+
+      // 합치고 중복 제거, maxSubpages 제한
+      const allLinks = [...new Set([...sitemapLinks, ...anchorLinks, ...spaLinks])];
+      const subLinks = allLinks.slice(0, maxSubpages);
+
+      console.log(
+        `[Crawler] 서브페이지 발견: sitemap=${sitemapLinks.length}, anchor=${anchorLinks.length}, spa=${spaLinks.length} → 총 ${subLinks.length}개`
+      );
 
       for (const subUrl of subLinks) {
         try {

@@ -51,6 +51,11 @@ const CATEGORY_COLORS: Record<string, string> = {
   tip: 'orange',
 };
 
+function stripHtml(html: string) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return doc.body.textContent || '';
+}
+
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('ko-KR', {
     year: 'numeric',
@@ -150,7 +155,7 @@ function HeroCarousel({
               </Title>
 
               <Text size="sm" c="dimmed" lh={1.7} lineClamp={3}>
-                {feed.content}
+                {stripHtml(feed.content)}
               </Text>
             </div>
 
@@ -257,7 +262,7 @@ function ArticleCard({
             {feed.title}
           </Text>
           <Text size="sm" c="dimmed" lineClamp={2} lh={1.6} mb={8}>
-            {feed.content}
+            {stripHtml(feed.content)}
           </Text>
           <Text size="xs" c="dimmed">{formatDate(feed.createdAt)}</Text>
         </div>

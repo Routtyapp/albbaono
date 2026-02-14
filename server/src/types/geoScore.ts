@@ -1,10 +1,13 @@
 // GEO Score 분석 결과 타입 정의
 
+export type SiteType = 'general' | 'ecommerce' | 'blog' | 'corporate' | 'portfolio';
+
 export interface GeoScoreRequest {
   url: string;
   options?: {
     includeSubpages?: boolean;
     maxSubpages?: number;
+    siteType?: SiteType;
   };
 }
 

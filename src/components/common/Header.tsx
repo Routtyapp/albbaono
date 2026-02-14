@@ -84,7 +84,7 @@ export function Header({ maxWidth }: { maxWidth?: number }) {
               color="dark"
               c="white"
               size="xs"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/dashboard/brands')}
             >
               시작하기
             </Button>
@@ -127,7 +127,7 @@ export function Header({ maxWidth }: { maxWidth?: number }) {
             mt="md"
             onClick={() => {
               close();
-              navigate('/dashboard');
+              navigate('/dashboard/brands');
             }}
           >
             시작하기

@@ -57,16 +57,15 @@ export function Hero() {
               size="md"
              
               rightSection={<IconArrowRight size={16} />}
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/dashboard/brands')}
             >
               지금 시작하기
             </Button>
             <Button
               radius="xl"
-              variant="outline"
-              color="gray"
+              variant="filled"
+              color="gray.6"
               size="md"
-              c="white"
               onClick={() => {
                 document.getElementById('solution')?.scrollIntoView({ behavior: 'smooth' });
               }}

@@ -1,10 +1,13 @@
 import { apiGet, apiMutate } from './client';
 
+export type SiteType = 'general' | 'ecommerce' | 'blog' | 'corporate' | 'portfolio';
+
 export interface GeoScoreRequest {
   url: string;
   options?: {
     includeSubpages?: boolean;
     maxSubpages?: number;
+    siteType?: SiteType;
   };
 }
 

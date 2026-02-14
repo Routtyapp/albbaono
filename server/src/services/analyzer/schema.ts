@@ -1,5 +1,26 @@
 import * as cheerio from 'cheerio';
-import type { SchemaAnalysis } from '../../types/geoScore.js';
+import type { SchemaAnalysis, SiteType, ScoreItem } from '../../types/geoScore.js';
+
+/**
+ * 사이트 유형별 적용 가능한 스키마 정의
+ */
+const SCHEMA_RELEVANCE: Record<SiteType, { product: boolean; faq: boolean; howTo: boolean; review: boolean }> = {
+  general:    { product: true,  faq: true,  howTo: true,  review: true  },
+  ecommerce:  { product: true,  faq: true,  howTo: false, review: true  },
+  blog:       { product: false, faq: true,  howTo: true,  review: false },
+  corporate:  { product: false, faq: true,  howTo: false, review: false },
+  portfolio:  { product: false, faq: false, howTo: false, review: false },
+};
+
+function createNotApplicableItem(name: string, maxScore: number): ScoreItem {
+  return {
+    name,
+    passed: true,
+    score: maxScore,
+    maxScore,
+    detail: '해당 사이트 유형에는 적용되지 않는 항목 (자동 만점)',
+  };
+}
 
 /**
  * 스키마 마크업 분석기
@@ -8,8 +29,10 @@ import type { SchemaAnalysis } from '../../types/geoScore.js';
  * - HowTo 스키마 (5점)
  * - Review 스키마 (5점)
  * 총 25점 만점
+ *
+ * siteType에 따라 해당하지 않는 스키마는 자동 만점 처리
  */
-export function analyzeSchema(html: string): SchemaAnalysis {
+export function analyzeSchema(html: string, siteType: SiteType = 'general'): SchemaAnalysis {
   const $ = cheerio.load(html);
 
   // JSON-LD 스키마 추출
@@ -35,11 +58,21 @@ export function analyzeSchema(html: string): SchemaAnalysis {
     review: $('[itemtype*="schema.org/Review"]').length > 0,
   };
 
+  const relevance = SCHEMA_RELEVANCE[siteType];
+
   return {
-    productSchema: analyzeProductSchema(schemas, hasMicrodata.product),
-    faqSchema: analyzeFaqSchema(schemas, hasMicrodata.faq),
-    howToSchema: analyzeHowToSchema(schemas, hasMicrodata.howTo),
-    reviewSchema: analyzeReviewSchema(schemas, hasMicrodata.review),
+    productSchema: relevance.product
+      ? analyzeProductSchema(schemas, hasMicrodata.product)
+      : createNotApplicableItem('Product 스키마', 10),
+    faqSchema: relevance.faq
+      ? analyzeFaqSchema(schemas, hasMicrodata.faq)
+      : createNotApplicableItem('FAQ 스키마', 5),
+    howToSchema: relevance.howTo
+      ? analyzeHowToSchema(schemas, hasMicrodata.howTo)
+      : createNotApplicableItem('HowTo 스키마', 5),
+    reviewSchema: relevance.review
+      ? analyzeReviewSchema(schemas, hasMicrodata.review)
+      : createNotApplicableItem('Review 스키마', 5),
   };
 }
 
